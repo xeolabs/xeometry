@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <script src="lib/xeogl.js"></script>
     <script src="js/xeoviz.js"></script>
+
+    <link href="css/styles.css" rel="stylesheet"/>
 <body>
 
 <script>
@@ -22,20 +24,21 @@
         v.scale("saw", [.09, .09, .09]);
         v.rotate("saw", [90, 0, 0]);
 
+        var objects = v.objects("saw");
         var i = 0;
-        var objects;
+        var numVisObjects = 15;
+        var visObjects;
 
         setInterval(function () {
-            var objects = v.objects("saw");
             if (i > 0) {
                 v.hide(objects[i - 1]);
             }
-            if (i + 15 >= objects.length) {
+            if (i + numVisObjects >= objects.length) {
                 i = 0;
             }
-            objects = objects.slice(i, i + 25);
-            v.show(objects);
-            v.goto(objects);
+            visObjects = objects.slice(i, i + numVisObjects);
+            v.show(visObjects);
+            v.goto(visObjects);
             i += 1;
 
         }, 100)
