@@ -175,7 +175,7 @@ viewer.show(["outerCover", "trigger"]);
 
 Show a model and two objects:
 ````javascript
-viewer.show(["saw", ""outerCover", "trigger"]);
+viewer.show(["saw", "outerCover", "trigger"]);
 ````
 
 ### Controlling the camera
