@@ -288,10 +288,34 @@ function xeoviz(cfg) {
         return (arguments.length === 0) ? cameraFlight.fitFOV : cameraFlight.fitFOV = value;
     };
 
+    this.eye = function (eye) {
+        if (eye) {
+            view.eye = eye;
+        } else {
+            return view.eye;
+        }
+    };
+
+    this.look = function (look) {
+        if (look) {
+            view.look = look;
+        } else {
+            return view.look;
+        }
+    };
+
+    this.up = function (up) {
+        if (up) {
+            view.up = up;
+        } else {
+            return view.up;
+        }
+    };
+
     this.lookat = function (eye, look, up) {
-        camera.view.eye = eye;
-        camera.view.look = look;
-        camera.view.up = up || [0, 1, 0];
+        view.eye = eye;
+        view.look = look;
+        view.up = up || [0, 1, 0];
     };
 
     this.goto = function (target, ok) {
@@ -431,9 +455,9 @@ function xeoviz(cfg) {
                 }
             }
             state.lookat = {
-                eye: vecToArray(camera.view.eye),
-                look: vecToArray(camera.view.look),
-                up: vecToArray(camera.view.up)
+                eye: vecToArray(view.eye),
+                look: vecToArray(view.look),
+                up: vecToArray(view.up)
             };
             return state;
         }
