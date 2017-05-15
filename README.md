@@ -1,9 +1,9 @@
 # xeoviz
 
-A light and tasty [glTF](http://gltf.org) model viewer built with [xeogl](http://xeogl.org).     
+A [glTF](http://gltf.org) model viewer built with [xeogl](http://xeogl.org).      
 
 
-## Features
+# Features
 
 * Load multiple glTF models
 * Show and hide models and objects
@@ -11,7 +11,7 @@ A light and tasty [glTF](http://gltf.org) model viewer built with [xeogl](http:/
 * Fly camera to look at models and objects
 * Save and load viewer state as JSON
 
-## Examples
+# Examples
 
 * [Load glTF model and fit it to view](example1.html)
 * [Load glTF model and fly camera to random objects](example2.html)
@@ -19,9 +19,9 @@ A light and tasty [glTF](http://gltf.org) model viewer built with [xeogl](http:/
 * [Load two glTF models and show them alternately](example4.html)
 * [Load glTF model and cycle through its objects](example5.html)
 
-## Usage
+# Usage
 
-#### Creating and destroying viewers
+### Creating and destroying viewers
 
 Create a viewer with a default canvas that fills the page:
 ````javascript
@@ -42,7 +42,7 @@ Destroy a viewer:
 viewer.destroy();
 ````
 
-#### Loading and unloading models
+### Loading and unloading models
 
 You can load multiple glTF models into a viewer at the same time. You can also load separate copies of the same model.
 
@@ -63,7 +63,7 @@ Unload a model:
 viewer.unload("gearbox");
 ````
 
-#### Querying models and objects
+### Querying models and objects
 
 You can query the IDs of whatever models and objects are currently loaded.
 
@@ -87,7 +87,7 @@ Get IDs of whatever objects intersect the given boundary:
 var sawObjects = viewer.objects([-100,-100,-100,100,100,100]);
 ````
 
-#### Querying boundaries of models and objects
+### Querying boundaries of models and objects
 
 Everything within a viewer can be queried for its axis-aligned World-space boundary, which is given as an array containing
 values ````[xmin, ymin, zmin, xmax, ymax, zmax]````.
@@ -122,7 +122,7 @@ Get collective boundary of a model and a couple of objects:
 var objectsBoundary3 = viewer.aabb(["saw", "outerCasing", "trigger");
 ````
 
-#### Transforming models and objects
+### Transforming models and objects
 
 Each model and object can be independently transformed within a viewer. A transformation consists of the following
  operations, applied in this order:
@@ -158,7 +158,7 @@ var scale = viewer.scale("saw");
 var rotate = viewer.rotate("saw");
 `````
 
-#### Showing and hiding models and objects
+### Showing and hiding models and objects
 
 Show everything in a viewer:
 ````javascript
@@ -190,7 +190,7 @@ Show a model and two objects:
 viewer.show(["saw", "outerCover", "trigger"]);
 ````
 
-#### Controlling the camera
+### Controlling the camera
 
 The camera position can be updated at any time. The camera can also be made to fit the view to given models and
 objects, either by flying or jumping to a new position.
@@ -274,7 +274,7 @@ viewer.flightDuration(2); // Seconds
 var duration = viewer.flightDuration();
 ````
 
-#### Saving and loading viewer state
+### Saving and loading viewer state
 
 You can save and restore the state of a viewer as a JSON bookmark. The bookmark will include:
 
