@@ -123,9 +123,9 @@ Each model and object can be independently transformed within a viewer. A transf
 
 Transform a model, move it along the X axis, scale it, then rotate it 90 degrees about its X-axis:
 ````javascript
-viewer.translate("saw", [100, 0, 0]);
-viewer.scale("saw", [0.5, 0.5, 0.5]);
-viewer.rotate("saw", [90, 0, 0]);
+viewer.translate("saw", [100,0,0]);
+viewer.scale("saw", [0.5,0.5,0.5]);
+viewer.rotate("saw", [90,0,0]);
 `````
 
 Spin an object about its Y-axis:
@@ -214,7 +214,8 @@ var flight = viewer.flight();
 
 Fly camera to given position:
 ````javascript
-viewer.lookat([0,0,-100], [0,0,0] [0,1,0], function() { // Eye, look and "up" vector
+// Eye, look and "up" vector
+viewer.lookat([0,0,-100],[0,0,0],[0,1,0], function() { 
     // Camera arrived
 });
 ````
@@ -243,7 +244,7 @@ viewer.goto(["saw", "gearbox"] function() {
 Switch camera to "jump" mode, where it will jump directly to each new position:
 ````javascript
 viewer.flight(false);
-
+````
 
 Jump camera to fit two objects - note we don't need the callback anymore because camera is now jumping:
 ````javascript
