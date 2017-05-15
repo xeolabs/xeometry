@@ -1,6 +1,7 @@
 # xeoviz
 
-A WebGL-based [glTF](http://gltf.org) model viewer built on [xeogl](http://xeogl.org). 
+A light and tasty [glTF](http://gltf.org) model viewer built with [xeogl](http://xeogl.org).     
+
 
 ## Features
 
@@ -20,7 +21,7 @@ A WebGL-based [glTF](http://gltf.org) model viewer built on [xeogl](http://xeogl
 
 ## Usage
 
-#### Creating a viewer
+#### Creating and destroying viewers
 
 Create a viewer with a default canvas that fills the page:
 ````javascript
@@ -34,12 +35,14 @@ var viewer = new xeoviz({
 });
 ````
 
-Destroy viewer:
+You can create multiple viewers in the same page. 
+
+Destroy a viewer:
 ````javascript
 viewer.destroy();
 ````
 
-#### Loading models
+#### Loading and unloading models
 
 You can load multiple glTF models into a viewer at the same time. You can also load separate copies of the same model.
 
@@ -81,7 +84,7 @@ var sawObjects = viewer.objects("saw");
 
 Get IDs of whatever objects intersect the given boundary:
 ````javascript
-var sawObjects = viewer.objects([-100, -100, -100, 100, 100, 100]);
+var sawObjects = viewer.objects([-100,-100,-100,100,100,100]);
 ````
 
 #### Querying boundaries of models and objects
@@ -119,7 +122,7 @@ Get collective boundary of a model and a couple of objects:
 var objectsBoundary3 = viewer.aabb(["saw", "outerCasing", "trigger");
 ````
 
-### Transforming models and objects
+#### Transforming models and objects
 
 Each model and object can be independently transformed within a viewer. A transformation consists of the following
  operations, applied in this order:
@@ -155,7 +158,7 @@ var scale = viewer.scale("saw");
 var rotate = viewer.rotate("saw");
 `````
 
-### Showing and hiding models and objects
+#### Showing and hiding models and objects
 
 Show everything in a viewer:
 ````javascript
