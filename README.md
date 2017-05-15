@@ -1,18 +1,26 @@
 # xeoviz
 
-A light and tasty WebGL-based [glTF](http://gltf.org) model viewer that's built on [xeogl](http://xeogl.org).
+A WebGL-based [glTF](http://gltf.org) model viewer built on [xeogl](http://xeogl.org). 
 
 ## Features
 
 * Load multiple glTF models
 * Show and hide models and objects
 * Scale, rotate and translate models and objects
-* Fit camera view to models and objects
-* Save and load viewer state as JSON bookmarks
+* Fly camera to look at models and objects
+* Save and load viewer state as JSON
+
+## Examples
+
+* [Load glTF model and fit it to view](example1.html)
+* [Load glTF model and fly camera to random objects](example2.html)
+* [Load glTF model and reveal its objects one at a time](example3.html)
+* [Load two glTF models and show them alternately](example4.html)
+* [Load glTF model and cycle through its objects](example5.html)
 
 ## Usage
 
-### Creating a viewer
+#### Creating a viewer
 
 Create a viewer with a default canvas that fills the page:
 ````javascript
@@ -31,11 +39,11 @@ Destroy viewer:
 viewer.destroy();
 ````
 
-### Loading glTF models
+#### Loading models
 
-You can load multiple glTF models into a xeoviz at the same time. You can even load separate copies of the same model.
+You can load multiple glTF models into a viewer at the same time. You can also load separate copies of the same model.
 
-Load two glTF models into a xeoviz:
+Load two glTF models into a viewer:
 ````javascript
 viewer.load("gearbox", "./GearboxAssy.gltf",
     function () {
@@ -52,11 +60,11 @@ Unload a model:
 viewer.unload("gearbox");
 ````
 
-### Querying content
+#### Querying models and objects
 
 You can query the IDs of whatever models and objects are currently loaded.
 
-Get IDs of models:
+Get IDs of all models:
 ````javascript
 var models = viewer.models();
 ````
@@ -66,7 +74,7 @@ Get IDs of all objects:
 var objects = viewer.objects();
 ````
 
-Get IDs of all objects within a given model:
+Get IDs of all objects within a model:
 ````javascript
 var sawObjects = viewer.objects("saw");
 ````
@@ -76,12 +84,12 @@ Get IDs of whatever objects intersect the given boundary:
 var sawObjects = viewer.objects([-100, -100, -100, 100, 100, 100]);
 ````
 
-### Querying boundaries
+#### Querying boundaries of models and objects
 
 Everything within a viewer can be queried for its axis-aligned World-space boundary, which is given as an array containing
 values ````[xmin, ymin, zmin, xmax, ymax, zmax]````.
 
-Get the collective boundary of everything in a xeoviz:
+Get the collective boundary of everything in a viewer:
 ````javascript
 var allBoundary = viewer.aabb();
 ````
@@ -101,9 +109,9 @@ Get collective boundary of some models:
 var modelsBoundary = viewer.aabb(["saw", "gearbox"]);
 ````
 
-Get collective boundary of two objects within a model:
+Get collective boundary of the first five objects within a given model:
 ````javascript
-var objectsBoundary2 = viewer.aabb(viewer.objects("saw").slice(0, 2));
+var objectsBoundary2 = viewer.aabb(viewer.objects("saw").slice(0, 5));
 ````
 
 Get collective boundary of a model and a couple of objects:
@@ -111,7 +119,7 @@ Get collective boundary of a model and a couple of objects:
 var objectsBoundary3 = viewer.aabb(["saw", "outerCasing", "trigger");
 ````
 
-### Transforming things
+### Transforming models and objects
 
 Each model and object can be independently transformed within a viewer. A transformation consists of the following
  operations, applied in this order:
@@ -147,14 +155,14 @@ var scale = viewer.scale("saw");
 var rotate = viewer.rotate("saw");
 `````
 
-### Showing and hiding things  
+### Showing and hiding models and objects
 
-Show everything in a xeoviz:
+Show everything in a viewer:
 ````javascript
 viewer.show();
 `````
 
-Hide everything in a xeoviz:
+Hide everything in a viewer:
 ````javascript
 viewer.hide();
 ````
@@ -179,7 +187,7 @@ Show a model and two objects:
 viewer.show(["saw", "outerCover", "trigger"]);
 ````
 
-### Controlling the camera
+#### Controlling the camera
 
 The camera position can be updated at any time. The camera can also be made to fit the view to given models and
 objects, either by flying or jumping to a new position.
@@ -263,7 +271,7 @@ viewer.flightDuration(2); // Seconds
 var duration = viewer.flightDuration();
 ````
 
-### Bookmarking
+#### Saving and loading viewer state
 
 You can save and restore the state of a viewer as a JSON bookmark. The bookmark will include:
 

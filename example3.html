@@ -17,6 +17,8 @@
 
         viewer.hide();
 
+        viewer.yspin(0.1);
+
         var objects = viewer.objects();
 
         var i = 0;
@@ -27,7 +29,7 @@
                 return;
             }
             viewer.show(objects[i++]);
-        }, 100);
+        }, 50);
 
         console.log("viewer ready");
     });

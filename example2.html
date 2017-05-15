@@ -13,10 +13,10 @@
 
     viewer.load("gearbox", "models/GearboxAssy/glTF/GearboxAssy.gltf", function () {
 
+        viewer.yspin(0.1);
+        viewer.fitFOV(40);
+        viewer.flightDuration(2.0);
         viewer.goto();
-        viewer.spin();
-        viewer.fitFOV(30);
-        viewer.flightDuration(1);
 
         var objects = viewer.objects();
 
@@ -24,7 +24,7 @@
             var randomObject = objects[Math.round(Math.random() * objects.length)];
             var aabb = viewer.aabb(randomObject);
             viewer.goto(aabb)
-        }, 2000);
+        }, 3000);
 
         console.log("viewer ready");
     });

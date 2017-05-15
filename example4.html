@@ -13,6 +13,8 @@
 
     v.lookat([0, 10, 35], [0, 10, 0], [0, 1, 0]);
 
+    v.yspin(0.1);
+
     v.load("gearbox", "models/GearboxAssy/glTF/GearboxAssy.gltf", function () {
         v.hide("gearbox");
         v.translate("gearbox", [-159.20, -17.02, -3.21]);
@@ -24,19 +26,27 @@
             v.rotate("saw", [90, 0, 0]);
         });
 
-        setTimeout(function () {
+        function showSaw() {
+            setTimeout(function () {
                 v.show("saw");
-                v.goto("saw");
-            },
-            1000);
+                v.goto("saw", function() {
+                    v.hide("gearbox");
+                    showGearbox();
+                });
+            }, 1000);
+        }
 
-        setTimeout(function () {
+        function showGearbox() {
+            setTimeout(function () {
                 v.show("gearbox");
                 v.goto("gearbox", function () {
                     v.hide("saw");
+                    showSaw();
                 });
-            },
-            3000);
+            }, 1000);
+        }
+
+        showSaw();
     });
 
 </script>
