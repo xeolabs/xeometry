@@ -108,7 +108,7 @@ var objectsBoundary2 = viewer.aabb(viewer.objects("saw").slice(0, 2));
 Get collective boundary of a model and a couple of objects:
 ````javascript
 var objectsBoundary3 = viewer.aabb(["saw", "outerCasing", "trigger");
-````````
+````
 
 ### Transforming things
 
