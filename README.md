@@ -103,7 +103,7 @@ var modelsBoundary = viewer.aabb(["saw", "gearbox"]);
 Get collective boundary of two objects within a model:
 ````javascript
 var objectsBoundary2 = viewer.aabb(viewer.objects("saw").slice(0, 2));
-````````
+````
 
 Get collective boundary of a model and a couple of objects:
 ````javascript
