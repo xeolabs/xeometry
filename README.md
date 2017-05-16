@@ -82,11 +82,6 @@ Get IDs of all objects within a model:
 var sawObjects = viewer.objects("saw");
 ````
 
-Get IDs of whatever objects intersect the given boundary:
-````javascript
-var sawObjects = viewer.objects([-100,-100,-100,100,100,100]);
-````
-
 ### Querying boundaries of models and objects
 
 Everything within a viewer can be queried for its axis-aligned World-space boundary, which is given as an array containing
