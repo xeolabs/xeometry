@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <script src="../lib/xeogl.js"></script>
+    <script src="../js/xeoviz.js"></script>
+
+    <link href="css/styles.css" rel="stylesheet"/>
+<body>
+
+<script>
+
+    var v = new xeoviz();
+
+    v.load("saw", "models/Reciprocating_Saw/PBR-SpecGloss/Reciprocating_Saw.gltf", function () {
+
+        v.rotate("saw", [90, 0, 0]);
+
+        v.goto();
+
+        v.fitFOV(55);
+
+        var i = 0;
+        setInterval(function () {
+            switch (i) {
+                case 0:
+                    v.left();
+                    break;
+                case 1:
+                    v.front();
+                    break;
+                case 2:
+                    v.right();
+                    break;
+                case 3:
+                    v.back();
+                    break;
+                case 4:
+                    v.top();
+                    break;
+                case 5:
+                    v.bottom();
+                    break;
+            }
+            i = (i == 5) ? 0 : i + 1;
+        }, 2000)
+    });
+
+
+</script>
+</body>
+</html>

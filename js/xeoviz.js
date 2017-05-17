@@ -1,12 +1,12 @@
 function xeoviz(cfg) {
 
     var scene = new xeogl.Scene({transparent: true});
-    var input = scene.input;
     var math = xeogl.math;
     var camera = scene.camera;
     var view = camera.view;
 
     var self = this;
+    var types = {};
     var models = {};
     var objects = {};
     var flying = true;
@@ -53,11 +53,16 @@ function xeoviz(cfg) {
         model.on("loaded", function () {
             var entities = model.types["xeogl.Entity"];
             var object;
+            var meta;
             for (var id in entities) {
                 if (entities.hasOwnProperty(id)) {
                     object = entities[id];
                     model.add(object.material = object.material.clone());
                     objects[id] = object;
+                    // Register for IFC type
+                    var type = meta && meta.type ? meta.type : "DEFAULT";
+                    var objectsOfType = (types[type] || (types[type] = {}));
+                    objectsOfType[id] = object;
                 }
             }
             if (ok) {
@@ -77,8 +82,18 @@ function xeoviz(cfg) {
             return;
         }
         var entities = model.types["xeogl.Entity"];
+        var entity;
+        var meta;
         for (var entityId in entities) {
             if (entities.hasOwnProperty(entityId)) {
+                entity = entities[entityId];
+                // Deregister for IFC type
+                meta = entity.meta;
+                var type = meta && meta.type ? meta.type : "DEFAULT";
+                var objectsOfType = types[type];
+                if (objectsOfType) {
+                    delete objectsOfType[entityId];
+                }
                 delete objects[entityId];
             }
         }
@@ -92,6 +107,35 @@ function xeoviz(cfg) {
                 this.unload(id);
             }
         }
+    };
+
+    this.type = function (id, type) {
+        type = type || "DEFAULT";
+        var object = objects[id];
+        if (object) {
+            var meta = object.meta;
+            var currentType = meta && meta.type ? meta.type : "DEFAULT";
+            if (arguments.length === 1) {
+                return currentType;
+            }
+            if (currentType === type) {
+                return;
+            }
+            var currentTypes = types[currentType];
+            if (currentTypes) {
+                delete currentTypes[id];
+            }
+            var newTypes = (types[type] || (types[type] = {}));
+            newTypes[id] = object;
+            object.meta.type = type;
+            return;
+        }
+        var model = models[id];
+        if (model) {
+            //.. TODO
+            return;
+        }
+        error("Model, object or type not found: " + id);
     };
 
     this.scale = function (id, scale) {
@@ -153,26 +197,39 @@ function xeoviz(cfg) {
         }
         if (xeogl._isString(ids)) {
             var id = ids;
-            var component = objects[id];
-            if (component) {
-                component.visibility.visible = visible;
+            var object = objects[id];
+            if (object) {
+                object.visibility.visible = visible;
                 return;
             }
-            component = models[id];
-            if (!component) {
-                error("Model or object not found: " + id);
+            var model = models[id];
+            if (!model) {
+                var objectsOfType = types[id];
+                if (objectsOfType) {
+                    var typeIds = Object.keys(objectsOfType);
+                    if (typeIds.length === 0) {
+                        return;
+                    }
+                    setVisible(typeIds, visible);
+                    return
+                }
+                error("Model, object or type not found: " + id);
                 return;
             }
             setVisible(self.objects(id), visible);
-        } else {
-            for (var i = 0, len = ids.length; i < len; i++) {
-                setVisible(ids[i], visible);
-            }
+            return;
+        }
+        for (var i = 0, len = ids.length; i < len; i++) {
+            setVisible(ids[i], visible);
         }
     }
 
     this.objects = function (id) {
         if (id !== undefined) {
+            var objectsOfType = types[id];
+            if (objectsOfType) {
+                return Object.keys(objectsOfType);
+            }
             var model = models[id];
             if (!model) {
                 error("Model not found: " + id);
@@ -203,6 +260,7 @@ function xeoviz(cfg) {
         var id;
         var component;
         var worldBoundary;
+        var objectsOfType;
         if (target.length === 1) {
             id = target[0];
             component = scene.components[id];
@@ -214,6 +272,10 @@ function xeoviz(cfg) {
                     return null;
                 }
             } else {
+                objectsOfType = types[id];
+                if (objectsOfType) {
+                    return this.aabb(Object.keys(objectsOfType));
+                }
                 return null;
             }
         }
@@ -233,15 +295,25 @@ function xeoviz(cfg) {
             component = scene.components[id];
             if (!component) {
                 component = models[id];
-                if (!component) {
+            }
+            if (component) {
+                worldBoundary = component.worldBoundary;
+                if (!worldBoundary) {
+                    continue;
+                }
+                aabb = worldBoundary.aabb;
+            } else {
+                objectsOfType = types[id];
+                if (objectsOfType) {
+                    var ids = Object.keys(objectsOfType);
+                    if (ids.length === 0) {
+                        continue;
+                    }
+                    aabb = this.aabb(ids);
+                } else {
                     continue;
                 }
             }
-            worldBoundary = component.worldBoundary;
-            if (!worldBoundary) {
-                continue;
-            }
-            aabb = worldBoundary.aabb;
             if (aabb[0] < xmin) {
                 xmin = aabb[0];
             }

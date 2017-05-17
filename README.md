@@ -6,21 +6,19 @@ A [glTF](http://gltf.org) model viewer built with [xeogl](http://xeogl.org).
 # Features
 
 * Load multiple glTF models
-* Show and hide models and objects
-* Scale, rotate and translate models and objects
-* Fly camera to look at models and objects
-* Save and load viewer state as JSON
+* Show, hide objects
+* Scale, rotate and translate objects
+* Navigate camera to objects
+* Find objects in boundary 
+* Zoom, pan, rotate, spin, fly and jump camera
+* Save and load JSON viewer state
 
 # Examples
 
-* [Load glTF model and fit it to view](example1.html)
-* [Load glTF model and fly camera to random objects](example2.html)
-* [Load glTF model and reveal its objects one at a time](example3.html)
-* [Load two glTF models and show them alternately](example4.html)
-* [Load glTF model and cycle through its objects](example5.html)
+* [Examples collection](examples/index.html)
 
 # Usage
-
+  
 ### Creating and destroying viewers
 
 Create a viewer with a default canvas that fills the page:
@@ -195,14 +193,14 @@ viewer.show(["saw", "outerCover", "trigger"]);
 The camera position can be updated at any time. The camera can also be made to fit the view to given models and
 objects, either by flying or jumping to a new position.
 
-Get camera eye, look and "up" vector:
+Get camera eye, look and up:
 ````javascript
 var eye = viewer.eye();
 var look = viewer.look();
 var up = viewer.up();
 ````
 
-Set camera eye, look and "up" vectorp:
+Set camera eye, look and up:
 ````javascript
 viewer.eye([0,0,-100]);
 viewer.look([0,0,0]);
@@ -232,21 +230,21 @@ viewer.lookat([0,0,-100],[0,0,0],[0,1,0], function() {
 });
 ````
 
-Fly camera to fit everything within view:
+Fly camera to fit everything in view:
 ````javascript
 viewer.goto(function() {
     // Camera arrived
 });
 ````
 
-Fly camera to fit a model:
+Fly camera to fit a model in view:
 ````javascript
 viewer.goto("saw", function() {
     // Camera arrived
 });
 ````
 
-Fly camera to fit two models:
+Fly camera to fit two models in view:
 ````javascript
 viewer.goto(["saw", "gearbox"] function() {
     // Camera arrived
@@ -258,20 +256,20 @@ Switch camera to "jump" mode, where it will jump directly to each new position:
 viewer.flight(false);
 ````
 
-Jump camera to fit two objects - note we don't need the callback anymore because camera is now jumping:
+Jump camera to fit two objects in view - note we don't need the callback anymore because camera is now jumping:
 ````javascript
 viewer.goto(["foo", "bar"]);
 ````
 
-Jump camera to fit a model and two objects:
+Jump camera to fit a model and two objects in view:
 ````javascript
 viewer.goto(["saw", "outerCasing", "trigger"]);
 ````
 
-Set how much of the fit-of-view that a target boundary will occupy when flying the camera to fit models or objects to the view:
+Set how much of the field of view that a target boundary will occupy when flying the camera to fit models or objects to the view:
 ````javascript
-viewer.flightDuration(2); // Seconds
-var duration = viewer.flightDuration();
+viewer.fitFOV(20); // Degrees
+var fitFOV = viewer.fitFOV();
 ````
 
 ### Saving and loading viewer state

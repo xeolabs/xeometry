@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <script src="../lib/xeogl.js"></script>
+    <script src="../js/xeoviz.js"></script>
+
+    <link href="../css/styles.css" rel="stylesheet"/>
+<body>
+
+<div id="explorer" class="dark">
+</div>
+
+<script>
+
+    var v = new xeoviz();
+
+    v.lookat([0, 10, 35], [0, 10, 0], [0, 1, 0]);
+    v.yspin(0.1);
+    v.xspin(0.01);
+
+    v.load("saw", "models/Reciprocating_Saw/PBR-SpecGloss/Reciprocating_Saw.gltf", function () {
+        v.show("saw");
+        v.translate("saw", [10, 17, 0]);
+        v.scale("saw", [.09, .09, .09]);
+        v.rotate("saw", [90, 0, 0]);
+        v.fitFOV(20);
+        var objects = v.objects("saw");
+        var i = 0;
+        var html = [""];
+        for (i = 0; i < objects.length; i++) {
+            var id = objects[i];
+            html.push("<a href='javascript:v.goto(\"" + id + "\")'>" + id + "</a><br>")
+        }
+        document.getElementById("explorer").innerHTML = html.join("");
+    });
+
+</script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <script src="lib/xeogl.js"></script>
+    <script src="js/xeoviz.js"></script>
+<body>
+
+<script>
+
+    var v = new xeoviz();
+
+    v.lookat([0, 10, 35], [0, 10, 0], [0, 1, 0]);
+
+    v.yspin(0.1);
+
+    v.load("gearbox", "models/GearboxAssy/glTF/GearboxAssy.gltf", function () {
+        v.hide("gearbox");
+        v.translate("gearbox", [-159.20, -17.02, -3.21]);
+
+        v.load("saw", "models/Reciprocating_Saw/PBR-SpecGloss/Reciprocating_Saw.gltf", function () {
+            v.hide("saw");
+            v.translate("saw", [10, 17, 0]);
+            v.scale("saw", [.09, .09, .09]);
+            v.rotate("saw", [90, 0, 0]);
+        });
+
+        function showSaw() {
+            setTimeout(function () {
+                v.show("saw");
+                v.goto("saw", function() {
+                    v.hide("gearbox");
+                    showGearbox();
+                });
+            }, 2000);
+        }
+
+        function showGearbox() {
+            setTimeout(function () {
+                v.show("gearbox");
+                v.goto("gearbox", function () {
+                    v.hide("saw");
+                    showSaw();
+                });
+            }, 2000);
+        }
+
+        showSaw();
+    });
+
+</script>
+</body>
+</html>
