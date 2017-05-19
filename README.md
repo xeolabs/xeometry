@@ -2,6 +2,7 @@
 
 A WebGL [glTF](http://gltf.org) model viewer built with [xeogl](http://xeogl.org).      
 
+![Screenshot](assets/sawScreenshot.png?raw=true)
 
 # Features
 

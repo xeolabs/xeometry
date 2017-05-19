@@ -19,8 +19,8 @@
     var v = new xeoviz();
 
     v.lookat([0, 10, 35], [0, 10, 0], [0, 1, 0]);
-    v.yspin(0.1);
-    v.xspin(0.01);
+//    v.yspin(0.1);
+//    v.xspin(0.01);
 
     v.load("saw", "models/Reciprocating_Saw/PBR-SpecGloss/Reciprocating_Saw.gltf", function () {
         v.show("saw");
@@ -36,8 +36,8 @@
             html.push("<a href='javascript:v.goto(\"" + id + "\")'>" + id + "</a><br>")
         }
         var explorer = document.getElementById("explorer");
-        explorer.innerHTML = html.join("");
-        Ps.initialize(explorer);
+//        explorer.innerHTML = html.join("");
+//        Ps.initialize(explorer);
     });
 
 </script>
