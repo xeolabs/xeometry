@@ -1,6 +1,6 @@
 # xeoviz
 
-A [glTF](http://gltf.org) model viewer built with [xeogl](http://xeogl.org).      
+A WebGL [glTF](http://gltf.org) model viewer built with [xeogl](http://xeogl.org).      
 
 
 # Features
@@ -9,7 +9,6 @@ A [glTF](http://gltf.org) model viewer built with [xeogl](http://xeogl.org).
 * Show, hide objects
 * Scale, rotate and translate objects
 * Navigate camera to objects
-* Find objects in boundary 
 * Zoom, pan, rotate, spin, fly and jump camera
 * Save and load JSON viewer state
 
@@ -276,7 +275,7 @@ You can save and restore the state of a viewer as a JSON bookmark. The bookmark 
  * model and object transforms
  * camera position
 
-Save model state to JSON bookmark, clear model the restore it again from the bookmark:
+Save model state to JSON bookmark, clear model then restore it again from the bookmark:
 ````javascript
 var json = viewer.bookmark();
 viewer.reset();

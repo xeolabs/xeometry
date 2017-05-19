@@ -17,7 +17,9 @@
 
 <div id="contents" class="container">
     <div id="list" class="content">
-        <h1><a href="../index.html">xeoviz</a> / Examples</h1>
+        <h1><a href="../index.html">xeoviz</a> / examples</h1>
+        <p>A WebGL glTF viewer built with <a href="http://xeogl.org">xeogl</a>.
+        </p>
     </div>
 </div>
 
@@ -34,18 +36,15 @@
         "Creating viewers": [
         ],
         "Loading models": [
-            "#Load glTF model and reveal its objects one at a time",
-            "loading_loadModel"
+            "loadModel",
+            "loadTwoModels"
         ],
         "Camera control": [
-            "#Fly camera to random objects",
-            "camera_gotoRandomObjects",
-
-            "#Cycle through objects in a model",
-            "camera_cycleThroughObjects",
-
-            "#Switch among camera axis views",
-            "camera_axisViews"
+            "showEachObject",
+            "gotoRandomObjects",
+            "cycleThroughObjects",
+            "axisViews",
+            "objectExplorer"
         ]
     };
 
@@ -79,7 +78,7 @@
             var file = section[i];
             (function (file) {
                 var name = file.split('_');
-                name.shift();
+               // name.shift();
                 name = name.join(' / ');
                 var div = document.createElement('div');
                 div.className = 'link';

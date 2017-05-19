@@ -160,7 +160,7 @@ function xeoviz(cfg) {
                 return;
             }
             if (arguments.length === 1) {
-                return [0, 0, 0];
+                return [0, 0, 0]; // TODO
                 //return component.transform.parent.xyzw.slice(); // TODO: should be angles
             } else {
                 math.eulerToQuaternion(angles, "XYZ", quat); // Tait-Bryan Euler angles
@@ -492,24 +492,24 @@ function xeoviz(cfg) {
         return (arguments.length === 0) ? xspin : xspin = value;
     };
 
-    this.state = function (state) {
-        if (state) {
+    this.bookmark = function (bookmark) {
+        if (bookmark) {
             var self = this;
-            load(state.models, 0, function () {
+            load(bookmark.models, 0, function () {
                 self.hide();
-                self.show(state.visible);
-                self.lookat(state.lookat.eye, state.lookat.look, state.lookat.up);
+                self.show(bookmark.visible);
+                self.lookat(bookmark.lookat.eye, bookmark.lookat.look, bookmark.lookat.up);
             });
         } else {
-            state = {};
+            bookmark = {};
             var id;
             var model;
             var vecToArray = xeogl.math.vecToArray;
-            state.models = [];
+            bookmark.models = [];
             for (var modelId in models) {
                 if (models.hasOwnProperty(modelId)) {
                     model = models[modelId];
-                    state.models.push({
+                    bookmark.models.push({
                         id: model.id,
                         src: model.src,
                         translate: vecToArray(this.translate(modelId)),
@@ -518,20 +518,20 @@ function xeoviz(cfg) {
                     });
                 }
             }
-            state.visible = [];
+            bookmark.visible = [];
             for (id in objects) {
                 if (objects.hasOwnProperty(id)) {
                     if (objects[id].visibility.visible) {
-                        state.visible.push(id);
+                        bookmark.visible.push(id);
                     }
                 }
             }
-            state.lookat = {
+            bookmark.lookat = {
                 eye: vecToArray(view.eye),
                 look: vecToArray(view.look),
                 up: vecToArray(view.up)
             };
-            return state;
+            return bookmark;
         }
     };
 
@@ -570,6 +570,6 @@ function xeoviz(cfg) {
     }
 
     if (cfg) {
-        this.state(cfg);
+        this.bookmark(cfg);
     }
 }

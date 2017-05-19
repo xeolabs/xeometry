@@ -6,8 +6,6 @@
     <script src="libs/xeogl.js"></script>
     <script src="../js/xeoviz.js"></script>
 
-    <link href="libs/perfect-scrollbar.css" rel="stylesheet"/>
-    <script src="libs/perfect-scrollbar.min.js"></script>
     <link href="css/styles.css" rel="stylesheet"/>
 <body>
 
@@ -19,8 +17,6 @@
     var v = new xeoviz();
 
     v.lookat([0, 10, 35], [0, 10, 0], [0, 1, 0]);
-    v.yspin(0.1);
-    v.xspin(0.01);
 
     v.load("saw", "models/Reciprocating_Saw/PBR-SpecGloss/Reciprocating_Saw.gltf", function () {
         v.show("saw");
@@ -28,17 +24,21 @@
         v.scale("saw", [.09, .09, .09]);
         v.rotate("saw", [90, 0, 0]);
         v.fitFOV(20);
-        var objects = v.objects("saw");
-        var i = 0;
-        var html = [""];
-        for (i = 0; i < objects.length; i++) {
-            var id = objects[i];
-            html.push("<a href='javascript:v.goto(\"" + id + "\")'>" + id + "</a><br>")
-        }
-        var explorer = document.getElementById("explorer");
-        explorer.innerHTML = html.join("");
-        Ps.initialize(explorer);
     });
+
+    var explorer = document.getElementById("explorer");
+    var bookmarks = [];
+
+    document.addEventListener('keydown', (function () {
+        var html = [""];
+        return function (event) {
+            if (event.code == 'KeyZ' && (event.ctrlKey || event.metaKey)) {
+                bookmarks.push(v.bookmark());
+                html.push("<a href='javascript:v.bookmark(bookmarks[" + (bookmarks.length - 1) + "])'>bookmark</a><br>")
+                explorer.innerHTML = html.join("");
+            }
+        };
+    })());
 
 </script>
 </body>
