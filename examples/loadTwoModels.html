@@ -10,28 +10,28 @@
 
 <script>
 
-    var v = new xeoviz();
+    var viewer = new xeoviz();
 
-    v.lookat([0, 10, 35], [0, 10, 0], [0, 1, 0]);
+    viewer.setEyeLookUp([0, 10, 35], [0, 10, 0], [0, 1, 0]);
 
-    v.yspin(0.1);
+    viewer.yspin(0.1);
 
-    v.load("gearbox", "models/GearboxAssy/glTF/GearboxAssy.gltf", function () {
-        v.hide("gearbox");
-        v.translate("gearbox", [-159.20, -17.02, -3.21]);
+    viewer.loadModel("gearbox", "models/GearboxAssy/glTF/GearboxAssy.gltf", function () {
+        viewer.hide("gearbox");
+        viewer.setTranslate("gearbox", [-159.20, -17.02, -3.21]);
 
-        v.load("saw", "models/Reciprocating_Saw/PBR-SpecGloss/Reciprocating_Saw.gltf", function () {
-            v.hide("saw");
-            v.translate("saw", [10, 17, 0]);
-            v.scale("saw", [.09, .09, .09]);
-            v.rotate("saw", [90, 0, 0]);
+        viewer.loadModel("saw", "models/Reciprocating_Saw/PBR-SpecGloss/Reciprocating_Saw.gltf", function () {
+            viewer.hide("saw");
+            viewer.setTranslate("saw", [10, 17, 0]);
+            viewer.setScale("saw", [.09, .09, .09]);
+            viewer.setRotate("saw", [90, 0, 0]);
         });
 
         function showSaw() {
             setTimeout(function () {
-                v.show("saw");
-                v.goto("saw", function() {
-                    v.hide("gearbox");
+                viewer.show("saw");
+                viewer.viewFit("saw", function() {
+                    viewer.hide("gearbox");
                     showGearbox();
                 });
             }, 2000);
@@ -39,9 +39,9 @@
 
         function showGearbox() {
             setTimeout(function () {
-                v.show("gearbox");
-                v.goto("gearbox", function () {
-                    v.hide("saw");
+                viewer.show("gearbox");
+                viewer.viewFit("gearbox", function () {
+                    viewer.hide("saw");
                     showSaw();
                 });
             }, 2000);

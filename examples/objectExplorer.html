@@ -16,24 +16,24 @@
 
 <script>
 
-    var v = new xeoviz();
+    var viewer = new xeoviz();
 
-    v.lookat([0, 10, 35], [0, 10, 0], [0, 1, 0]);
-//    v.yspin(0.1);
-//    v.xspin(0.01);
+    viewer.setEyeLookUp([0, 10, 35], [0, 10, 0], [0, 1, 0]);
+//    viewer.yspin(0.1);
+//    viewer.xspin(0.01);
 
-    v.load("saw", "models/Reciprocating_Saw/PBR-SpecGloss/Reciprocating_Saw.gltf", function () {
-        v.show("saw");
-        v.translate("saw", [10, 17, 0]);
-        v.scale("saw", [.09, .09, .09]);
-        v.rotate("saw", [90, 0, 0]);
-        v.fitFOV(20);
-        var objects = v.objects("saw");
+    viewer.loadModel("saw", "models/Reciprocating_Saw/PBR-SpecGloss/Reciprocating_Saw.gltf", function () {
+        viewer.show("saw");
+        viewer.setTranslate("saw", [10, 17, 0]);
+        viewer.setScale("saw", [.09, .09, .09]);
+        viewer.setRotate("saw", [90, 0, 0]);
+        viewer.setViewFitFOV(20);
+        var objects = viewer.getObjects("saw");
         var i = 0;
         var html = [""];
         for (i = 0; i < objects.length; i++) {
             var id = objects[i];
-            html.push("<a href='javascript:v.goto(\"" + id + "\")'>" + id + "</a><br>")
+            html.push("<a href='javascript:viewer.viewFit(\"" + id + "\")'>" + id + "</a><br>")
         }
         var explorer = document.getElementById("explorer");
         explorer.innerHTML = html.join("");

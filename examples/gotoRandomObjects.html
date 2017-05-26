@@ -12,19 +12,19 @@
 
     var viewer = new xeoviz();
 
-    viewer.load("gearbox", "models/GearboxAssy/glTF/GearboxAssy.gltf", function () {
+    viewer.loadModel("gearbox", "models/GearboxAssy/glTF/GearboxAssy.gltf", function () {
 
         viewer.yspin(0.1);
-        viewer.fitFOV(40);
+        viewer.setViewFitFOV(40);
         viewer.flightDuration(2.0);
-        viewer.goto();
+        viewer.viewFit();
 
-        var objects = viewer.objects();
+        var objects = viewer.getObjects();
 
         setInterval(function () {
             var randomObject = objects[Math.round(Math.random() * objects.length)];
             var aabb = viewer.aabb(randomObject);
-            viewer.goto(aabb)
+            viewer.viewFit(aabb)
         }, 3000);
 
         console.log("viewer ready");

@@ -14,16 +14,16 @@
 
 <script>
 
-    var v = new xeoviz();
+    var viewer = new xeoviz();
 
-    v.lookat([0, 10, 35], [0, 10, 0], [0, 1, 0]);
+    viewer.setEyeLookUp([0, 10, 35], [0, 10, 0], [0, 1, 0]);
 
-    v.load("saw", "models/Reciprocating_Saw/PBR-SpecGloss/Reciprocating_Saw.gltf", function () {
-        v.show("saw");
-        v.translate("saw", [10, 17, 0]);
-        v.scale("saw", [.09, .09, .09]);
-        v.rotate("saw", [90, 0, 0]);
-        v.fitFOV(20);
+    viewer.loadModel("saw", "models/Reciprocating_Saw/PBR-SpecGloss/Reciprocating_Saw.gltf", function () {
+        viewer.show("saw");
+        viewer.setTranslate("saw", [10, 17, 0]);
+        viewer.setScale("saw", [.09, .09, .09]);
+        viewer.setRotate("saw", [90, 0, 0]);
+        viewer.setViewFitFOV(20);
     });
 
     var explorer = document.getElementById("explorer");
@@ -33,8 +33,8 @@
         var html = [""];
         return function (event) {
             if (event.code == 'KeyZ' && (event.ctrlKey || event.metaKey)) {
-                bookmarks.push(v.bookmark());
-                html.push("<a href='javascript:v.bookmark(bookmarks[" + (bookmarks.length - 1) + "])'>bookmark</a><br>")
+                bookmarks.push(viewer.bookmark());
+                html.push("<a href='javascript:viewer.bookmark(bookmarks[" + (bookmarks.length - 1) + "])'>bookmark</a><br>")
                 explorer.innerHTML = html.join("");
             }
         };

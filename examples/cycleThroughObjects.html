@@ -11,34 +11,34 @@
 
 <script>
 
-    var v = new xeoviz();
+    var viewer = new xeoviz();
 
-    v.lookat([0, 10, 35], [0, 10, 0], [0, 1, 0]);
+    viewer.setEyeLookUp([0, 10, 35], [0, 10, 0], [0, 1, 0]);
 
-    v.yspin(0.1);
-    v.xspin(0.01);
+    viewer.yspin(0.1);
+    viewer.xspin(0.01);
 
-    v.load("saw", "models/Reciprocating_Saw/PBR-SpecGloss/Reciprocating_Saw.gltf", function () {
-        v.hide("saw");
-        v.translate("saw", [10, 17, 0]);
-        v.scale("saw", [.09, .09, .09]);
-        v.rotate("saw", [90, 0, 0]);
+    viewer.loadModel("saw", "models/Reciprocating_Saw/PBR-SpecGloss/Reciprocating_Saw.gltf", function () {
+        viewer.hide("saw");
+        viewer.setTranslate("saw", [10, 17, 0]);
+        viewer.setScale("saw", [.09, .09, .09]);
+        viewer.setRotate("saw", [90, 0, 0]);
 
-        var objects = v.objects("saw");
+        var objects = viewer.getObjects("saw");
         var i = 0;
         var numVisObjects = 15;
         var visObjects;
 
         setInterval(function () {
             if (i > 0) {
-                v.hide(objects[i - 1]);
+                viewer.hide(objects[i - 1]);
             }
             if (i + numVisObjects >= objects.length) {
                 i = 0;
             }
             visObjects = objects.slice(i, i + numVisObjects);
-            v.show(visObjects);
-            v.goto(visObjects);
+            viewer.show(visObjects);
+            viewer.viewFit(visObjects);
             i += 1;
 
         }, 100)

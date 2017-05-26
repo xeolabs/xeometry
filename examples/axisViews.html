@@ -11,36 +11,36 @@
 
 <script>
 
-    var v = new xeoviz();
+    var viewer = new xeoviz();
 
-    v.load("saw", "models/Reciprocating_Saw/PBR-SpecGloss/Reciprocating_Saw.gltf", function () {
+    viewer.loadModel("saw", "models/Reciprocating_Saw/PBR-SpecGloss/Reciprocating_Saw.gltf", function () {
 
-        v.rotate("saw", [90, 0, 0]);
+        viewer.setRotate("saw", [90, 0, 0]);
 
-        v.goto();
+        viewer.viewFit();
 
-        v.fitFOV(55);
+        viewer.setViewFitFOV(55);
 
         var i = 0;
         setInterval(function () {
             switch (i) {
                 case 0:
-                    v.left();
+                    viewer.viewFitLeft();
                     break;
                 case 1:
-                    v.front();
+                    viewer.viewFitFront();
                     break;
                 case 2:
-                    v.right();
+                    viewer.viewFitRight();
                     break;
                 case 3:
-                    v.back();
+                    viewer.viewFitBack();
                     break;
                 case 4:
-                    v.top();
+                    viewer.viewFitTop();
                     break;
                 case 5:
-                    v.bottom();
+                    viewer.viewFitBottom();
                     break;
             }
             i = (i == 5) ? 0 : i + 1;

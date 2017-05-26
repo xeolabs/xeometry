@@ -12,8 +12,8 @@
 
     var viewer = new xeoviz();
 
-    viewer.load("gearbox", "models/GearboxAssy/glTF/GearboxAssy.gltf", function () {
-        viewer.goto();
+    viewer.loadModel("gearbox", "models/GearboxAssy/glTF/GearboxAssy.gltf", function () {
+        viewer.viewFit();
         console.log("viewer ready");
     });
 

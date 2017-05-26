@@ -9,6 +9,9 @@ function xeoviz(cfg) {
     var types = {};
     var models = {};
     var objects = {};
+    var eulerAngles = {};
+    var objectModels = {};
+    var flattened = {};
     var flying = true;
     var yspin = 0;
     var xspin = 0;
@@ -29,7 +32,7 @@ function xeoviz(cfg) {
 
     var cameraControl = new xeogl.CameraControl(scene);
 
-    this.load = function (id, src, ok) {
+    this.loadModel = function (id, src, ok) {
         var model = models[id];
         if (model) {
             if (src === model.src) {
@@ -40,6 +43,13 @@ function xeoviz(cfg) {
             }
             this.unload(id);
         }
+
+
+        ////////////////////////////////////////////////
+        // TODO: Pass in 'bakeTransforms' property to model constructor
+        // cause loader to accumilate matrix instead of build transform tree for each object
+        ////////////////////////////////////////////////
+
         model = new xeogl.GLTFModel(scene, {
             id: id,
             src: src,
@@ -59,6 +69,7 @@ function xeoviz(cfg) {
                     object = entities[id];
                     model.add(object.material = object.material.clone());
                     objects[id] = object;
+                    objectModels[id] = model;
                     // Register for IFC type
                     var type = meta && meta.type ? meta.type : "DEFAULT";
                     var objectsOfType = (types[type] || (types[type] = {}));
@@ -71,11 +82,31 @@ function xeoviz(cfg) {
         });
     };
 
-    this.models = function () {
+    this.getModels = function () {
         return Object.keys(models);
     };
 
-    this.unload = function (id) {
+    this.getObjects = function (id) {
+        if (id !== undefined || id === null) {
+            var objectsOfType = types[id];
+            if (objectsOfType) {
+                return Object.keys(objectsOfType);
+            }
+            var model = models[id];
+            if (!model) {
+                error("Model not found: " + id);
+                return [];
+            }
+            var entities = model.types["xeogl.Entity"];
+            if (!entities) {
+                return [];
+            }
+            return Object.keys(entities);
+        }
+        return Object.keys(objects);
+    };
+
+    this.unloadModel = function (id) {
         var model = models[id];
         if (!model) {
             error("Model not found: " + id);
@@ -95,10 +126,14 @@ function xeoviz(cfg) {
                     delete objectsOfType[entityId];
                 }
                 delete objects[entityId];
+                delete objectModels[entityId];
+                delete eulerAngles[entityId];
+                delete flattened[entityId];
             }
         }
         model.destroy();
         delete models[id];
+        delete eulerAngles[id];
     };
 
     this.clear = function () {
@@ -109,15 +144,12 @@ function xeoviz(cfg) {
         }
     };
 
-    this.type = function (id, type) {
+    this.setType = function (id, type) {
         type = type || "DEFAULT";
         var object = objects[id];
         if (object) {
             var meta = object.meta;
             var currentType = meta && meta.type ? meta.type : "DEFAULT";
-            if (arguments.length === 1) {
-                return currentType;
-            }
             if (currentType === type) {
                 return;
             }
@@ -138,48 +170,73 @@ function xeoviz(cfg) {
         error("Model, object or type not found: " + id);
     };
 
-    this.scale = function (id, scale) {
-        var component = getComponent(id);
+    this.getType = function (id) {
+        var object = objects[id];
+        if (object) {
+            var meta = object.meta;
+            return meta && meta.type ? meta.type : "DEFAULT";
+        }
+        error("Model, object or type not found: " + id);
+    };
+
+    this.setScale = function (id, scale) {
+        var component = getTransformableComponent(id);
         if (!component) {
             error("Model or object not found: " + id);
             return;
         }
-        if (arguments.length === 1) {
-            return component.transform.xyz.slice();
-        } else {
-            component.transform.xyz = scale;
-        }
+        component.transform.xyz = scale;
     };
 
-    this.rotate = (function () {
+    this.getScale = function (id) {
+        var component = getTransformableComponent(id);
+        if (!component) {
+            error("Model or object not found: " + id);
+            return;
+        }
+        return component.transform.xyz.slice();
+    };
+
+    this.setRotate = (function () {
         var quat = math.vec4();
         return function (id, angles) {
-            var component = getComponent(id);
+            var component = getTransformableComponent(id);
             if (!component) {
                 error("Model or object not found: " + id);
                 return;
             }
-            if (arguments.length === 1) {
-                return [0, 0, 0]; // TODO
-                //return component.transform.parent.xyzw.slice(); // TODO: should be angles
-            } else {
-                math.eulerToQuaternion(angles, "XYZ", quat); // Tait-Bryan Euler angles
-                component.transform.parent.xyzw = quat;
-            }
+            math.eulerToQuaternion(angles, "XYZ", quat); // Tait-Bryan Euler angles
+            component.transform.parent.xyzw = quat;
+            var saveAngles = eulerAngles[id] || (eulerAngles[id] = math.vec3());
+            saveAngles.set(angles);
         };
     })();
 
-    this.translate = function (id, pos) {
-        var component = getComponent(id);
+    this.getRotate = function (id) {
+        var component = getTransformableComponent(id);
         if (!component) {
             error("Model or object not found: " + id);
             return;
         }
-        if (arguments.length === 1) {
-            return component.transform.parent.parent.xyz.slice();
-        } else {
-            component.transform.parent.parent.xyz = pos;
+        return eulerAngles[id] || math.vec3([0, 0, 0]);
+    };
+
+    this.setTranslate = function (id, translate) {
+        var component = getTransformableComponent(id);
+        if (!component) {
+            error("Model or object not found: " + id);
+            return;
         }
+        component.transform.parent.parent.xyz = translate;
+    };
+
+    this.getTranslate = function (id) {
+        var component = getTransformableComponent(id);
+        if (!component) {
+            error("Model or object not found: " + id);
+            return;
+        }
+        return component.transform.parent.parent.xyz.slice();
     };
 
     this.show = function (ids) {
@@ -192,7 +249,7 @@ function xeoviz(cfg) {
 
     function setVisible(ids, visible) {
         if (ids === undefined || ids === null) {
-            setVisible(self.objects(), visible);
+            setVisible(self.getObjects(), visible);
             return;
         }
         if (xeogl._isString(ids)) {
@@ -216,7 +273,7 @@ function xeoviz(cfg) {
                 error("Model, object or type not found: " + id);
                 return;
             }
-            setVisible(self.objects(id), visible);
+            setVisible(self.getObjects(id), visible);
             return;
         }
         for (var i = 0, len = ids.length; i < len; i++) {
@@ -224,27 +281,7 @@ function xeoviz(cfg) {
         }
     }
 
-    this.objects = function (id) {
-        if (id !== undefined) {
-            var objectsOfType = types[id];
-            if (objectsOfType) {
-                return Object.keys(objectsOfType);
-            }
-            var model = models[id];
-            if (!model) {
-                error("Model not found: " + id);
-                return [];
-            }
-            var entities = model.types["xeogl.Entity"];
-            if (!entities) {
-                return [];
-            }
-            return Object.keys(entities);
-        }
-        return Object.keys(objects);
-    };
-
-    this.aabb = function (target) {
+    this.getAABB = function (target) {
         if (arguments.length === 0 || target === undefined) {
             return scene.worldBoundary.aabb;
         }
@@ -274,7 +311,7 @@ function xeoviz(cfg) {
             } else {
                 objectsOfType = types[id];
                 if (objectsOfType) {
-                    return this.aabb(Object.keys(objectsOfType));
+                    return this.getAABB(Object.keys(objectsOfType));
                 }
                 return null;
             }
@@ -309,7 +346,7 @@ function xeoviz(cfg) {
                     if (ids.length === 0) {
                         continue;
                     }
-                    aabb = this.aabb(ids);
+                    aabb = this.getAABB(ids);
                 } else {
                     continue;
                 }
@@ -347,81 +384,86 @@ function xeoviz(cfg) {
             return scene.worldBoundary.aabb;
         }
     };
-
-    this.flying = function (value) {
-        return (arguments.length === 0) ? flying : flying = !!value;
+    
+    this.setEye = function (eye) {
+        view.eye = eye;
     };
 
-    this.flightDuration = function (value) {
-        return (arguments.length === 0) ? cameraFlight.duration : cameraFlight.duration = value;
+    this.getEye = function () {
+        return view.eye;
     };
 
-    this.fitFOV = function (value) {
-        return (arguments.length === 0) ? cameraFlight.fitFOV : cameraFlight.fitFOV = value;
+    this.setLook = function (look) {
+        view.look = look;
     };
 
-    this.eye = function (eye) {
-        if (eye) {
-            view.eye = eye;
-        } else {
-            return view.eye;
-        }
+    this.getLook = function () {
+        return view.look;
     };
 
-    this.look = function (look) {
-        if (look) {
-            view.look = look;
-        } else {
-            return view.look;
-        }
+    this.setUp = function (up) {
+        view.up = up;
     };
 
-    this.up = function (up) {
-        if (up) {
-            view.up = up;
-        } else {
-            return view.up;
-        }
+    this.getUp = function () {
+        return view.up;
     };
 
-    this.lookat = function (eye, look, up) {
+    this.setEyeLookUp = function (eye, look, up) {
         view.eye = eye;
         view.look = look;
         view.up = up || [0, 1, 0];
     };
 
-    this.goto = function (target, ok) {
-        (flying || ok) ? cameraFlight.flyTo({aabb: this.aabb(target)}, ok) : cameraFlight.jumpTo({aabb: this.aabb(target)});
+    this.setViewFitSpeed = function (value) {
+        cameraFlight.duration = value;
+        flying = (value > 0);
     };
 
-    this.right = function (target, ok) {
-        gotoAxis(target, 0, ok);
+    this.getViewFitSpeed = function () {
+        return cameraFlight.duration;
     };
 
-    this.back = function (target, ok) {
-        gotoAxis(target, 1, ok);
+    this.setViewFitFOV = function (value) {         
+        cameraFlight.fitFOV = value;
     };
 
-    this.left = function (target, ok) {
-        gotoAxis(target, 2, ok);
+    this.getViewFitFOV = function () {
+        return cameraFlight.fitFOV;
     };
 
-    this.front = function (target, ok) {
-        gotoAxis(target, 3, ok);
+    this.viewFit = function (target, ok) {
+        (flying || ok) ? cameraFlight.flyTo({aabb: this.getAABB(target)}, ok) : cameraFlight.jumpTo({aabb: this.getAABB(target)});
     };
 
-    this.top = function (target, ok) {
-        gotoAxis(target, 4, ok);
+    this.viewFitRight = function (target, ok) {
+        viewFitAxis(target, 0, ok);
     };
 
-    this.bottom = function (target, ok) {
-        gotoAxis(target, 5, ok);
+    this.viewFitBack = function (target, ok) {
+        viewFitAxis(target, 1, ok);
     };
 
-    var gotoAxis = (function () {
+    this.viewFitLeft = function (target, ok) {
+        viewFitAxis(target, 2, ok);
+    };
+
+    this.viewFitFront = function (target, ok) {
+        viewFitAxis(target, 3, ok);
+    };
+
+    this.viewFitTop = function (target, ok) {
+        viewFitAxis(target, 4, ok);
+    };
+
+    this.viewFitBottom = function (target, ok) {
+        viewFitAxis(target, 5, ok);
+    };
+
+    var viewFitAxis = (function () {
         var center = new math.vec3();
         return function (target, axis, ok) {
-            var aabb = self.aabb(target);
+            var aabb = self.getAABB(target);
             var diag = xeogl.math.getAABB3Diag(aabb);
             center[0] = aabb[0] + aabb[3] / 2.0;
             center[1] = aabb[1] + aabb[4] / 2.0;
@@ -492,37 +534,89 @@ function xeoviz(cfg) {
         return (arguments.length === 0) ? xspin : xspin = value;
     };
 
-    this.bookmark = function (bookmark) {
-        if (bookmark) {
-            var self = this;
-            load(bookmark.models, 0, function () {
-                self.hide();
-                self.show(bookmark.visible);
-                self.lookat(bookmark.lookat.eye, bookmark.lookat.look, bookmark.lookat.up);
-            });
-        } else {
-            bookmark = {};
+    this.getBookmark = (function () {
+
+        var vecToArray = xeogl.math.vecToArray;
+
+        function getTranslate(component) {
+            var translate = component.transform.parent.parent.xyz;
+            if (translate[0] !== 0 || translate[1] !== 0 || translate[1] !== 0) {
+                return vecToArray(translate);
+            }
+        }
+
+        function getScale(component) {
+            var scale = component.transform.xyz;
+            if (scale[0] !== 1 || scale[1] !== 1 || scale[1] !== 1) {
+                return vecToArray(scale);
+            }
+        }
+
+        function getRotate(component) {
+            var rotate = eulerAngles[component.id];
+            if (rotate && (rotate[0] !== 0 || rotate[1] !== 0 || rotate[2] !== 0)) {
+                return vecToArray(rotate);
+            }
+        }
+
+        return function () {
+            var bookmark = {};
             var id;
             var model;
-            var vecToArray = xeogl.math.vecToArray;
+            var modelData;
+            var translate;
+            var scale;
+            var rotate;
             bookmark.models = [];
             for (var modelId in models) {
                 if (models.hasOwnProperty(modelId)) {
                     model = models[modelId];
-                    bookmark.models.push({
+                    modelData = {
                         id: model.id,
-                        src: model.src,
-                        translate: vecToArray(this.translate(modelId)),
-                        scale: vecToArray(this.scale(modelId)),
-                        rotate: vecToArray(this.rotate(modelId))
-                    });
+                        src: model.src
+                    };
+                    translate = getTranslate(model);
+                    if (translate) {
+                        modelData.translate = translate;
+                    }
+                    scale = getScale(model);
+                    if (scale) {
+                        modelData.scale = scale;
+                    }
+                    rotate = getRotate(model);
+                    if (rotate) {
+                        modelData.rotate = rotate;
+                    }
+                    bookmark.models.push(modelData);
                 }
             }
-            bookmark.visible = [];
+            bookmark.objects = {};
             for (id in objects) {
+                var object;
+                var objectData;
                 if (objects.hasOwnProperty(id)) {
-                    if (objects[id].visibility.visible) {
-                        bookmark.visible.push(id);
+                    object = objects[id];
+                    objectData = null;
+                    translate = getTranslate(object);
+                    if (translate) {
+                        objectData = objectData || (bookmark.objects[id] = {});
+                        objectData.translate = translate;
+                    }
+                    scale = getScale(object);
+                    if (scale) {
+                        objectData = objectData || (bookmark.objects[id] = {});
+                        objectData.scale = scale;
+                    }
+                    rotate = getRotate(object);
+                    if (rotate) {
+                        objectData = objectData || (bookmark.objects[id] = {});
+                        objectData.rotate = rotate;
+                    }
+                    if (object.visibility.visible) {
+                        objectData = objectData || (bookmark.objects[id] = {});
+                        objectData.visible = true;
+                    } else if (objectData) {
+                        objectData.visible = false;
                     }
                 }
             }
@@ -532,30 +626,72 @@ function xeoviz(cfg) {
                 up: vecToArray(view.up)
             };
             return bookmark;
-        }
-    };
+        };
+    })();
 
-    function load(_modelsData, i, ok) {
-        if (i >= _modelsData.length) {
-            ok();
-            return;
+    this.setBookmark = (function () {
+
+        function loadModels(_modelsData, i, ok) {
+            if (i >= _modelsData.length) {
+                ok();
+                return;
+            }
+            var modelData = _modelsData[i];
+            var id = modelData.id;
+            self.loadModel(id, modelData.src, function () {
+                self.setTranslate(id, modelData.translate);
+                self.setScale(id, modelData.scale);
+                self.setRotate(id, modelData.rotate);
+                loadModels(_modelsData, i + 1, ok);
+            });
         }
-        var modelData = _modelsData[i];
-        var id = modelData.id;
-        self.load(id, modelData.src, function () {
-            self.translate(id, modelData.translate);
-            self.scale(id, modelData.scale);
-            self.rotate(id, modelData.rotate);
-            load(_modelsData, i + 1, ok);
-        });
-    }
+
+        return function (bookmark) {
+            loadModels(bookmark.models, 0, function () {
+                var objectStates = bookmark.objects;
+                var objectState;
+                var visible = [];
+                for (var id in objectStates) {
+                    if (objectStates.hasOwnProperty(id)) {
+                        objectState = objectStates[id];
+                        if (objectState.visible) {
+                            visible.push(id);
+                        }
+                        if (objectState.translate) {
+                            self.setTranslate(id, objectState.translate);
+                        }
+                        if (objectState.scale) {
+                            self.setScale(id, objectState.scale);
+                        }
+                        if (objectState.rotate) {
+                            self.setRotate(id, objectState.rotate);
+                        }
+                    }
+                }
+                self.hide();
+                self.show(visible);
+                self.lookat(bookmark.lookat.eye, bookmark.lookat.look, bookmark.lookat.up);
+            });
+        };
+    })();
 
     this.destroy = function () {
         scene.off(onTick);
         scene.destroy();
         models = {};
         objects = {};
+        objectModels = {};
+        eulerAngles = {};
+        flattened = {};
     };
+
+    function getTransformableComponent(id) {
+        var component = getComponent(id);
+        if (component && objects[id] && !flattened[id]) {
+            flattenTransform(component);
+        }
+        return component;
+    }
 
     function getComponent(id) {
         var component = objects[id];
@@ -563,6 +699,17 @@ function xeoviz(cfg) {
             component = models[id];
         }
         return component;
+    }
+
+    function flattenTransform(object) {
+        object.transform = new xeogl.Scale(object, {
+            parent: new xeogl.Quaternion(object, {
+                parent: new xeogl.Translate(object, {
+                    parent: object.transform
+                })
+            })
+        });
+        flattened[object.id] = true;
     }
 
     function error(msg) {
