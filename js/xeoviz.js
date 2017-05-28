@@ -1,6 +1,6 @@
 function xeoviz(cfg) {
 
-    var scene = new xeogl.Scene({transparent: true});
+    var scene = new xeogl.Scene({ transparent: true });
     var math = xeogl.math;
     var camera = scene.camera;
     var view = camera.view;
@@ -32,6 +32,13 @@ function xeoviz(cfg) {
 
     var cameraControl = new xeogl.CameraControl(scene);
 
+    /** 
+     * Loads a model into the viewer.
+     * 
+     * @param {String} id ID to assign to the model within the viewer.
+     * @param {String} src Path a glTF file.
+     * @param {Function()} [ok] Callback fired when model loaded.
+    */
     this.loadModel = function (id, src, ok) {
         var model = models[id];
         if (model) {
@@ -82,10 +89,23 @@ function xeoviz(cfg) {
         });
     };
 
+    /** 
+     * Gets the IDs of the models currently in the viewer.
+     * 
+     * @return {String[]} IDs of the models.
+     */
     this.getModels = function () {
         return Object.keys(models);
     };
 
+    /** 
+     * Gets the IDs of the objects in the given model.
+     * 
+     * Returns the IDs of all objects in the viewer when no arguments are given.
+     *       
+     * @param {String|String[]} id ID of a model or an IFC type.
+     * @return {String[]} IDs of the objects.
+     */
     this.getObjects = function (id) {
         if (id !== undefined || id === null) {
             var objectsOfType = types[id];
@@ -106,6 +126,11 @@ function xeoviz(cfg) {
         return Object.keys(objects);
     };
 
+    /** 
+     * Unloads a model.
+     * 
+     * @param {String} id ID of the model.
+     */
     this.unloadModel = function (id) {
         var model = models[id];
         if (!model) {
@@ -136,6 +161,9 @@ function xeoviz(cfg) {
         delete eulerAngles[id];
     };
 
+    /** 
+     * Unloads all models.
+     */
     this.clear = function () {
         for (var id in models) {
             if (models.hasOwnProperty(id)) {
@@ -144,6 +172,11 @@ function xeoviz(cfg) {
         }
     };
 
+    /** 
+     * Assigns an IFC type to the given object(s).
+     * 
+     * @return {String} ID of an object or model. When a model ID is given, the type will be assigned to all the model's objects.
+     */
     this.setType = function (id, type) {
         type = type || "DEFAULT";
         var object = objects[id];
@@ -170,15 +203,27 @@ function xeoviz(cfg) {
         error("Model, object or type not found: " + id);
     };
 
+    /** 
+     * Gets the IFC type of an object.
+     * 
+     * @param {String} ID of the object.
+     * @returns {String} The IFC type of the object.
+     */
     this.getType = function (id) {
         var object = objects[id];
         if (object) {
             var meta = object.meta;
             return meta && meta.type ? meta.type : "DEFAULT";
         }
-        error("Model, object or type not found: " + id);
+        error("Object not found: " + id);
     };
 
+    /** 
+     * Sets the scale of a model or object.
+     * 
+     * @param {String} ID of a model or object.
+     * @param {[Number, Number, Number]} scale Scale factors for the X, Y and Z axis.
+     */
     this.setScale = function (id, scale) {
         var component = getTransformableComponent(id);
         if (!component) {
@@ -188,6 +233,12 @@ function xeoviz(cfg) {
         component.transform.xyz = scale;
     };
 
+    /** 
+     * Gets the scale of a model or object.
+     * 
+     * @param {String} ID of a model or object.
+     * @return {[Number, Number, Number]} scale Scale factors for the X, Y and Z axis.
+    */
     this.getScale = function (id) {
         var component = getTransformableComponent(id);
         if (!component) {
@@ -197,6 +248,12 @@ function xeoviz(cfg) {
         return component.transform.xyz.slice();
     };
 
+    /** 
+     * Sets the rotation of a model or object.
+     * 
+     * @param {String} ID of a model or object.
+    *  @param {[Number, Number, Number]} angles Rotation angles for the X, Y and Z axis.
+    */
     this.setRotate = (function () {
         var quat = math.vec4();
         return function (id, angles) {
@@ -212,6 +269,12 @@ function xeoviz(cfg) {
         };
     })();
 
+    /** 
+     * Gets the rotation of a model or object.
+     * 
+     * @param {String} ID of a model or object.
+     * @return {[Number, Number, Number]} Rotation angles for the X, Y and Z axis. 
+     */
     this.getRotate = function (id) {
         var component = getTransformableComponent(id);
         if (!component) {
@@ -221,6 +284,12 @@ function xeoviz(cfg) {
         return eulerAngles[id] || math.vec3([0, 0, 0]);
     };
 
+    /** 
+     * Sets the translation of a model or object.
+     * 
+     * @param {String} ID of a model or object.
+     * @return {[Number, Number, Number]} World-space translation vector. 
+     */
     this.setTranslate = function (id, translate) {
         var component = getTransformableComponent(id);
         if (!component) {
@@ -230,6 +299,12 @@ function xeoviz(cfg) {
         component.transform.parent.parent.xyz = translate;
     };
 
+    /** 
+     * Gets the translation of a model or object.
+     * 
+     * @param {String} ID of a model or object.
+     * @return {[Number, Number, Number]} World-space translation vector. 
+     */
     this.getTranslate = function (id) {
         var component = getTransformableComponent(id);
         if (!component) {
@@ -239,10 +314,24 @@ function xeoviz(cfg) {
         return component.transform.parent.parent.xyz.slice();
     };
 
+    /** 
+     * Shows model(s) and/or object(s).
+     * 
+     * Shows all objects in the viewer when no arguments are given.
+     * 
+     * @param {String|String[]} ids IDs of model(s) and/or object(s). Shows all objects by default.
+     */
     this.show = function (ids) {
         setVisible(ids, true);
     };
 
+    /** 
+     * Hides model(s) and/or object(s).
+     * 
+     * Hides all objects in the viewer when no arguments are given.
+     * 
+     * @param {String|String[]} ID of model(s) and/or object(s). 
+    */
     this.hide = function (ids) {
         setVisible(ids, false);
     };
@@ -281,6 +370,14 @@ function xeoviz(cfg) {
         }
     }
 
+    /** 
+     * Gets the boundary of the given models and/or objects.
+     * 
+     * When no arguments are given, gets the collective boundary of all objects in the viewer.
+     * 
+     * @param {String|String[]} IDs of models and/or objects.
+     * @returns {[Number, Number, Number, Number, Number, Number]} An axis-aligned World-space bounding box, given as elements ````[xmin, ymin, zmin, xmax, ymax, zmax]````.
+     */
     this.getAABB = function (target) {
         if (arguments.length === 0 || target === undefined) {
             return scene.worldBoundary.aabb;
@@ -384,78 +481,183 @@ function xeoviz(cfg) {
             return scene.worldBoundary.aabb;
         }
     };
-    
+
+    /** 
+     * Sets the camera viewpoint.
+     * 
+     * @param {[Number, Number, Number]} eye The new viewpoint.
+     */
     this.setEye = function (eye) {
         view.eye = eye;
     };
 
+    /** 
+     * Gets the camera viewpoint.
+     * 
+     * @return {[Number, Number, Number]} The current viewpoint.
+     */
     this.getEye = function () {
         return view.eye;
     };
 
+    /** 
+     * Sets the camera's point-of-interest.
+     * 
+     * @param {[Number, Number, Number]} look The new point-of-interest.
+     */
     this.setLook = function (look) {
         view.look = look;
     };
 
+    /** 
+     * Gets the camera's point-of-interest.
+     * 
+     * @return {[Number, Number, Number]} The current point-of-interest.
+     */
     this.getLook = function () {
         return view.look;
     };
 
+    /** 
+     * Sets the camera's "up" direction.
+     * 
+     * @param {[Number, Number, Number]} up The new up direction.
+     */
     this.setUp = function (up) {
         view.up = up;
     };
 
+    /** 
+     * Gets the camera's "up" direction.
+     * 
+     * @return {[Number, Number, Number]} The current "up" direction.
+     */
     this.getUp = function () {
         return view.up;
     };
 
+    /** 
+     * Sets the camera's pose, consisting of position, target and "up" vector.
+     * 
+     * @param {[Number, Number, Number]} eye Camera's new viewpoint.
+     * @param {[Number, Number, Number]} look Camera's new point-of-interest.
+     * @param {[Number, Number, Number]} up Camera's new up direction.
+     */
     this.setEyeLookUp = function (eye, look, up) {
         view.eye = eye;
         view.look = look;
         view.up = up || [0, 1, 0];
     };
 
+    /** 
+     * Sets the flight duration when fitting elements to view.
+     * 
+     * A value of zero will cause the camera to instantly jump to each new target. 
+     * 
+     * @param {Number} value The new flight duration, in seconds.
+     */
     this.setViewFitSpeed = function (value) {
         cameraFlight.duration = value;
         flying = (value > 0);
     };
 
+    /** 
+     * Gets the flight duration when fitting elements to view.
+     * 
+     * @returns {Number} The current flight duration, in seconds.
+     */
     this.getViewFitSpeed = function () {
         return cameraFlight.duration;
     };
 
-    this.setViewFitFOV = function (value) {         
+    /** 
+     * Sets the target field-of-view (FOV) angle when fitting elements to view.
+     * 
+     * @param {Number} value The new view-fit FOV angle, in degrees.
+     */
+    this.setViewFitFOV = function (value) {
         cameraFlight.fitFOV = value;
     };
 
+    /** 
+     * Gets the target field-of-view angle when fitting elements to view.
+     * 
+     * @returns {Number} The current view-fit FOV angle, in degrees.
+     */
     this.getViewFitFOV = function () {
         return cameraFlight.fitFOV;
     };
 
+    /** 
+     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view.
+     * 
+     * Preserves the direction that the camera is currently pointing in.
+     * 
+     * A boundary is an axis-aligned World-space bounding box, given as elements ````[xmin, ymin, zmin, xmax, ymax, zmax]````.
+     * 
+     * @param {String|[]} target The elements to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries. 
+     * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
+     */
     this.viewFit = function (target, ok) {
-        (flying || ok) ? cameraFlight.flyTo({aabb: this.getAABB(target)}, ok) : cameraFlight.jumpTo({aabb: this.getAABB(target)});
+        (flying || ok) ? cameraFlight.flyTo({ aabb: this.getAABB(target) }, ok) : cameraFlight.jumpTo({ aabb: this.getAABB(target) });
     };
 
+    /** 
+     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking down the +X axis.
+     * 
+     * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries. 
+     * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
+     */
     this.viewFitRight = function (target, ok) {
         viewFitAxis(target, 0, ok);
     };
 
+    /** 
+     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking down the +Z axis.
+     * 
+     * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries. 
+     * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
+     */
     this.viewFitBack = function (target, ok) {
         viewFitAxis(target, 1, ok);
     };
 
+    /** 
+     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking down the -X axis.
+     * 
+     * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries. 
+     * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
+     */
     this.viewFitLeft = function (target, ok) {
         viewFitAxis(target, 2, ok);
     };
 
+    /** 
+     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking down the +X axis.
+     * 
+     * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries. 
+     * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
+     */
     this.viewFitFront = function (target, ok) {
         viewFitAxis(target, 3, ok);
     };
 
+    /** 
+     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking down the -Y axis.
+     * 
+     * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries. 
+     * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
+     */
     this.viewFitTop = function (target, ok) {
         viewFitAxis(target, 4, ok);
     };
 
+    /** 
+     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking down the +X axis.
+     * 
+     * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries. 
+     * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
+     */
     this.viewFitBottom = function (target, ok) {
         viewFitAxis(target, 5, ok);
     };
@@ -534,6 +736,20 @@ function xeoviz(cfg) {
         return (arguments.length === 0) ? xspin : xspin = value;
     };
 
+    /** 
+     * Gets a JSON bookmark of the viewer's current state.
+     * 
+     * The bookmark will be a complete snapshot of the viewer's state, including:
+     * 
+     * * which models are currently loaded,
+     * * transformations of the models,
+     * * transformations and visibilities of their objects, and
+     * * the current camera position.
+     * 
+     * The viewer can then be restored to the bookmark at any time using #setBookmark().
+     * 
+     * @return {Object} A JSON bookmark.
+    */
     this.getBookmark = (function () {
 
         var vecToArray = xeogl.math.vecToArray;
@@ -629,6 +845,14 @@ function xeoviz(cfg) {
         };
     })();
 
+    /** 
+     * Sets viewer state to the snapshot contained in given JSON bookmark.
+     * 
+     * A bookmark is a complete snapshot of the viewer's state, which was 
+     * captured earlier with #getBookmark().
+     * 
+     * @param {Object} bookmark JSON bookmark. 
+    */
     this.setBookmark = (function () {
 
         function loadModels(_modelsData, i, ok) {
@@ -675,6 +899,9 @@ function xeoviz(cfg) {
         };
     })();
 
+    /**
+     * Clears and destroys this viewer.
+     */
     this.destroy = function () {
         scene.off(onTick);
         scene.destroy();
