@@ -1,7 +1,8 @@
 # xeoviz
 
-A convenient WebGL-based [glTF](http://gltf.org) viewer built on [xeogl](http://xeogl.org).
+A convenient WebGL-based [glTF](http://gltf.org) viewer API built on [xeogl](http://xeogl.org).
  
+A xeoviz viewer is a single class that provides a facade on the front of xeogl, with methods focused on setting up custom bookmarkable views of glTF models. 
 
 ![Screenshot](assets/sawScreenshot.png?raw=true)
 
@@ -21,7 +22,16 @@ A convenient WebGL-based [glTF](http://gltf.org) viewer built on [xeogl](http://
 * [Examples collection](examples/index.html)
 
 # Usage
-  
+
+### Loading the xeoviz library and dependencies
+
+The first step is to link to the xeogl and xeoviz libraries: 
+````html
+<script src="libs/xeogl.js"></script>
+<script src="../js/xeoviz.js"></script>
+````
+xeoviz's only dependency is the xeogl library. 
+
 ### Creating and destroying viewers
 
 Create a viewer with a default internally-created canvas that fills the page:
@@ -273,5 +283,5 @@ Save model state to JSON bookmark, clear model then restore it again from the bo
 ````javascript
 var json = viewer.getBookmark();
 viewer.reset();
-viewer.setBookmark(json);
+viewer.setBookmark(json, function() { });
 ````
