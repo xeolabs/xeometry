@@ -1,17 +1,20 @@
 # xeoviz
 
-A WebGL [glTF](http://gltf.org) model viewer built with [xeogl](http://xeogl.org).      
+A convenient WebGL-based [glTF](http://gltf.org) viewer built on [xeogl](http://xeogl.org).
+ 
 
 ![Screenshot](assets/sawScreenshot.png?raw=true)
 
 # Features
 
 * Load multiple glTF models
-* Show, hide objects
+* Create multiple viewers in a page
+* Show and hide objects
 * Scale, rotate and translate objects
+* Query objects for boundaries
 * Navigate camera to objects
 * Zoom, pan, rotate, spin, fly and jump camera
-* Save and load JSON viewer state
+* Save and load viewer bookmarks
 
 # Examples
 
@@ -21,7 +24,7 @@ A WebGL [glTF](http://gltf.org) model viewer built with [xeogl](http://xeogl.org
   
 ### Creating and destroying viewers
 
-Create a viewer with a default canvas that fills the page:
+Create a viewer with a default internally-created canvas that fills the page:
 ````javascript
 var viewer = new xeoviz();
 ````
@@ -42,14 +45,14 @@ viewer.destroy();
 
 ### Loading and unloading models
 
-You can load multiple glTF models into a viewer at the same time. You can also load separate copies of the same model.
+You can load multiple glTF models into a viewer at the same time. You can also load multiple copies of the same model.
 
 Load two glTF models into a viewer:
 ````javascript
-viewer.load("gearbox", "./GearboxAssy.gltf",
+viewer.loadModel("gearbox", "./GearboxAssy.gltf",
     function () {
     
-        viewer.load("saw", "./Reciprocating_Saw.gltf",
+        viewer.loadModel("saw", "./Reciprocating_Saw.gltf",
             function () {
                 //... two models loaded
             });
@@ -58,7 +61,7 @@ viewer.load("gearbox", "./GearboxAssy.gltf",
 
 Unload a model:
 ````javascript
-viewer.unload("gearbox");
+viewer.unloadModel("gearbox");
 ````
 
 ### Querying models and objects
@@ -67,58 +70,57 @@ You can query the IDs of whatever models and objects are currently loaded.
 
 Get IDs of all models:
 ````javascript
-var models = viewer.models();
+var models = viewer.getModels();
 ````
 
 Get IDs of all objects:
 ````javascript
-var objects = viewer.objects();
+var objects = viewer.getObjects();
 ````
 
 Get IDs of all objects within a model:
 ````javascript
-var sawObjects = viewer.objects("saw");
+var sawObjects = viewer.getObjects("saw");
 ````
 
 ### Querying boundaries of models and objects
 
-Everything within a viewer can be queried for its axis-aligned World-space boundary, which is given as an array containing
+Everything within a viewer can be queried for its axis-aligned World-space boundary (AABB), which is given as an array containing
 values ````[xmin, ymin, zmin, xmax, ymax, zmax]````.
 
 Get the collective boundary of everything in a viewer:
 ````javascript
-var allBoundary = viewer.aabb();
+var allBoundary = viewer.getAABB();
 ````
 
 Get the boundary of a model:
 ````javascript
-var sawBoundary = viewer.aabb("saw");
+var sawBoundary = viewer.getAABB("saw");
 ````
 
-Get collective boundary of some objects:
+Get collective boundary of two objects:
 ````javascript
-var objectsBoundary = viewer.aabb(["foo", "bar"]);
+var objectsBoundary = viewer.getAABB(["foo", "bar"]);
 ````
 
-Get collective boundary of some models:
+Get collective boundary of two models:
 ````javascript
-var modelsBoundary = viewer.aabb(["saw", "gearbox"]);
+var modelsBoundary = viewer.getAABB(["saw", "gearbox"]);
 ````
 
 Get collective boundary of the first five objects within a given model:
 ````javascript
-var objectsBoundary2 = viewer.aabb(viewer.objects("saw").slice(0, 5));
+var objectsBoundary2 = viewer.getAABB(viewer.objects("saw").slice(0, 5));
 ````
 
 Get collective boundary of a model and a couple of objects:
 ````javascript
-var objectsBoundary3 = viewer.aabb(["saw", "outerCasing", "trigger");
+var objectsBoundary3 = viewer.getAABB(["saw", "outerCasing", "trigger");
 ````
 
 ### Transforming models and objects
 
-Each model and object can be independently transformed within a viewer. A transformation consists of the following
- operations, applied in this order:
+Each model and object can be independently transformed within a viewer. A transformation consists of the following operations, applied in this order:
 
  * scale
  * X-axis rotation (degrees),
@@ -128,16 +130,16 @@ Each model and object can be independently transformed within a viewer. A transf
 
 Transform a model, move it along the X axis, scale it, then rotate it 90 degrees about its X-axis:
 ````javascript
-viewer.translate("saw", [100,0,0]);
-viewer.scale("saw", [0.5,0.5,0.5]);
-viewer.rotate("saw", [90,0,0]);
+viewer.setTranslate("saw", [100,0,0]);
+viewer.setScale("saw", [0.5,0.5,0.5]);
+viewer.setRotate("saw", [90,0,0]);
 `````
 
 Spin an object about its Y-axis:
 ````javascript
 var angles =[0,0,0]; // Tait-Bryant angles about X, Y and Z, in degrees
 function spin() {
-    viewer.rotate("outerCasing", angles);
+    viewer.setRotate("outerCasing", angles);
     angles[1] += 0.1;
     requestAnimationFrame(spin);
 }
@@ -146,9 +148,9 @@ spin();
 
 Get an object's translation, scale and rotation:
 ````javascript
-var translate = viewer.translate("saw");
-var scale = viewer.scale("saw");
-var rotate = viewer.rotate("saw");
+var translate = viewer.setTranslate("saw");
+var scale = viewer.setScale("saw");
+var rotate = viewer.setRotate("saw");
 `````
 
 ### Showing and hiding models and objects
@@ -190,80 +192,71 @@ objects, either by flying or jumping to a new position.
 
 Get camera eye, look and up:
 ````javascript
-var eye = viewer.eye();
-var look = viewer.look();
-var up = viewer.up();
+var eye = viewer.getEye();
+var look = viewer.getLook();
+var up = viewer.getUp();
 ````
 
 Set camera eye, look and up:
 ````javascript
-viewer.eye([0,0,-100]);
-viewer.look([0,0,0]);
-viewer.up([0,1,0]);
+viewer.setEye([0,0,-100]);
+viewer.setLook([0,0,0]);
+viewer.setUp([0,1,0]);
 ````
 
-Switch camera to "flight" mode, where it will animate to each new position:
-````javascript
-viewer.flight(true);
-````
 Set how fast the camera flies to each new position:
 ````javascript
 viewer.flightDuration(2); // Seconds
 var duration = viewer.flightDuration();
 ````
 
-Get the current camera mode:
-````javascript
-var flight = viewer.flight();
-````
-
 Fly camera to given position:
 ````javascript
 // Eye, look and "up" vector
-viewer.lookat([0,0,-100],[0,0,0],[0,1,0], function() { 
+viewer.setEyeLookUp([0,0,-100],[0,0,0],[0,1,0], function() { 
     // Camera arrived
 });
 ````
 
 Fly camera to fit everything in view:
 ````javascript
-viewer.goto(function() {
+viewer.viewFit(function() {
     // Camera arrived
 });
 ````
 
 Fly camera to fit a model in view:
 ````javascript
-viewer.goto("saw", function() {
+viewer.viewFit("saw", function() {
     // Camera arrived
 });
 ````
 
 Fly camera to fit two models in view:
 ````javascript
-viewer.goto(["saw", "gearbox"] function() {
+viewer.viewFit(["saw", "gearbox"] function() {
     // Camera arrived
 });
 ````
 
 Switch camera to "jump" mode, where it will jump directly to each new position:
 ````javascript
-viewer.flight(false);
+viewer.viewFit(false);
 ````
 
 Jump camera to fit two objects in view - note we don't need the callback anymore because camera is now jumping:
 ````javascript
-viewer.goto(["foo", "bar"]);
+viewer.viewFit(["foo", "bar"]);
 ````
 
 Jump camera to fit a model and two objects in view:
 ````javascript
-viewer.goto(["saw", "outerCasing", "trigger"]);
+viewer.viewFit(["saw", "outerCasing", "trigger"]);
 ````
 
 Set how much of the field of view that a target boundary will occupy when flying the camera to fit models or objects to the view:
 ````javascript
-viewer.fitFOV(20); // Degrees
+viewer.setViewFitFOV(20); // Degrees
 var fitFOV = viewer.fitFOV();
 ````
 
@@ -278,7 +271,7 @@ You can save and restore the state of a viewer as a JSON bookmark. The bookmark 
 
 Save model state to JSON bookmark, clear model then restore it again from the bookmark:
 ````javascript
-var json = viewer.bookmark();
+var json = viewer.getBookmark();
 viewer.reset();
-viewer.bookmark(json);
+viewer.setBookmark(json);
 ````
