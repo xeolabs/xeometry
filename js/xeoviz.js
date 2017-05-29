@@ -1,3 +1,12 @@
+
+/**
+ * A convenient API for visualizing glTF models on WebGL using xeogl.
+ * 
+ * Find usage instructions at http://xeolabs.com-xeoviz
+ * 
+ * @param {*} cfg 
+ * @param 
+ */
 function xeoviz(cfg) {
 
     var scene = new xeogl.Scene({ transparent: true });
@@ -7,11 +16,11 @@ function xeoviz(cfg) {
 
     var self = this;
     var types = {};
-    var models = {};
-    var objects = {};
-    var eulerAngles = {};
-    var objectModels = {};
-    var flattened = {};
+    var models = {}; // Models mapped to their IDs
+    var objects = {}; // Objects mapped to their IDs
+    var eulerAngles = {}; // Euler rotation angles for each object
+    var objectModels = {}; // Map of object IDs to models
+    var flattened = {}; 
     var flying = true;
     var yspin = 0;
     var xspin = 0;
@@ -35,7 +44,10 @@ function xeoviz(cfg) {
     /** 
      * Loads a model into the viewer.
      * 
-     * @param {String} id ID to assign to the model within the viewer.
+     * Also assigns the model an ID, which gets prefixed to 
+     * the IDs of the model's objects.
+     * 
+     * @param {String} id ID to assign to the model.
      * @param {String} src Path a glTF file.
      * @param {Function()} [ok] Callback fired when model loaded.
     */
@@ -99,7 +111,7 @@ function xeoviz(cfg) {
     };
 
     /** 
-     * Gets the IDs of the objects in the given model.
+     * Gets the IDs of the objects within the given model.
      * 
      * Returns the IDs of all objects in the viewer when no arguments are given.
      *       
@@ -162,7 +174,7 @@ function xeoviz(cfg) {
     };
 
     /** 
-     * Unloads all models.
+     * Unloads all models and objects.
      */
     this.clear = function () {
         for (var id in models) {
@@ -270,7 +282,7 @@ function xeoviz(cfg) {
     })();
 
     /** 
-     * Gets the rotation of a model or object.
+     * Sets the rotation of a model or object.
      * 
      * @param {String} ID of a model or object.
      * @return {[Number, Number, Number]} Rotation angles for the X, Y and Z axis. 
@@ -282,6 +294,21 @@ function xeoviz(cfg) {
             return;
         }
         return eulerAngles[id] || math.vec3([0, 0, 0]);
+    };
+
+/** 
+     * Sets the scale of a model or object.
+     * 
+     * @param {String} ID of a model or object.
+     * @param {[Number, Number, Number]} scale Scale factors for the X, Y and Z axis.
+     */
+    this.setScale = function (id, scale) {
+        var component = getTransformableComponent(id);
+        if (!component) {
+            error("Model or object not found: " + id);
+            return;
+        }
+        component.transform.xyz = scale;
     };
 
     /** 
