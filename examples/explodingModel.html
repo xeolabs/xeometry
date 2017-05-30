@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <script src="libs/xeogl.js"></script>
+    <script src="../js/xeoviz.js"></script>
+
+    <script src="libs/gl-matrix-min.js"></script>
+
+    <link href="css/styles.css" rel="stylesheet"/>
+<body>
+
+<div id="explorer" class="dark">
+</div>
+
+<script>
+
+    var viewer = new xeoviz();
+
+    viewer.loadModel("gearbox", "models/GearboxAssy/glTF/GearboxAssy.gltf", function () {
+
+        viewer.yspin(0.1);
+
+        viewer.setViewFitDuration(0);
+        viewer.viewFit();
+
+        var modelCenter = viewer.getCenter("gearbox");
+        var objectId;
+        var objectCenter;
+        var objects = viewer.getObjects();
+        var maxTranslation = 0.01;
+        var maxSpin = 0.1;
+        var objectTrajectory;
+        var trajectories = [];
+        var spin;
+        var spins = [];
+
+        // Compute velocity of each object
+
+        for (var i = 0; i < objects.length; i++) {
+
+            objectId = objects[i];
+
+            objectCenter = viewer.getCenter(objectId);
+            objectTrajectory = vec3.create();
+            vec3.subtract(objectTrajectory, objectCenter, modelCenter);
+            vec3.normalize(objectTrajectory, objectTrajectory);
+            vec3.scale(objectTrajectory, objectTrajectory, maxTranslation);
+            trajectories.push(objectTrajectory);
+
+            spin = vec3.create();
+            spin.set([Math.random() * maxSpin, Math.random() * maxSpin, Math.random() * maxSpin]);
+            spins.push(spin);
+        }
+
+        // Animate the explosion
+
+        var running = true;
+
+        function update() {
+            if (!running) {
+                return;
+            }
+            var tempVec3 = vec3.create();
+            var id;
+            for (var i = 0; i < objects.length; i++) {
+                id = objects[i];
+                viewer.setTranslate(id, vec3.add(tempVec3, viewer.getTranslate(id), trajectories[i]));
+                viewer.setRotate(id, vec3.add(tempVec3, viewer.getRotate(id), spins[i]));
+            }
+            requestAnimationFrame(update);
+        }
+
+        update();
+    });
+
+</script>
+</body>
+</html>

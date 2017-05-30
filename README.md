@@ -6,6 +6,10 @@ A xeoviz viewer is a single class that provides a facade on the front of xeogl, 
 
 ![Screenshot](assets/sawScreenshot.png?raw=true)
 
+# Examples
+
+* [Examples collection](examples/index.html)
+
 # Features
 
 * Load multiple glTF models
@@ -17,18 +21,14 @@ A xeoviz viewer is a single class that provides a facade on the front of xeogl, 
 * Zoom, pan, rotate, spin, fly and jump camera
 * Save and load viewer bookmarks
 
-# Examples
-
-* [Examples collection](examples/index.html)
-
 # Usage
 
-### Loading the xeoviz library and dependencies
+### Loading the libs
 
 The first step is to link to the xeogl and xeoviz libraries: 
 ````html
-<script src="libs/xeogl.js"></script>
-<script src="../js/xeoviz.js"></script>
+<script src="xeogl.js"></script>
+<script src="xeoviz.js"></script>
 ````
 xeoviz's only dependency is the xeogl library. 
 

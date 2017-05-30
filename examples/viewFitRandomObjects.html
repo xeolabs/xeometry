@@ -16,14 +16,14 @@
 
         viewer.yspin(0.1);
         viewer.setViewFitFOV(40);
-        viewer.flightDuration(2.0);
+        viewer.setViewFitDuration(2.0);
         viewer.viewFit();
 
         var objects = viewer.getObjects();
 
         setInterval(function () {
             var randomObject = objects[Math.round(Math.random() * objects.length)];
-            var aabb = viewer.aabb(randomObject);
+            var aabb = viewer.getAABB(randomObject);
             viewer.viewFit(aabb)
         }, 3000);
 
