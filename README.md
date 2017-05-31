@@ -1,11 +1,14 @@
-# xeoviz
+# ifcgl
 
-A convenient WebGL-based [glTF](http://gltf.org) IFC viewer API built on [xeogl](http://xeogl.org).
+A lean open-source WebGL-based IFC model viewer API built on [xeogl](http://xeogl.org).
  
-A xeoviz viewer is a single class that provides a facade on the front of xeogl, with methods focused
-on navigating and creating bookmarkable views of glTF models.
+An ifcgl viewer is a single facade class that wraps xeogl, with methods to
+load models from  [glTF](https://github.com/KhronosGroup/glTF),
+query, animate and navigate their objects and create sharable custom views.
 
-![Screenshot](assets/sawScreenshot.png?raw=true)
+When the objects within the glTF models are tagged with
+[IFC](https://en.wikipedia.org/wiki/Industry_Foundation_Classes) element type codes (optional), then
+the viewer can manage the objects using those type codes.
 
 # Examples
 
@@ -26,23 +29,23 @@ on navigating and creating bookmarkable views of glTF models.
 
 ### Loading the libs
 
-The first step is to link to the xeogl and xeoviz libraries: 
+The first step is to link to the xeogl and ifcgl libraries:
 ````html
 <script src="xeogl.js"></script>
-<script src="xeoviz.js"></script>
+<script src="ifcgl.js"></script>
 ````
-xeoviz's only dependency is the xeogl library. 
+ifcgl's only dependency is the xeogl library.
 
 ### Creating and destroying viewers
 
 Create a viewer with a default internally-created canvas that fills the page:
 ````javascript
-var viewer = new xeoviz();
+var viewer = new ifcgl.Viewer();
 ````
 
 Create a viewer with an existing canvas:
 ````javascript
-var viewer = new xeoviz({
+var viewer = new ifcgl({
     canvasId: "myCanvas"
 });
 ````
@@ -60,14 +63,12 @@ You can load multiple glTF models into a viewer at the same time. You can also l
 
 Load two glTF models into a viewer:
 ````javascript
-viewer.loadModel("gearbox", "./GearboxAssy.gltf",
-    function () {
-    
-        viewer.loadModel("saw", "./Reciprocating_Saw.gltf",
-            function () {
-                //... two models loaded
-            });
+viewer.loadModel("gearbox", "./GearboxAssy.gltf", function () {
+
+    viewer.loadModel("saw", "./Reciprocating_Saw.gltf", function () {
+        //... two models loaded
     });
+});
 ````
 
 Unload a model:
@@ -77,7 +78,7 @@ viewer.unloadModel("gearbox");
 
 #### Tagging models with IFC types
 
-Any entity within a glTF file can have an ````extra```` property for any app-specific information. For xeoviz, we
+Any entity within a glTF file can have an ````extra```` property for any app-specific information. For ifcgl, we
 we use that that to tag our objects with IFC types, for example:
 
 ````json

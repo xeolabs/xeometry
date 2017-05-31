@@ -1,12 +1,14 @@
 /**
  * A convenient API for visualizing glTF models on WebGL using xeogl.
  *
- * Find usage instructions at http://xeolabs.com-xeoviz
+ * Find usage instructions at http://xeolabs.com-ifcgl
  *
  * @param {*} cfg
  * @param
  */
-function xeoviz(cfg) {
+var ifcgl = {};
+
+ifcgl.Viewer = function(cfg) {
 
     var self = this;
 
