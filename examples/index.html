@@ -33,8 +33,7 @@
     };
 
     var files = {
-        "Creating viewers": [
-        ],
+        "Creating viewers": [],
         "Loading models": [
             "loadModel",
             "loadTwoModels"
@@ -47,7 +46,8 @@
             "objectExplorer"
         ],
         "Transforming objects": [
-            "explodingModel"
+            "explodeModelObjects",
+            "animateModelTransform"
         ]
     };
 
@@ -81,7 +81,7 @@
             var file = section[i];
             (function (file) {
                 var name = file.split('_');
-               // name.shift();
+                // name.shift();
                 name = name.join(' / ');
                 var div = document.createElement('div');
                 div.className = 'link';

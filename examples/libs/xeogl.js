@@ -4,7 +4,7 @@
  * A WebGL-based 3D visualization engine from xeoLabs
  * http://xeogl.org/
  *
- * Built on 2017-05-22
+ * Built on 2017-05-30
  *
  * MIT License
  * Copyright 2017, Lindsay Kay
@@ -1092,7 +1092,7 @@ var Canvas2Image = (function () {
             } else {
                 while (true) {
                     item = arguments[0] || {};
-                    var findId = lastUniqueId++;
+                      var findId = lastUniqueId++;
                     if (!this.items[findId]) {
                         this.items[findId] = item;
                         return findId;
@@ -5844,9 +5844,9 @@ var Canvas2Image = (function () {
             if (shadowObjectLists.hasOwnProperty(lightId)) {
                 shadowObjectList = shadowObjectLists[lightId];
                 light = shadowObjectList.light;
-                //   if (light.shadowDirty) {
-                this._renderShadowMap(light, shadowObjectList.objects);
-                //   }
+             //   if (light.shadowDirty) {
+                    this._renderShadowMap(light, shadowObjectList.objects);
+             //   }
             }
         }
     };
@@ -8545,12 +8545,15 @@ var Canvas2Image = (function () {
      * @param {String} fragmentDraw Fragment shader source for drawing.
      * @param {String} vertexShadow Vertex shader source for drawing the shadow buffer.
      * @param {String} fragmentShadow Fragment shader source for drawing the shadow buffer.
+     * @param {String} vertexHighlight Vertex shader source for drawing highlight.
+     * @param {String} fragmentHighlight Fragment shader source for drawing highlight.
      */
     xeogl.renderer.ProgramSource = function (hash,
                                              vertexPickObject, fragmentPickObject,
                                              vertexPickPrimitive, fragmentPickPrimitive,
                                              vertexDraw, fragmentDraw,
-                                             vertexShadow, fragmentShadow) {
+                                             vertexShadow, fragmentShadow,
+                                             vertexHighlight, fragmentHighlight) {
 
         /**
          * Hash code identifying the capabilities of the {@link xeogl.renderer.Program} that is compiled from this source
@@ -8605,6 +8608,18 @@ var Canvas2Image = (function () {
          * @type {Array of String}
          */
         this.fragmentShadow = fragmentShadow;
+
+        /**
+         * Vertex shader source for rendering highlight.
+         * @type {Array of String}
+         */
+        this.vertexHighlight = vertexHighlight;
+
+        /**
+         * Fragment shader source for rendering highlight.
+         * @type {Array of String}
+         */
+        this.fragmentHighlight = fragmentHighlight;
 
         /**
          * Count of {@link xeogl.renderer.Program}s compiled from this program source code
@@ -8688,7 +8703,9 @@ var Canvas2Image = (function () {
                 vertexDraw(),
                 fragmentDraw(),
                 vertexShadow(),
-                fragmentShadow()
+                fragmentShadow(),
+                vertexHighlight(),
+                fragmentHighlight()
             );
 
             cache[hash] = source;
@@ -8866,6 +8883,30 @@ var Canvas2Image = (function () {
         function fragmentShadow() {
             begin();
             add("// Shadow map fragment shader");
+            add("precision " + getFSFloatPrecision(states.gl) + " float;");
+            add("void main(void) {");
+            add("   gl_FragColor = vec4(gl_FragCoord.z, 0.0, 0.0, 0.0);");
+            //     add("   gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);");
+            add("}");
+            return fragmentShadowSrc = end();
+        }
+
+        function vertexHighlight() {
+            begin();
+            add("// Highlight vertex shader");
+            add("attribute vec3 position;");
+            add("uniform mat4 modelMatrix;");
+            add("uniform mat4 shadowViewMatrix;");
+            add("uniform mat4 shadowProjMatrix;");
+            add("void main(void) {");
+            add("   gl_Position = shadowProjMatrix * (shadowViewMatrix * (modelMatrix * (vec4(position, 1.0))));");
+            add("}");
+            return vertexShadowSrc = end();
+        }
+
+        function fragmentHighlight() {
+            begin();
+            add("// Highlight fragment shader");
             add("precision " + getFSFloatPrecision(states.gl) + " float;");
             add("void main(void) {");
             add("   gl_FragColor = vec4(gl_FragCoord.z, 0.0, 0.0, 0.0);");
@@ -11446,7 +11487,7 @@ var Canvas2Image = (function () {
             var state = this.state;
             var gl = this.program.gl;
             var maxTextureUnits = xeogl.WEBGL_INFO.MAX_TEXTURE_UNITS;
-            //   frameCtx.textureUnit = 0;
+         //   frameCtx.textureUnit = 0;
 
             if (this._uBaseColor) {
                 this._uBaseColor.setValue(state.baseColor);
@@ -11474,7 +11515,7 @@ var Canvas2Image = (function () {
 
             if (state.baseColorMap && state.baseColorMap.texture && this._uBaseColorMap) {
                 draw.bindTexture(this._uBaseColorMap, state.baseColorMap.texture, frameCtx.textureUnit);
-                frameCtx.textureUnit = (frameCtx.textureUnit + 1) % xeogl.WEBGL_INFO.MAX_TEXTURE_IMAGE_UNITS;
+                  frameCtx.textureUnit = (frameCtx.textureUnit + 1) % xeogl.WEBGL_INFO.MAX_TEXTURE_IMAGE_UNITS;
                 frameCtx.bindTexture++;
                 if (this._uBaseColorMapMatrix) {
                     this._uBaseColorMapMatrix.setValue(state.baseColorMap.matrix);
@@ -11483,25 +11524,25 @@ var Canvas2Image = (function () {
 
             if (state.metallicMap && state.metallicMap.texture && this._uMetallicMap) {
                 draw.bindTexture(this._uMetallicMap, state.metallicMap.texture, frameCtx.textureUnit);
-                frameCtx.textureUnit = (frameCtx.textureUnit + 1) % xeogl.WEBGL_INFO.MAX_TEXTURE_IMAGE_UNITS;
+                  frameCtx.textureUnit = (frameCtx.textureUnit + 1) % xeogl.WEBGL_INFO.MAX_TEXTURE_IMAGE_UNITS;
                 frameCtx.bindTexture++;
                 if (this._uMetallicMapMatrix) {
                     this._uMetallicMapMatrix.setValue(state.metallicMap.matrix);
                 }
             }
-
+            
             if (state.roughnessMap && state.roughnessMap.texture && this._uRoughnessMap) {
                 draw.bindTexture(this._uRoughnessMap, state.roughnessMap.texture, frameCtx.textureUnit);
-                frameCtx.textureUnit = (frameCtx.textureUnit + 1) % xeogl.WEBGL_INFO.MAX_TEXTURE_IMAGE_UNITS;
+                  frameCtx.textureUnit = (frameCtx.textureUnit + 1) % xeogl.WEBGL_INFO.MAX_TEXTURE_IMAGE_UNITS;
                 frameCtx.bindTexture++;
                 if (this._uRoughnessMapMatrix) {
                     this._uRoughnessMapMatrix.setValue(state.roughnessMap.matrix);
                 }
             }
-
+            
             if (state.metallicRoughnessMap && state.metallicRoughnessMap.texture && this._uMetallicRoughnessMap) {
                 draw.bindTexture(this._uMetallicRoughnessMap, state.metallicRoughnessMap.texture, frameCtx.textureUnit);
-                frameCtx.textureUnit = (frameCtx.textureUnit + 1) % xeogl.WEBGL_INFO.MAX_TEXTURE_IMAGE_UNITS;
+                  frameCtx.textureUnit = (frameCtx.textureUnit + 1) % xeogl.WEBGL_INFO.MAX_TEXTURE_IMAGE_UNITS;
                 frameCtx.bindTexture++;
                 if (this._uMetallicRoughnessMapMatrix) {
                     this._uMetallicRoughnessMapMatrix.setValue(state.metallicRoughnessMap.matrix);
@@ -11510,7 +11551,7 @@ var Canvas2Image = (function () {
 
             if (state.emissiveMap && state.emissiveMap.texture && this._uEmissiveMap) {
                 draw.bindTexture(this._uEmissiveMap, state.emissiveMap.texture, frameCtx.textureUnit);
-                frameCtx.textureUnit = (frameCtx.textureUnit + 1) % xeogl.WEBGL_INFO.MAX_TEXTURE_IMAGE_UNITS;
+                  frameCtx.textureUnit = (frameCtx.textureUnit + 1) % xeogl.WEBGL_INFO.MAX_TEXTURE_IMAGE_UNITS;
                 frameCtx.bindTexture++;
                 if (this._uEmissiveMapMatrix) {
                     this._uEmissiveMapMatrix.setValue(state.emissiveMap.matrix);
@@ -11519,7 +11560,7 @@ var Canvas2Image = (function () {
 
             if (state.occlusionMap && state.occlusionMap.texture && this._uOcclusionMap) {
                 draw.bindTexture(this._uOcclusionMap, state.occlusionMap.texture, frameCtx.textureUnit);
-                frameCtx.textureUnit = (frameCtx.textureUnit + 1) % xeogl.WEBGL_INFO.MAX_TEXTURE_IMAGE_UNITS;
+                  frameCtx.textureUnit = (frameCtx.textureUnit + 1) % xeogl.WEBGL_INFO.MAX_TEXTURE_IMAGE_UNITS;
                 frameCtx.bindTexture++;
                 if (this._uOcclusionMapMatrix) {
                     this._uOcclusionMapMatrix.setValue(state.occlusionMap.matrix);
@@ -11528,7 +11569,7 @@ var Canvas2Image = (function () {
 
             if (state.opacityMap && state.opacityMap.texture && this._uOpacityMap) {
                 draw.bindTexture(this._uOpacityMap, state.opacityMap.texture, frameCtx.textureUnit);
-                frameCtx.textureUnit = (frameCtx.textureUnit + 1) % xeogl.WEBGL_INFO.MAX_TEXTURE_IMAGE_UNITS;
+                  frameCtx.textureUnit = (frameCtx.textureUnit + 1) % xeogl.WEBGL_INFO.MAX_TEXTURE_IMAGE_UNITS;
                 frameCtx.bindTexture++;
                 if (this._uOpacityMapMatrix) {
                     this._uOpacityMapMatrix.setValue(state.opacityMap.matrix);
@@ -11537,7 +11578,7 @@ var Canvas2Image = (function () {
 
             if (state.normalMap && state.normalMap.texture && this._uNormalMap) {
                 draw.bindTexture(this._uNormalMap, state.normalMap.texture, frameCtx.textureUnit);
-                frameCtx.textureUnit = (frameCtx.textureUnit + 1) % xeogl.WEBGL_INFO.MAX_TEXTURE_IMAGE_UNITS;
+                  frameCtx.textureUnit = (frameCtx.textureUnit + 1) % xeogl.WEBGL_INFO.MAX_TEXTURE_IMAGE_UNITS;
                 frameCtx.bindTexture++;
                 if (this._uNormalMapMatrix) {
                     this._uNormalMapMatrix.setValue(state.normalMap.matrix);
@@ -17292,7 +17333,7 @@ var Canvas2Image = (function () {
  // Decrement the count; count now zero,
  // so spinner becomes invisible
  spinner.process--;
- ````
+````
 
  By default, a Spinner shows while resources are loading for components like
  {{#crossLink "Texture"}}{{/crossLink}}. We can disable that like this:
@@ -17311,7 +17352,7 @@ var Canvas2Image = (function () {
 
     "use strict";
 
-    // Ensures lazy-injected CSS only injected once
+    // Ensures lazy-injected CSS only injected once  
     var spinnerCSSInjected = false;
 
     xeogl.Spinner = xeogl.Component.extend({
@@ -17377,7 +17418,7 @@ var Canvas2Image = (function () {
                     value = value !== false;
 
                     this._textures = value;
-
+                    
                     /**
                      * Fired whenever this Spinner's  {{#crossLink "Spinner/textures:property"}}{{/crossLink}} property changes.
                      *
@@ -21597,7 +21638,7 @@ var Canvas2Image = (function () {
                 primitive: null, // WebGL enum
                 primitiveName: null, // String
 
-                // VBOs
+                // VBOs 
 
                 positions: null,
                 colors: null,
@@ -23370,7 +23411,7 @@ var Canvas2Image = (function () {
  {{#crossLink "TorusGeometry/arc:property"}}{{/crossLink}} properties.
  * Dynamically switch its primitive type between ````"points"````, ````"lines"```` and ````"triangles"```` at any time by
  updating its {{#crossLink "Geometry/primitive:property"}}{{/crossLink}} property.
-
+ 
  ## Examples
 
 
@@ -23851,12 +23892,12 @@ var Canvas2Image = (function () {
  <a href="../../examples/#geometry_primitives_sphere"><img src="../../assets/images/screenshots/SphereGeometry.png"></img></a>
 
  ## Overview
-
+ 
  * Dynamically modify a SphereGeometry's shape at any time by updating its {{#crossLink "SphereGeometry/center:property"}}{{/crossLink}}, {{#crossLink "SphereGeometry/radius:property"}}{{/crossLink}}, {{#crossLink "SphereGeometry/heightSegments:property"}}{{/crossLink}} and
  {{#crossLink "SphereGeometry/widthSegments:property"}}{{/crossLink}} properties.
  * Dynamically switch its primitive type between ````"points"````, ````"lines"```` and ````"triangles"```` at any time by
  updating its {{#crossLink "Geometry/primitive:property"}}{{/crossLink}} property.
-
+ 
  ## Examples
 
 
@@ -24098,7 +24139,7 @@ var Canvas2Image = (function () {
                     return this._center;
                 }
             },
-
+            
             /**
              * The SphereGeometry's radius.
              *
@@ -24339,7 +24380,7 @@ var Canvas2Image = (function () {
 
             this._super(cfg);
 
-            // this.primitive = cfg.primitive || "lines";
+           // this.primitive = cfg.primitive || "lines";
 
             if (cfg.boundary) {
                 this.boundary = cfg.boundary;
@@ -25757,7 +25798,7 @@ xeogl.PathGeometry = xeogl.Geometry.extend({
  {{#crossLink "PlaneGeometry/zSegments:property"}}{{/crossLink}} properties.
  * Dynamically switch its primitive type between ````"points"````, ````"lines"```` and ````"triangles"```` at any time by
  updating its {{#crossLink "Geometry/primitive:property"}}{{/crossLink}} property.
-
+ 
  ## Examples
 
  * [Textured PlaneGeometry](../../examples/#geometry_primitives_plane)
@@ -25821,7 +25862,7 @@ xeogl.PathGeometry = xeogl.Geometry.extend({
             this._super(cfg);
 
             this.center = cfg.center;
-
+            
             this.xSize = cfg.xSize;
             this.zSize = cfg.zSize;
 
@@ -26351,8 +26392,8 @@ xeogl.PathGeometry = xeogl.Geometry.extend({
             }
 
             this.positions = positions;
-            //   this.normals = positions;
-            //  this.uv = positions;
+         //   this.normals = positions;
+          //  this.uv = positions;
             this.indices = indices;
         },
 
@@ -28964,9 +29005,9 @@ xeogl.PathGeometry = xeogl.Geometry.extend({
                     this._shadowViewMatrix = math.identityMat4();
                 }
                 // if (this._shadowViewMatrixDirty) {
-                //    math.addVec3(this._state.pos, this._state.dir, look);
+            //    math.addVec3(this._state.pos, this._state.dir, look);
                 //math.lookAtMat4v(this._state.pos, look, up, this._shadowViewMatrix);
-                math.lookAtMat4v([0,-100, 0], [0,0,0], up, this._shadowViewMatrix);
+                 math.lookAtMat4v([0,-100, 0], [0,0,0], up, this._shadowViewMatrix);
                 this._shadowViewMatrixDirty = false;
                 //   }
                 return this._shadowViewMatrix;
@@ -29539,7 +29580,7 @@ xeogl.PathGeometry = xeogl.Geometry.extend({
 ;/**
  A **SpotLight** defines a positional light source that originates from a single point and eminates in a given direction, to illuminate attached {{#crossLink "Entity"}}Entities{{/crossLink}}.
 
- TODO
+TODO
 
  ## Overview
 
@@ -29558,7 +29599,7 @@ xeogl.PathGeometry = xeogl.Geometry.extend({
 
  ## Examples
 
- TODO
+    TODO
 
  ## Usage
 
@@ -29671,12 +29712,12 @@ xeogl.PathGeometry = xeogl.Geometry.extend({
                 if (!this._shadowViewMatrix) {
                     this._shadowViewMatrix = math.identityMat4();
                 }
-                // if (this._shadowViewMatrixDirty) {
-                math.addVec3(this._state.pos, this._state.dir, look);
-                math.lookAtMat4v(this._state.pos, look, up, this._shadowViewMatrix);
-                // math.lookAtMat4v([0,-100, 0], [0,0,0], up, this._shadowViewMatrix);
-                this._shadowViewMatrixDirty = false;
-                //   }
+               // if (this._shadowViewMatrixDirty) {
+                    math.addVec3(this._state.pos, this._state.dir, look);
+                    math.lookAtMat4v(this._state.pos, look, up, this._shadowViewMatrix);
+               // math.lookAtMat4v([0,-100, 0], [0,0,0], up, this._shadowViewMatrix);
+                    this._shadowViewMatrixDirty = false;
+             //   }
                 return this._shadowViewMatrix;
             };
         })(),
@@ -29686,10 +29727,10 @@ xeogl.PathGeometry = xeogl.Geometry.extend({
                 this._shadowProjMatrix = math.identityMat4();
             }
             //if (this._shadowProjMatrixDirty) { // TODO: Set when canvas resizes
-            var canvas = this.scene.canvas.canvas;
-            math.perspectiveMat4(45, canvas.clientWidth / canvas.clientHeight, 0.1, 1000.0, this._shadowProjMatrix);
-            this._shadowProjMatrixDirty = false;
-            // }
+                var canvas = this.scene.canvas.canvas;
+                math.perspectiveMat4(45, canvas.clientWidth / canvas.clientHeight, 0.1, 1000.0, this._shadowProjMatrix);
+                this._shadowProjMatrixDirty = false;
+           // }
             return this._shadowProjMatrix;
         },
 
@@ -30415,7 +30456,7 @@ xeogl.PathGeometry = xeogl.Geometry.extend({
                     return this._state.resolution;
                 }
             },
-
+            
             /**
              The intensity of this Shadow.
 
@@ -32681,14 +32722,14 @@ xeogl.GLTFLoaderUtils = Object.create(Object, {
                             entityId = this._makeID(nodeId + ".entity." + i);
 
                             for  (j = 0; entities[entityId]; j++) {
-                                entityId = this._makeID(nodeId + ".entity." + i + "." + j);
+                               entityId = this._makeID(nodeId + ".entity." + i + "." + j);
                             }
 
+                            var meta = node.extra || {};
+                            meta.name = node.name;
                             entity = new xeogl.Entity(scene, {
                                 id: entityId,
-                                meta: {
-                                    name: node.name
-                                },
+                                meta: meta,
                                 material: material,
                                 geometry: geometry,
                                 transform: transform,
@@ -32775,10 +32816,10 @@ xeogl.GLTFLoaderUtils = Object.create(Object, {
  ````javascript
  gearbox.src = "models/gltf/buggy/buggy.gltf"
  ````
-
+ 
  ### Accessing components
 
- Once the GLTFModel has loaded, its {{#crossLink "Scene"}}{{/crossLink}} will contain various components that represent the elements of the glTF file.
+ Once the GLTFModel has loaded, its {{#crossLink "Scene"}}{{/crossLink}} will contain various components that represent the elements of the glTF file. 
  We'll now access some of those components by ID, to query and update them programmatically.
 
  **Transforms**
@@ -34930,7 +34971,7 @@ xeogl.GLTFLoaderUtils = Object.create(Object, {
                         emissive[1] = 0;
                         emissive[2] = 0;
                     }
-
+                    
                     this._renderer.imageDirty = true;
 
                     /**
@@ -39310,11 +39351,11 @@ xeogl.GLTFLoaderUtils = Object.create(Object, {
                     if (this._state.active === value) {
                         return;
                     }
-
+                    
                     this._state.active = value;
 
                     this._renderer.imageDirty = true;
-
+                    
                     /**
                      * Fired whenever this DepthBuf's {{#crossLink "DepthBuf/active:property"}}{{/crossLink}} property changes.
                      * @event active
@@ -41280,7 +41321,7 @@ xeogl.GLTFLoaderUtils = Object.create(Object, {
         },
 
         _props: {
-
+            
             /**
              * Uniforms for {{#crossLink "Shader"}}Shaders{{/crossLink}} on attached
              * {{#crossLink "Entity"}}Entities{{/crossLink}}.
@@ -41799,7 +41840,7 @@ xeogl.GLTFLoaderUtils = Object.create(Object, {
             if (!this._center) {
                 this._center = xeogl.math.vec3();
             }
-
+            
             var aabb = this._getAABB ? this._getAABB() : null;
 
             if (aabb) {
@@ -41818,7 +41859,7 @@ xeogl.GLTFLoaderUtils = Object.create(Object, {
                 math.AABB3ToOBB3(this._aabb, this._obb);
                 math.OBB3ToSphere3(this._obb, this._sphere);
                 math.getSphere3Center(this._sphere, this._center);
-
+                
                 return;
             }
 
@@ -41856,7 +41897,7 @@ xeogl.GLTFLoaderUtils = Object.create(Object, {
                 math.AABB3ToOBB3(this._aabb, this._obb);
                 math.OBB3ToSphere3(this._obb, this._sphere);
                 math.getSphere3Center(this._sphere, this._center);
-
+                
                 return
             }
 

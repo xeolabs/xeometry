@@ -18,9 +18,9 @@
 
     var viewer = new xeoviz();
 
-    viewer.loadModel("gearbox", "models/GearboxAssy/glTF/GearboxAssy.gltf", function () {
+    viewer.loadModel("gearbox", "models/Reciprocating_Saw/PBR-SpecGloss/Reciprocating_Saw.gltf", function () {
 
-        viewer.yspin(0.1);
+      //  viewer.yspin(0.3);
 
         viewer.setViewFitDuration(0);
         viewer.viewFit();
@@ -29,8 +29,9 @@
         var objectId;
         var objectCenter;
         var objects = viewer.getObjects();
-        var maxTranslation = 0.01;
+        var maxTranslation = 0.5;
         var maxSpin = 0.1;
+        var halfMaxSpin = maxSpin / 2;
         var objectTrajectory;
         var trajectories = [];
         var spin;
@@ -47,10 +48,15 @@
             vec3.subtract(objectTrajectory, objectCenter, modelCenter);
             vec3.normalize(objectTrajectory, objectTrajectory);
             vec3.scale(objectTrajectory, objectTrajectory, maxTranslation);
+            objectTrajectory[0] *= 0.5;
             trajectories.push(objectTrajectory);
 
             spin = vec3.create();
-            spin.set([Math.random() * maxSpin, Math.random() * maxSpin, Math.random() * maxSpin]);
+            spin.set([
+                (Math.random() * maxSpin) - halfMaxSpin,
+                (Math.random() * maxSpin) - halfMaxSpin,
+                (Math.random() * maxSpin) - halfMaxSpin]
+            );
             spins.push(spin);
         }
 
@@ -66,7 +72,7 @@
             var id;
             for (var i = 0; i < objects.length; i++) {
                 id = objects[i];
-                viewer.setTranslate(id, vec3.add(tempVec3, viewer.getTranslate(id), trajectories[i]));
+               // viewer.setTranslate(id, vec3.add(tempVec3, viewer.getTranslate(id), trajectories[i]));
                 viewer.setRotate(id, vec3.add(tempVec3, viewer.getRotate(id), spins[i]));
             }
             requestAnimationFrame(update);

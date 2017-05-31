@@ -4675,6 +4675,9 @@
             "name": "n275033_nut_1"
         },
         "n275080_washer-node": {
+        "extra": {
+                                "type": "IfcCurtainWall"
+                            },
             "children": [],
             "matrix": [
                 -0.866025,
@@ -4700,6 +4703,9 @@
             "name": "n275080_washer"
         },
         "n275080_washer-node_1": {
+        "extra": {
+                                "type": "IfcCurtainWall"
+                            },
             "children": [],
             "matrix": [
                 -0.866025,
@@ -4725,6 +4731,9 @@
             "name": "n275080_washer_1"
         },
         "n275269_bushing-node": {
+        "extra": {
+                                        "type": "IfcRamp"
+                                    },
             "children": [],
             "matrix": [
                 1,
@@ -4750,6 +4759,9 @@
             "name": "n275269_bushing"
         },
         "n275269_bushing-node_1": {
+        "extra": {
+                                                "type": "IfcRamp"
+                                            },
             "children": [],
             "matrix": [
                 1,
@@ -4775,6 +4787,9 @@
             "name": "n275269_bushing_1"
         },
         "n275650_cap_screw-node": {
+        "extra": {
+                                                "type": "IfcDuctFitting"
+                                            },
             "children": [],
             "matrix": [
                 1,
@@ -4975,6 +4990,9 @@
             "name": "n276291_shaft_1"
         },
         "pro12-18s-node": {
+        "extra": {
+                                "type": "IfcCurtainWall"
+                            },
             "children": [
                 "a_120-14_main-node",
                 "a_120-14_main-node_1",
@@ -5003,6 +5021,9 @@
             "name": "pro12-18s"
         },
         "shaft_sub-node": {
+        "extra": {
+                        "type": "IfcCurtainWall"
+                    },
             "children": [
                 "n190954_slip_clutch_ring-node_1",
                 "n274013_sleeve-node",
@@ -5057,6 +5078,9 @@
             "name": "shaft_sub_1"
         },
         "spindle_drum_complete_assy-node": {
+            "extra": {
+                "type": "IfcRamp"
+            },
             "children": [
                 "n273690_cover-node",
                 "lower_gears_sub-node",
@@ -5109,6 +5133,9 @@
             "name": "spindle_drum_complete_assy_1"
         },
         "spindle_drum_gear_assy-node": {
+            "extra": {
+                        "type": "IfcRamp"
+                    },
             "children": [
                 "n273303_shaft-node",
                 "gear-1_sub-node"
@@ -5134,6 +5161,9 @@
             "name": "spindle_drum_gear_assy"
         },
         "spindle_drum_gear_assy-node_1": {
+            "extra": {
+                "type": "IfcRamp"
+            },
             "children": [
                 "n273303_shaft-node_1",
                 "gear-1_sub-node_1"
@@ -5159,6 +5189,9 @@
             "name": "spindle_drum_gear_assy_1"
         },
         "upper_shaft-node": {
+            "extra": {
+                "type": "IfcCurtainWall"
+            },
             "children": [],
             "matrix": [
                 1,
@@ -5184,6 +5217,9 @@
             "name": "upper_shaft"
         },
         "vert_shaft-node": {
+            "extra": {
+                "type": "IfcCurtainWall"
+            },
             "children": [],
             "matrix": [
                 4.48966e-011,

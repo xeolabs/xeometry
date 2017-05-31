@@ -12,14 +12,21 @@
 
     var viewer = new xeoviz();
 
-    viewer.loadModel("gearbox", "models/GearboxAssy/glTF/GearboxAssy.gltf", function () {
+    viewer.loadModel("saw", "models/Reciprocating_Saw/PBR-SpecGloss/Reciprocating_Saw.gltf", function () {
 
         viewer.setViewFitDuration(0);
         viewer.viewFit();
 
-       // viewer.yspin(0.1);
+        var angles = [0,0,0];
 
-        console.log("viewer ready");
+        function update() {
+            angles[1] += 0.1;
+            angles[0] += 0.05;
+            viewer.setRotate("saw", angles);
+            requestAnimationFrame(update);
+        }
+
+        update();
     });
 
 </script>
