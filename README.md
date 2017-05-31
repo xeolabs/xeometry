@@ -136,8 +136,7 @@ var types = viewer.getTypes();
 
 ### Querying boundaries of models and objects
 
-Everything within a viewer can be queried for its axis-aligned World-space boundary (AABB), which is given as an array containing
-values ````[xmin, ymin, zmin, xmax, ymax, zmax]````.
+Everything within a viewer can be queried for its axis-aligned World-space boundary (AABB), which is given as an array containing values ````[xmin, ymin, zmin, xmax, ymax, zmax]````.
 
 Get the collective boundary of everything in a viewer:
 ````javascript
@@ -176,7 +175,8 @@ var objectsBoundary3 = viewer.getAABB(["saw", "outerCasing", "trigger");
 
 ### Transforming models and objects
 
-Each model and object can be independently transformed within a viewer. A transformation consists of the following operations, applied in this order:
+Each model and object can be independently transformed within a viewer.  Transforming a model or object
+will dynamically change the boundary extents returned by ````getAABB()```` (see previous section). A transformation consists of the following operations, applied in this order:
 
  * scale
  * X-axis rotation (degrees),
