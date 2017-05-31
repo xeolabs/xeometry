@@ -272,8 +272,8 @@ viewer.setUp([0,1,0]);
 
 Set how fast the camera flies to each new position:
 ````javascript
-viewer.flightDuration(2); // Seconds
-var duration = viewer.flightDuration();
+viewer.setFlightDuration(2); // Seconds
+var duration = viewer.getFlightDuration();
 ````
 
 Fly camera to given position:
