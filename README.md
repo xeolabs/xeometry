@@ -17,7 +17,7 @@ the viewer can manage the objects using those type codes. That's about as far as
 # Features
 
 * Load multiple glTF models
-* Tag glTF models with IFC types, to manage the objects by type
+* Tag glTF models with IFC types, to access the objects by type
 * Create multiple viewers in a page
 * Show and hide objects
 * Scale, rotate and translate objects
