@@ -7,7 +7,7 @@ load models from  [glTF](https://github.com/KhronosGroup/glTF),
 query, animate and navigate their objects and create sharable custom views.
 
 When the objects within the glTF models are tagged with
-[IFC](https://en.wikipedia.org/wiki/Industry_Foundation_Classes) element type codes (optional), then
+[IFC](https://en.wikipedia.org/wiki/Industry_Foundation_Classes) element types (optional), then
 the viewer can manage the objects using those type codes. That's about as far as the viewer uses the IFC. For now, it's just about viewing them.
 
 # Examples
