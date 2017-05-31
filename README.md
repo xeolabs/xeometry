@@ -2,7 +2,7 @@
 
 A lean open-source WebGL-based IFC model viewer API built on [xeogl](http://xeogl.org).
  
-An ifcgl viewer is a single facade class that wraps xeogl, with methods to
+An **ifcgl** viewer is a single facade class that wraps xeogl, with methods to
 load models from  [glTF](https://github.com/KhronosGroup/glTF),
 query, animate and navigate their objects and create sharable custom views.
 
