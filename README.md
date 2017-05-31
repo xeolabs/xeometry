@@ -8,7 +8,7 @@ query, animate and navigate their objects and create sharable custom views.
 
 When the objects within the glTF models are tagged with
 [IFC](https://en.wikipedia.org/wiki/Industry_Foundation_Classes) element type codes (optional), then
-the viewer can manage the objects using those type codes.
+the viewer can manage the objects using those type codes. That's about as far as the viewer uses the IFC. For now, it's just about viewing them.
 
 # Examples
 
@@ -17,6 +17,7 @@ the viewer can manage the objects using those type codes.
 # Features
 
 * Load multiple glTF models
+* Tag glTF models with IFC types, to manage the objects by type
 * Create multiple viewers in a page
 * Show and hide objects
 * Scale, rotate and translate objects
