@@ -1,8 +1,8 @@
-# xeoviz
+# xeometry
 
 A lightweight open-source WebGL-based IFC model viewing API built on [xeogl](http://xeogl.org).
  
-An **xeoviz** viewer is a single facade class that wraps xeogl, with methods to
+An **xeometry** viewer is a single facade class that wraps xeogl, with methods to
 load models from  [glTF](https://github.com/KhronosGroup/glTF),
 query, animate and navigate their objects and create sharable custom views.
 
@@ -14,7 +14,7 @@ You can also just operate on objects using their IDs:<br><br>
 [![](assets/sawObjects.png)](http://xeogl.org/examples/#presentation_annotations_tronTank)
 
 ```` JavaScript
-var viewer = new xeoviz.Viewer({ canvasId: "theCanvas" });
+var viewer = new xeometry.Viewer({ canvasId: "theCanvas" });
 
 viewer.loadModel("saw", "models/Reciprocating_Saw.gltf", function () {
      viewer.setOpacity([ // Make the red plastic casing transparent
@@ -71,23 +71,23 @@ viewer.loadModel("saw", "models/Reciprocating_Saw.gltf", function () {
 
 ### Loading the libs
 
-The first step is to link to the xeogl and xeoviz libraries:
+The first step is to link to the xeogl and xeometry libraries:
 ````html
 <script src="xeogl.js"></script>
-<script src="xeoviz.js"></script>
+<script src="xeometry.js"></script>
 ````
-xeoviz's only dependency is the xeogl library.
+xeometry's only dependency is the xeogl library.
 
 ### Creating and destroying viewers
 
 Create a viewer with a default internally-created canvas that fills the page:
 ````javascript
-var viewer = new xeoviz.Viewer();
+var viewer = new xeometry.Viewer();
 ````
 
 Create a viewer with an existing canvas:
 ````javascript
-var viewer = new xeoviz.Viewer({
+var viewer = new xeometry.Viewer({
     canvasId: "myCanvas"
 });
 ````
@@ -120,7 +120,7 @@ viewer.unloadModel("gearbox");
 
 #### Tagging models with IFC types
 
-Any entity within a glTF file can have an ````extra```` property for any app-specific information. For xeoviz, we
+Any entity within a glTF file can have an ````extra```` property for any app-specific information. For xeometry, we
 we use that that to tag our objects with IFC types, for example:
 
 ````json
