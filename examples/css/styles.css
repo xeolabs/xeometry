@@ -64,6 +64,7 @@ body {
     /*border: solid 1px #bdbcbc;*/
 }
 
+
 #menu {
     margin: 0;
     left:0;
@@ -76,7 +77,7 @@ body {
 #explorer {
     margin: 0;
     left:0;
-    background: #fdfbff;
+    background: #b6b4b7;
     width: auto;
     height:100%;
     position:absolute;
@@ -86,6 +87,22 @@ body {
     z-index: 200000;
     color: black;
 }
+
+#explorerInfo {
+    position: absolute;
+    top: 0px;
+    z-index: 200000;
+    /*font-weight: 600;*/
+    float: left;
+    left: 0px;
+    padding: 10px;
+    /*border-radius: 0 0 4px 0;*/
+    /*border-radius:6px;*/
+    height: auto;
+    text-align: left;
+    /*border: solid 1px #bdbcbc;*/
+}
+
 
 #menu a {
     color: white;

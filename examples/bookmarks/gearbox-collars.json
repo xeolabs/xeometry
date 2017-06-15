@@ -1,0 +1,312 @@
+{
+  "models": [
+    {
+      "id": "gearbox",
+      "src": "models/GearboxAssy/glTF/GearboxAssy.gltf"
+    }
+  ],
+  "objects": {
+    "gearbox#n131738_spring-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#n274015_washer-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#n275033_nut-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#jd9467_ball_bearing-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#n274011_housing-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#jd9321_ball_bearing-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#n274010_housing-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#n190954_slip_clutch_ring-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#n275269_bushing-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#n190954_slip_clutch_ring-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#n274013_sleeve-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#n274017_gear_53t-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#n276291_shaft-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#n131738_spring-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#n274015_washer-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#n275033_nut-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#jd9467_ball_bearing-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#n274011_housing-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#jd9321_ball_bearing-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#n274010_housing-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#n190954_slip_clutch_ring-node_2.entity.0": {
+      "visible": true
+    },
+    "gearbox#n275269_bushing-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#n190954_slip_clutch_ring-node_3.entity.0": {
+      "visible": true
+    },
+    "gearbox#n274013_sleeve-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#n274017_gear_53t-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#n276291_shaft-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#ce17354_shaft-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#n196960_compression_spring-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#n272730_hub-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#n274314_slip_clutch-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#box_bevel_gear_horz-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#n274314_slip_clutch-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#vert_shaft-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#box_bevel_gear_horz-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#upper_shaft-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#n273690_cover-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#a_19m8375_cap_screw-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#a_19m8375_cap_screw-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#a_19m8375_cap_screw-node_2.entity.0": {
+      "visible": true
+    },
+    "gearbox#e63526_nut-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#e63526_nut-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#e63526_nut-node_2.entity.0": {
+      "visible": true
+    },
+    "gearbox#e63526_nut-node_3.entity.0": {
+      "visible": true
+    },
+    "gearbox#e63526_nut-node_4.entity.0": {
+      "visible": true
+    },
+    "gearbox#e63526_nut-node_5.entity.0": {
+      "visible": true
+    },
+    "gearbox#jd9323_ball_bearing-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#jd9323_ball_bearing-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#n273340_washer-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#n273340_washer-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#n273348_washer-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#n274157_spur_gear-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#n274233_spacer-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#n274242_hub-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#n275080_washer-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#n275650_cap_screw-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#n275650_cap_screw-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#n275650_cap_screw-node_2.entity.0": {
+      "visible": true
+    },
+    "gearbox#n273303_shaft-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#a_19m8374_cap_screw-node.entity.0": {
+      "visible": true
+    },
+    "gearbox#a_19m8374_cap_screw-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#a_19m8374_cap_screw-node_2.entity.0": {
+      "visible": true
+    },
+    "gearbox#e63526_nut-node_6.entity.0": {
+      "visible": true
+    },
+    "gearbox#e63526_nut-node_7.entity.0": {
+      "visible": true
+    },
+    "gearbox#e63526_nut-node_8.entity.0": {
+      "visible": true
+    },
+    "gearbox#n273348_washer-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#n273690_cover-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#a_19m8375_cap_screw-node_3.entity.0": {
+      "visible": true
+    },
+    "gearbox#a_19m8375_cap_screw-node_4.entity.0": {
+      "visible": true
+    },
+    "gearbox#a_19m8375_cap_screw-node_5.entity.0": {
+      "visible": true
+    },
+    "gearbox#e63526_nut-node_9.entity.0": {
+      "visible": true
+    },
+    "gearbox#e63526_nut-node_10.entity.0": {
+      "visible": true
+    },
+    "gearbox#e63526_nut-node_11.entity.0": {
+      "visible": true
+    },
+    "gearbox#e63526_nut-node_12.entity.0": {
+      "visible": true
+    },
+    "gearbox#e63526_nut-node_13.entity.0": {
+      "visible": true
+    },
+    "gearbox#e63526_nut-node_14.entity.0": {
+      "visible": true
+    },
+    "gearbox#jd9323_ball_bearing-node_2.entity.0": {
+      "visible": true
+    },
+    "gearbox#jd9323_ball_bearing-node_3.entity.0": {
+      "visible": true
+    },
+    "gearbox#n273340_washer-node_2.entity.0": {
+      "visible": true
+    },
+    "gearbox#n273340_washer-node_3.entity.0": {
+      "visible": true
+    },
+    "gearbox#n273348_washer-node_2.entity.0": {
+      "visible": true
+    },
+    "gearbox#n274157_spur_gear-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#n274233_spacer-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#n274242_hub-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#n275080_washer-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#n275650_cap_screw-node_3.entity.0": {
+      "visible": true
+    },
+    "gearbox#n275650_cap_screw-node_4.entity.0": {
+      "visible": true
+    },
+    "gearbox#n275650_cap_screw-node_5.entity.0": {
+      "visible": true
+    },
+    "gearbox#n273303_shaft-node_1.entity.0": {
+      "visible": true
+    },
+    "gearbox#a_19m8374_cap_screw-node_3.entity.0": {
+      "visible": true
+    },
+    "gearbox#a_19m8374_cap_screw-node_4.entity.0": {
+      "visible": true
+    },
+    "gearbox#a_19m8374_cap_screw-node_5.entity.0": {
+      "visible": true
+    },
+    "gearbox#e63526_nut-node_15.entity.0": {
+      "visible": true
+    },
+    "gearbox#e63526_nut-node_16.entity.0": {
+      "visible": true
+    },
+    "gearbox#e63526_nut-node_17.entity.0": {
+      "visible": true
+    },
+    "gearbox#n273348_washer-node_3.entity.0": {
+      "visible": true
+    }
+  },
+  "lookat": {
+    "eye": [
+      145.06,
+      17.86,
+      -7.84
+    ],
+    "look": [
+      158.65,
+      17.86,
+      4.57
+    ],
+    "up": [
+      0,
+      1,
+      0
+    ]
+  }
+}

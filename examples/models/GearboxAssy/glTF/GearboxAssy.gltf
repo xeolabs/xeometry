@@ -2227,6 +2227,7 @@
             "name": "a_120-14_main_1"
         },
         "a_19m8374_cap_screw-node": {
+            "extra": { "type": "screw" },
             "children": [],
             "matrix": [
                 -1,
@@ -2252,6 +2253,7 @@
             "name": "a_19m8374_cap_screw"
         },
         "a_19m8374_cap_screw-node_1": {
+            "extra": { "type": "screw" },
             "children": [],
             "matrix": [
                 -1,
@@ -2277,6 +2279,7 @@
             "name": "a_19m8374_cap_screw_1"
         },
         "a_19m8374_cap_screw-node_2": {
+            "extra": { "type": "screw" },
             "children": [],
             "matrix": [
                 -1,
@@ -2302,6 +2305,7 @@
             "name": "a_19m8374_cap_screw_2"
         },
         "a_19m8374_cap_screw-node_3": {
+            "extra": { "type": "screw" },
             "children": [],
             "matrix": [
                 -1,
@@ -2327,6 +2331,7 @@
             "name": "a_19m8374_cap_screw_3"
         },
         "a_19m8374_cap_screw-node_4": {
+            "extra": { "type": "screw" },
             "children": [],
             "matrix": [
                 -1,
@@ -2352,6 +2357,7 @@
             "name": "a_19m8374_cap_screw_4"
         },
         "a_19m8374_cap_screw-node_5": {
+            "extra": { "type": "screw" },
             "children": [],
             "matrix": [
                 -1,
@@ -2377,6 +2383,7 @@
             "name": "a_19m8374_cap_screw_5"
         },
         "a_19m8375_cap_screw-node": {
+            "extra": { "type": "screw" },
             "children": [],
             "matrix": [
                 -1,
@@ -2402,6 +2409,7 @@
             "name": "a_19m8375_cap_screw"
         },
         "a_19m8375_cap_screw-node_1": {
+            "extra": { "type": "screw" },
             "children": [],
             "matrix": [
                 -1,
@@ -2427,6 +2435,7 @@
             "name": "a_19m8375_cap_screw_1"
         },
         "a_19m8375_cap_screw-node_2": {
+            "extra": { "type": "screw" },
             "children": [],
             "matrix": [
                 -1,
@@ -2452,6 +2461,7 @@
             "name": "a_19m8375_cap_screw_2"
         },
         "a_19m8375_cap_screw-node_3": {
+            "extra": { "type": "screw" },
             "children": [],
             "matrix": [
                 -1,
@@ -2477,6 +2487,7 @@
             "name": "a_19m8375_cap_screw_3"
         },
         "a_19m8375_cap_screw-node_4": {
+            "extra": { "type": "screw" },
             "children": [],
             "matrix": [
                 -1,
@@ -2502,6 +2513,7 @@
             "name": "a_19m8375_cap_screw_4"
         },
         "a_19m8375_cap_screw-node_5": {
+            "extra": { "type": "screw" },
             "children": [],
             "matrix": [
                 -1,
@@ -2627,6 +2639,7 @@
             "name": "base_upper_sub_1"
         },
         "box_bevel_gear_horz-node": {
+            "extra": { "type": "gear" },
             "children": [],
             "matrix": [
                 1,
@@ -2652,6 +2665,7 @@
             "name": "box_bevel_gear_horz"
         },
         "box_bevel_gear_horz-node_1": {
+            "extra": { "type": "gear" },
             "children": [],
             "matrix": [
                 3.45615e-011,
@@ -2677,6 +2691,7 @@
             "name": "box_bevel_gear_horz_1"
         },
         "ce17354_shaft-node": {
+            "extra": { "type": "shaft" },
             "children": [],
             "matrix": [
                 1,
@@ -2797,6 +2812,7 @@
             "name": "defaultambient"
         },
         "e63526_nut-node": {
+            "extra": { "type": "nut" },
             "children": [],
             "matrix": [
                 -1,
@@ -2822,6 +2838,7 @@
             "name": "e63526_nut"
         },
         "e63526_nut-node_1": {
+            "extra": { "type": "nut" },
             "children": [],
             "matrix": [
                 -1,
@@ -2847,6 +2864,7 @@
             "name": "e63526_nut_1"
         },
         "e63526_nut-node_10": {
+            "extra": { "type": "nut" },
             "children": [],
             "matrix": [
                 -1,
@@ -2872,6 +2890,7 @@
             "name": "e63526_nut_10"
         },
         "e63526_nut-node_11": {
+            "extra": { "type": "nut" },
             "children": [],
             "matrix": [
                 -1,
@@ -2897,6 +2916,7 @@
             "name": "e63526_nut_11"
         },
         "e63526_nut-node_12": {
+            "extra": { "type": "nut" },
             "children": [],
             "matrix": [
                 1,
@@ -2922,6 +2942,7 @@
             "name": "e63526_nut_12"
         },
         "e63526_nut-node_13": {
+            "extra": { "type": "nut" },
             "children": [],
             "matrix": [
                 1,
@@ -2947,6 +2968,7 @@
             "name": "e63526_nut_13"
         },
         "e63526_nut-node_14": {
+            "extra": { "type": "nut" },
             "children": [],
             "matrix": [
                 1,
@@ -2972,6 +2994,7 @@
             "name": "e63526_nut_14"
         },
         "e63526_nut-node_15": {
+            "extra": { "type": "nut" },
             "children": [],
             "matrix": [
                 1,
@@ -2997,6 +3020,7 @@
             "name": "e63526_nut_15"
         },
         "e63526_nut-node_16": {
+            "extra": { "type": "nut" },
             "children": [],
             "matrix": [
                 1,
@@ -3022,6 +3046,7 @@
             "name": "e63526_nut_16"
         },
         "e63526_nut-node_17": {
+            "extra": { "type": "nut" },
             "children": [],
             "matrix": [
                 1,
@@ -3047,6 +3072,7 @@
             "name": "e63526_nut_17"
         },
         "e63526_nut-node_2": {
+            "extra": { "type": "nut" },
             "children": [],
             "matrix": [
                 -1,
@@ -3072,6 +3098,7 @@
             "name": "e63526_nut_2"
         },
         "e63526_nut-node_3": {
+            "extra": { "type": "nut" },
             "children": [],
             "matrix": [
                 1,
@@ -3097,6 +3124,7 @@
             "name": "e63526_nut_3"
         },
         "e63526_nut-node_4": {
+            "extra": { "type": "nut" },
             "children": [],
             "matrix": [
                 1,
@@ -3122,6 +3150,7 @@
             "name": "e63526_nut_4"
         },
         "e63526_nut-node_5": {
+            "extra": { "type": "nut" },
             "children": [],
             "matrix": [
                 1,
@@ -3147,6 +3176,7 @@
             "name": "e63526_nut_5"
         },
         "e63526_nut-node_6": {
+            "extra": { "type": "nut" },
             "children": [],
             "matrix": [
                 1,
@@ -3172,6 +3202,7 @@
             "name": "e63526_nut_6"
         },
         "e63526_nut-node_7": {
+            "extra": { "type": "nut" },
             "children": [],
             "matrix": [
                 1,
@@ -3197,6 +3228,7 @@
             "name": "e63526_nut_7"
         },
         "e63526_nut-node_8": {
+            "extra": { "type": "nut" },
             "children": [],
             "matrix": [
                 1,
@@ -3222,6 +3254,7 @@
             "name": "e63526_nut_8"
         },
         "e63526_nut-node_9": {
+            "extra": { "type": "nut" },
             "children": [],
             "matrix": [
                 -1,
@@ -3359,6 +3392,7 @@
             "name": "horz_shaft"
         },
         "jd9321_ball_bearing-node": {
+            "extra": { "type": "bearing" },
             "children": [],
             "matrix": [
                 1,
@@ -3384,6 +3418,7 @@
             "name": "jd9321_ball_bearing"
         },
         "jd9321_ball_bearing-node_1": {
+            "extra": { "type": "bearing" },
             "children": [],
             "matrix": [
                 1,
@@ -3409,6 +3444,7 @@
             "name": "jd9321_ball_bearing_1"
         },
         "jd9323_ball_bearing-node": {
+            "extra": { "type": "bearing" },
             "children": [],
             "matrix": [
                 1,
@@ -3434,6 +3470,7 @@
             "name": "jd9323_ball_bearing"
         },
         "jd9323_ball_bearing-node_1": {
+            "extra": { "type": "bearing" },
             "children": [],
             "matrix": [
                 -1,
@@ -3459,6 +3496,7 @@
             "name": "jd9323_ball_bearing_1"
         },
         "jd9323_ball_bearing-node_2": {
+            "extra": { "type": "bearing" },
             "children": [],
             "matrix": [
                 1,
@@ -3484,6 +3522,7 @@
             "name": "jd9323_ball_bearing_2"
         },
         "jd9323_ball_bearing-node_3": {
+            "extra": { "type": "bearing" },
             "children": [],
             "matrix": [
                 -1,
@@ -3509,6 +3548,7 @@
             "name": "jd9323_ball_bearing_3"
         },
         "jd9467_ball_bearing-node": {
+            "extra": { "type": "bearing" },
             "children": [],
             "matrix": [
                 1,
@@ -3534,6 +3574,7 @@
             "name": "jd9467_ball_bearing"
         },
         "jd9467_ball_bearing-node_1": {
+            "extra": { "type": "bearing" },
             "children": [],
             "matrix": [
                 1,
@@ -3675,6 +3716,7 @@
             "name": "lower_gears_sub_1"
         },
         "n131738_spring-node": {
+            "extra": { "type": "spring" },
             "children": [],
             "matrix": [
                 1,
@@ -3700,6 +3742,7 @@
             "name": "n131738_spring"
         },
         "n131738_spring-node_1": {
+            "extra": { "type": "spring" },
             "children": [],
             "matrix": [
                 1,
@@ -3725,6 +3768,7 @@
             "name": "n131738_spring_1"
         },
         "n190954_slip_clutch_ring-node": {
+            "extra": { "type": "spring" },
             "children": [],
             "matrix": [
                 -1,
@@ -3750,6 +3794,7 @@
             "name": "n190954_slip_clutch_ring"
         },
         "n190954_slip_clutch_ring-node_1": {
+            "extra": { "type": "spring" },
             "children": [],
             "matrix": [
                 0.5,
@@ -3775,6 +3820,7 @@
             "name": "n190954_slip_clutch_ring_1"
         },
         "n190954_slip_clutch_ring-node_2": {
+            "extra": { "type": "spring" },
             "children": [],
             "matrix": [
                 -1,
@@ -3800,6 +3846,7 @@
             "name": "n190954_slip_clutch_ring_2"
         },
         "n190954_slip_clutch_ring-node_3": {
+            "extra": { "type": "spring" },
             "children": [],
             "matrix": [
                 0.5,
@@ -3825,6 +3872,7 @@
             "name": "n190954_slip_clutch_ring_3"
         },
         "n196960_compression_spring-node": {
+            "extra": { "type": "spring" },
             "children": [],
             "matrix": [
                 1,
@@ -3850,6 +3898,7 @@
             "name": "n196960_compression_spring"
         },
         "n272730_hub-node": {
+            "extra": { "type": "hub" },
             "children": [],
             "matrix": [
                 1,
@@ -3875,6 +3924,7 @@
             "name": "n272730_hub"
         },
         "n273303_shaft-node": {
+            "extra": { "type": "shaft" },
             "children": [],
             "matrix": [
                 1,
@@ -3900,6 +3950,7 @@
             "name": "n273303_shaft"
         },
         "n273303_shaft-node_1": {
+            "extra": { "type": "shaft" },
             "children": [],
             "matrix": [
                 1,
@@ -3925,6 +3976,7 @@
             "name": "n273303_shaft_1"
         },
         "n273340_washer-node": {
+            "extra": { "type": "washer" },
             "children": [],
             "matrix": [
                 -1,
@@ -3950,6 +4002,7 @@
             "name": "n273340_washer"
         },
         "n273340_washer-node_1": {
+            "extra": { "type": "washer" },
             "children": [],
             "matrix": [
                 1,
@@ -3975,6 +4028,7 @@
             "name": "n273340_washer_1"
         },
         "n273340_washer-node_2": {
+            "extra": { "type": "washer" },
             "children": [],
             "matrix": [
                 -1,
@@ -4000,6 +4054,7 @@
             "name": "n273340_washer_2"
         },
         "n273340_washer-node_3": {
+            "extra": { "type": "washer" },
             "children": [],
             "matrix": [
                 1,
@@ -4025,6 +4080,7 @@
             "name": "n273340_washer_3"
         },
         "n273348_washer-node": {
+            "extra": { "type": "washer" },
             "children": [],
             "matrix": [
                 -0.866025,
@@ -4050,6 +4106,7 @@
             "name": "n273348_washer"
         },
         "n273348_washer-node_1": {
+            "extra": { "type": "washer" },
             "children": [],
             "matrix": [
                 -0.5,
@@ -4075,6 +4132,7 @@
             "name": "n273348_washer_1"
         },
         "n273348_washer-node_2": {
+            "extra": { "type": "washer" },
             "children": [],
             "matrix": [
                 -0.866025,
@@ -4100,6 +4158,7 @@
             "name": "n273348_washer_2"
         },
         "n273348_washer-node_3": {
+            "extra": { "type": "washer" },
             "children": [],
             "matrix": [
                 -0.5,
@@ -4125,6 +4184,7 @@
             "name": "n273348_washer_3"
         },
         "n273690_cover-node": {
+            "extra": { "type": "cover" },
             "children": [],
             "matrix": [
                 -1,
@@ -4150,6 +4210,7 @@
             "name": "n273690_cover"
         },
         "n273690_cover-node_1": {
+            "extra": { "type": "cover" },
             "children": [],
             "matrix": [
                 -1,
@@ -4175,6 +4236,7 @@
             "name": "n273690_cover_1"
         },
         "n274010_housing-node": {
+            "extra": { "type": "housing" },
             "children": [],
             "matrix": [
                 1,
@@ -4200,6 +4262,7 @@
             "name": "n274010_housing"
         },
         "n274010_housing-node_1": {
+            "extra": { "type": "housing" },
             "children": [],
             "matrix": [
                 1,
@@ -4225,6 +4288,7 @@
             "name": "n274010_housing_1"
         },
         "n274011_housing-node": {
+            "extra": { "type": "housing" },
             "children": [],
             "matrix": [
                 1,
@@ -4250,6 +4314,7 @@
             "name": "n274011_housing"
         },
         "n274011_housing-node_1": {
+            "extra": { "type": "housing" },
             "children": [],
             "matrix": [
                 1,
@@ -4275,6 +4340,7 @@
             "name": "n274011_housing_1"
         },
         "n274013_sleeve-node": {
+            "extra": { "type": "sleeve" },
             "children": [],
             "matrix": [
                 -1,
@@ -4300,6 +4366,7 @@
             "name": "n274013_sleeve"
         },
         "n274013_sleeve-node_1": {
+            "extra": { "type": "sleeve" },
             "children": [],
             "matrix": [
                 -1,
@@ -4325,6 +4392,7 @@
             "name": "n274013_sleeve_1"
         },
         "n274015_washer-node": {
+            "extra": { "type": "washer" },
             "children": [],
             "matrix": [
                 1,
@@ -4350,6 +4418,7 @@
             "name": "n274015_washer"
         },
         "n274015_washer-node_1": {
+            "extra": { "type": "washer" },
             "children": [],
             "matrix": [
                 1,
@@ -4375,6 +4444,7 @@
             "name": "n274015_washer_1"
         },
         "n274017_gear_53t-node": {
+            "extra": { "type": "gear" },
             "children": [],
             "matrix": [
                 0.5,
@@ -4400,6 +4470,7 @@
             "name": "n274017_gear_53t"
         },
         "n274017_gear_53t-node_1": {
+            "extra": { "type": "gear" },
             "children": [],
             "matrix": [
                 0.5,
@@ -4425,6 +4496,7 @@
             "name": "n274017_gear_53t_1"
         },
         "n274157_spur_gear-node": {
+            "extra": { "type": "gear" },
             "children": [],
             "matrix": [
                 0.5,
@@ -4450,6 +4522,7 @@
             "name": "n274157_spur_gear"
         },
         "n274157_spur_gear-node_1": {
+            "extra": { "type": "gear" },
             "children": [],
             "matrix": [
                 0.5,
@@ -4475,6 +4548,7 @@
             "name": "n274157_spur_gear_1"
         },
         "n274233_spacer-node": {
+            "extra": { "type": "spacer" },
             "children": [],
             "matrix": [
                 4.48966e-011,
@@ -4500,6 +4574,7 @@
             "name": "n274233_spacer"
         },
         "n274233_spacer-node_1": {
+            "extra": { "type": "spacer" },
             "children": [],
             "matrix": [
                 4.48966e-011,
@@ -4525,6 +4600,7 @@
             "name": "n274233_spacer_1"
         },
         "n274242_hub-node": {
+            "extra": { "type": "hub" },
             "children": [],
             "matrix": [
                 -1,
@@ -4550,6 +4626,7 @@
             "name": "n274242_hub"
         },
         "n274242_hub-node_1": {
+            "extra": { "type": "hub" },
             "children": [],
             "matrix": [
                 -1,
@@ -4575,6 +4652,7 @@
             "name": "n274242_hub_1"
         },
         "n274314_slip_clutch-node": {
+            "extra": { "type": "clutch" },
             "children": [],
             "matrix": [
                 1,
@@ -4600,6 +4678,7 @@
             "name": "n274314_slip_clutch"
         },
         "n274314_slip_clutch-node_1": {
+            "extra": { "type": "clutch" },
             "children": [],
             "matrix": [
                 1,
@@ -4625,6 +4704,7 @@
             "name": "n274314_slip_clutch_1"
         },
         "n275033_nut-node": {
+            "extra": { "type": "nut" },
             "children": [],
             "matrix": [
                 -1,
@@ -4650,6 +4730,7 @@
             "name": "n275033_nut"
         },
         "n275033_nut-node_1": {
+            "extra": { "type": "nut" },
             "children": [],
             "matrix": [
                 -1,
@@ -4675,9 +4756,7 @@
             "name": "n275033_nut_1"
         },
         "n275080_washer-node": {
-        "extra": {
-                                "type": "IfcCurtainWall"
-                            },
+            "extra": { "type": "washer" },
             "children": [],
             "matrix": [
                 -0.866025,
@@ -4703,9 +4782,7 @@
             "name": "n275080_washer"
         },
         "n275080_washer-node_1": {
-        "extra": {
-                                "type": "IfcCurtainWall"
-                            },
+            "extra": { "type": "washer" },
             "children": [],
             "matrix": [
                 -0.866025,
@@ -4731,9 +4808,7 @@
             "name": "n275080_washer_1"
         },
         "n275269_bushing-node": {
-        "extra": {
-                                        "type": "IfcRamp"
-                                    },
+            "extra": { "type": "bushing" },
             "children": [],
             "matrix": [
                 1,
@@ -4759,9 +4834,7 @@
             "name": "n275269_bushing"
         },
         "n275269_bushing-node_1": {
-        "extra": {
-                                                "type": "IfcRamp"
-                                            },
+            "extra": { "type": "bushing" },
             "children": [],
             "matrix": [
                 1,
@@ -4787,9 +4860,7 @@
             "name": "n275269_bushing_1"
         },
         "n275650_cap_screw-node": {
-        "extra": {
-                                                "type": "IfcDuctFitting"
-                                            },
+            "extra": { "type": "screw" },
             "children": [],
             "matrix": [
                 1,
@@ -4815,6 +4886,7 @@
             "name": "n275650_cap_screw"
         },
         "n275650_cap_screw-node_1": {
+            "extra": { "type": "screw" },
             "children": [],
             "matrix": [
                 1,
@@ -4840,6 +4912,7 @@
             "name": "n275650_cap_screw_1"
         },
         "n275650_cap_screw-node_2": {
+            "extra": { "type": "screw" },
             "children": [],
             "matrix": [
                 1,
@@ -4865,6 +4938,7 @@
             "name": "n275650_cap_screw_2"
         },
         "n275650_cap_screw-node_3": {
+            "extra": { "type": "screw" },
             "children": [],
             "matrix": [
                 1,
@@ -4890,6 +4964,7 @@
             "name": "n275650_cap_screw_3"
         },
         "n275650_cap_screw-node_4": {
+            "extra": { "type": "screw" },
             "children": [],
             "matrix": [
                 1,
@@ -4915,6 +4990,7 @@
             "name": "n275650_cap_screw_4"
         },
         "n275650_cap_screw-node_5": {
+            "extra": { "type": "screw" },
             "children": [],
             "matrix": [
                 1,
@@ -4940,6 +5016,7 @@
             "name": "n275650_cap_screw_5"
         },
         "n276291_shaft-node": {
+            "extra": { "type": "screw" },
             "children": [],
             "matrix": [
                 1,
@@ -4965,6 +5042,7 @@
             "name": "n276291_shaft"
         },
         "n276291_shaft-node_1": {
+            "extra": { "type": "screw" },
             "children": [],
             "matrix": [
                 1,
@@ -4990,9 +5068,7 @@
             "name": "n276291_shaft_1"
         },
         "pro12-18s-node": {
-        "extra": {
-                                "type": "IfcCurtainWall"
-                            },
+
             "children": [
                 "a_120-14_main-node",
                 "a_120-14_main-node_1",
@@ -5021,9 +5097,6 @@
             "name": "pro12-18s"
         },
         "shaft_sub-node": {
-        "extra": {
-                        "type": "IfcCurtainWall"
-                    },
             "children": [
                 "n190954_slip_clutch_ring-node_1",
                 "n274013_sleeve-node",
@@ -5078,9 +5151,6 @@
             "name": "shaft_sub_1"
         },
         "spindle_drum_complete_assy-node": {
-            "extra": {
-                "type": "IfcRamp"
-            },
             "children": [
                 "n273690_cover-node",
                 "lower_gears_sub-node",
@@ -5133,9 +5203,6 @@
             "name": "spindle_drum_complete_assy_1"
         },
         "spindle_drum_gear_assy-node": {
-            "extra": {
-                        "type": "IfcRamp"
-                    },
             "children": [
                 "n273303_shaft-node",
                 "gear-1_sub-node"
@@ -5161,9 +5228,6 @@
             "name": "spindle_drum_gear_assy"
         },
         "spindle_drum_gear_assy-node_1": {
-            "extra": {
-                "type": "IfcRamp"
-            },
             "children": [
                 "n273303_shaft-node_1",
                 "gear-1_sub-node_1"
@@ -5189,9 +5253,7 @@
             "name": "spindle_drum_gear_assy_1"
         },
         "upper_shaft-node": {
-            "extra": {
-                "type": "IfcCurtainWall"
-            },
+            "extra": { "type": "shaft" },
             "children": [],
             "matrix": [
                 1,
@@ -5217,9 +5279,7 @@
             "name": "upper_shaft"
         },
         "vert_shaft-node": {
-            "extra": {
-                "type": "IfcCurtainWall"
-            },
+            "extra": { "type": "shaft" },
             "children": [],
             "matrix": [
                 4.48966e-011,

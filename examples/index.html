@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
 
-    <title>ifcgl - Examples</title>
+    <title>xeometry - Examples</title>
 
     <link href='https://fonts.googleapis.com/css?family=Exo+2:400,800,900,700,600,500|Roboto:100,300,400,500,700,900'
           rel='stylesheet' type='text/css'>
@@ -17,7 +17,7 @@
 
 <div id="contents" class="container">
     <div id="list" class="content">
-        <h1><a href="../index.html">ifcgl</a> / examples</h1>
+        <h1><a href="../index.html">xeometry</a> / examples</h1>
         <p>A WebGL glTF viewer built with <a href="http://xeogl.org">xeogl</a>.
         </p>
     </div>
@@ -33,7 +33,9 @@
     };
 
     var files = {
-        "Creating viewers": [],
+        "Creating viewers": [
+            "multipleViewers"
+        ],
         "Loading models": [
             "loadModel",
             "loadTwoModels"
@@ -43,11 +45,17 @@
             "viewFitRandomObjects",
             "cycleThroughObjects",
             "axisViews",
-            "objectExplorer"
+            "objectExplorer",
+            "typeExplorer"
         ],
-        "Transforming objects": [
-            "explodeModelObjects",
+        "Animation": [
+            "explodeObjects",
             "animateModelTransform"
+        ],
+
+        "Emphasis": [
+            "xrayObjects",
+            "xrayObjectTypes"
         ]
     };
 
@@ -62,7 +70,7 @@
     sourceButton.textContent = 'View source';
 
     sourceButton.addEventListener('click', function (event) {
-        window.open('https://github.com/xeolabs/ifcgl/blob/master/examples/' + selected + '.html');
+        window.open('https://github.com/xeolabs/xeometry/blob/master/examples/' + selected + '.html');
     }, false);
 
     sourceButton.style.display = 'none';

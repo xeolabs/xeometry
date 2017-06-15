@@ -4,25 +4,22 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <script src="libs/xeogl.js"></script>
-    <script src="../js/ifcgl.js"></script>
+    <script src="../js/xeometry.js"></script>
 
     <script src="libs/gl-matrix-min.js"></script>
 
     <link href="css/styles.css" rel="stylesheet"/>
 <body>
 
-<div id="explorer" class="dark">
-</div>
 
 <script>
 
-    var viewer = new ifcgl.Viewer();
+    var viewer = new xeometry.Viewer();
 
     viewer.loadModel("gearbox", "models/Reciprocating_Saw/PBR-SpecGloss/Reciprocating_Saw.gltf", function () {
 
-      //  viewer.yspin(0.3);
+        viewer.xspin(0.05);
 
-        viewer.setViewFitDuration(0);
         viewer.viewFit();
 
         var modelCenter = viewer.getCenter("gearbox");
@@ -37,7 +34,7 @@
         var spin;
         var spins = [];
 
-        // Compute velocity of each object
+        // Pre-calculate velocity of each object
 
         for (var i = 0; i < objects.length; i++) {
 
@@ -72,7 +69,7 @@
             var id;
             for (var i = 0; i < objects.length; i++) {
                 id = objects[i];
-               // viewer.setTranslate(id, vec3.add(tempVec3, viewer.getTranslate(id), trajectories[i]));
+                viewer.setTranslate(id, vec3.add(tempVec3, viewer.getTranslate(id), trajectories[i]));
                 viewer.setRotate(id, vec3.add(tempVec3, viewer.getRotate(id), spins[i]));
             }
             requestAnimationFrame(update);

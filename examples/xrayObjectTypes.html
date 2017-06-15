@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <script src="libs/xeogl.js"></script>
+    <script src="../js/xeometry.js"></script>
+    <link href="css/styles.css" rel="stylesheet"/>
+<body>
+
+
+<script>
+
+    // Load gearbox, make everything transparent except for gears and shafts
+
+    var viewer = new xeometry.Viewer();
+
+    viewer.setEye([15, 0, -20]);
+    viewer.setLook([0, 0, 0]);
+
+    viewer.loadModel("gearbox", "models/GearboxAssy/glTF/GearboxAssy.gltf", function () {
+        viewer.setOpacity("gearbox", 0.3); // Everything in model transparent
+        viewer.setOpacity(["bearing", "shaft"], 1.0); // Bearings and shafts opaque
+        viewer.viewFit(["bearing", "shaft"]); // Fit 3D view to bearings and shafts
+    });
+
+</script>
+</body>
+</html>

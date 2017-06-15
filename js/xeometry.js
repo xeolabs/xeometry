@@ -1,18 +1,21 @@
 /**
  * A convenient API for visualizing glTF models on WebGL using xeogl.
  *
- * Find usage instructions at http://xeolabs.com-ifcgl
+ * Find usage instructions at http://xeolabs.com-xeometry
  *
  * @param {*} cfg
  * @param
  */
-var ifcgl = {};
+var xeometry = {};
 
-ifcgl.Viewer = function(cfg) {
+xeometry.Viewer = function (cfg) {
 
     var self = this;
 
+    cfg = cfg || {};
+
     var scene = new xeogl.Scene({
+        canvas: cfg.canvas,
         transparent: true
     });
 
@@ -29,7 +32,6 @@ ifcgl.Viewer = function(cfg) {
     var scales = {}; // xeogl.Scale for each model and object
     var objectModels = {}; // Model of each object
     var transformable = {}; // True for each model and object that has transforms
-    var flying = true;
     var yspin = 0;
     var xspin = 0;
 
@@ -203,7 +205,7 @@ ifcgl.Viewer = function(cfg) {
     this.clear = function () {
         for (var id in models) {
             if (models.hasOwnProperty(id)) {
-                this.unload(id);
+                this.unloadModel(id);
             }
         }
     };
@@ -531,6 +533,63 @@ ifcgl.Viewer = function(cfg) {
     }
 
     //----------------------------------------------------------------------------------------------------
+    // Opacity
+    //----------------------------------------------------------------------------------------------------
+
+    /**
+     * Sets opacity of model(s), object(s) or type(s).
+     *
+     * @param {String|String[]} ids IDs of models, objects or types. Shows all objects by default.
+     * @param {Number} opacity Degree of opacity in range [0..1].
+     */
+    this.setOpacity = function (ids, opacity) {
+        if (opacity === null || opacity === undefined) {
+            opacity = 1.0;
+        }
+        if (ids === undefined || ids === null) {
+            self.setOpacity(self.getObjects(), opacity);
+            return;
+        }
+        if (xeogl._isString(ids)) {
+            var id = ids;
+            var object = objects[id];
+            if (object) {
+                object.modes.transparent = (opacity < 1);
+                object.material.opacity = opacity;
+                //object.visibility.opacity = opacity;
+                return;
+            }
+            var model = models[id];
+            if (!model) {
+                var objectsOfType = types[id];
+                if (objectsOfType) {
+                    var typeIds = Object.keys(objectsOfType);
+                    if (typeIds.length === 0) {
+                        return;
+                    }
+                    self.setOpacity(typeIds, opacity);
+                    return
+                }
+                error("Model, object or type not found: " + id);
+                return;
+            }
+            self.setOpacity(self.getObjects(id), opacity);
+            return;
+        }
+        for (var i = 0, len = ids.length; i < len; i++) {
+            self.setOpacity(ids[i], opacity);
+        }
+    };
+
+    /**
+     *
+     * @param id
+     */
+    this.getOpacity = function (id) {
+
+    };
+
+    //----------------------------------------------------------------------------------------------------
     // Boundaries
     //----------------------------------------------------------------------------------------------------
 
@@ -737,13 +796,12 @@ ifcgl.Viewer = function(cfg) {
     /**
      * Sets the flight duration when fitting elements to view.
      *
-     * A value of zero will cause the camera to instantly jump to each new target.
+     * A value of zero (default) will cause the camera to instantly jump to each new target .
      *
      * @param {Number} value The new flight duration, in seconds.
      */
     this.setViewFitDuration = function (value) {
         cameraFlight.duration = value;
-        flying = (value > 0);
     };
 
     /**
@@ -757,6 +815,8 @@ ifcgl.Viewer = function(cfg) {
 
     /**
      * Sets the target field-of-view (FOV) angle when fitting elements to view.
+     *
+     * Default value is 45.
      *
      * @param {Number} value The new view-fit FOV angle, in degrees.
      */
@@ -784,7 +844,7 @@ ifcgl.Viewer = function(cfg) {
      * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
      */
     this.viewFit = function (target, ok) {
-        (flying || ok) ? cameraFlight.flyTo({aabb: this.getAABB(target)}, ok) : cameraFlight.jumpTo({aabb: this.getAABB(target)});
+        (ok || cameraFlight.duration > 0) ? cameraFlight.flyTo({aabb: this.getAABB(target)}, ok) : cameraFlight.jumpTo({aabb: this.getAABB(target)});
     };
 
     /**
@@ -901,7 +961,7 @@ ifcgl.Viewer = function(cfg) {
                     };
                     break;
             }
-            if (flying || ok) {
+            if (ok || cameraFlight.duration > 0) {
                 cameraFlight.flyTo(cameraTarget, ok);
             } else {
                 cameraFlight.jumpTo(cameraTarget);
@@ -919,6 +979,66 @@ ifcgl.Viewer = function(cfg) {
 
     this.xspin = function (value) {
         return (arguments.length === 0) ? xspin : xspin = value;
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    // Ray casting
+    //----------------------------------------------------------------------------------------------------
+
+    /**
+     * Gets the first object that intersects the given ray.
+     *
+     * @param {[Number, Number, Number]} origin World-space ray origin.
+     * @param {[Number, Number, Number]} dir World-space ray direction vector.
+     * @returns {{id: *}} If object found, the ID of the object.
+     */
+    this.rayCastObject = function (origin, dir) {
+        var hit = scene.pick({origin: origin, direction: dir, pickSurface: false});
+        if (hit) {
+            return {id: hit.entity.id};
+        }
+    };
+
+    /**
+     * Gets the first object that intersects the given ray, along with the
+     * coordinates of the ray-surface intersection.
+     *
+     * @param {[Number, Number, Number]} origin World-space ray origin.
+     * @param {[Number, Number, Number]} dir World-space ray direction vector.
+     * @returns {{id: *, worldPos: *}} If object found, the ID of objectand the World-space ray-surface intersection coordinates.
+     */
+    this.rayCastSurface = function (origin, dir) {
+        var hit = scene.pick({origin: origin, direction: dir, pickSurface: true});
+        if (hit) {
+            return {id: hit.entity.id, worldPos: hit.worldPos};
+        }
+    };
+
+    /**
+     * Finds the closest object at the given canvas position.
+     *
+     * @param {[Number, Number]} canvasPos Canvas position.
+     * @returns {{id: *}}
+     */
+    this.pickObject = function (canvasPos) {
+        var hit = scene.pick({canvasPos: canvasPos, pickSurface: false});
+        if (hit) {
+            return {id: hit.entity.id};
+        }
+    };
+
+    /**
+     * Finds the closest object at the given canvas position, plus the
+     * object's surface coordinates at that position.
+     *
+     * @param {[Number, Number]} canvasPos Canvas position.
+     * @returns {{id: *, worldPos: *}} If object found, the ID of objectand the World-space ray-surface intersection coordinates.
+     */
+    this.pickSurface = function (canvasPos) {
+        var hit = scene.pick({canvasPos: canvasPos, pickSurface: true});
+        if (hit) {
+            return {id: hit.entity.id, worldPos: hit.worldPos};
+        }
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -945,24 +1065,32 @@ ifcgl.Viewer = function(cfg) {
 
         var vecToArray = math.vecToArray;
 
-        function getTranslate(component) {
-            var xyz = component.transform.parent.parent.xyz;
+        function getTranslate(id) {
+            var translation = translations[id];
+            if (!translation) {
+                return;
+            }
+            var xyz = translation.xyz;
             if (xyz[0] !== 0 || xyz[1] !== 0 || xyz[1] !== 0) {
                 return vecToArray(xyz);
             }
         }
 
-        function getScale(component) {
-            var scale = component.transform.xyz;
-            if (scale[0] !== 1 || scale[1] !== 1 || scale[1] !== 1) {
-                return vecToArray(scale);
+        function getScale(id) {
+            var scale = scales[id];
+            if (!scale) {
+                return;
+            }
+            var xyz = scale.xyz;
+            if (xyz && (xyz[0] !== 1 || xyz[1] !== 1 || xyz[1] !== 1)) {
+                return vecToArray(xyz);
             }
         }
 
-        function getRotate(component) {
-            var rotate = eulerAngles[component.id];
-            if (rotate && (rotate[0] !== 0 || rotate[1] !== 0 || rotate[2] !== 0)) {
-                return vecToArray(rotate);
+        function getRotate(id) {
+            var xyz = eulerAngles[id];
+            if (xyz && (xyz[0] !== 0 || xyz[1] !== 0 || xyz[2] !== 0)) {
+                return vecToArray(xyz);
             }
         }
 
@@ -975,22 +1103,22 @@ ifcgl.Viewer = function(cfg) {
             var scale;
             var rotate;
             bookmark.models = [];
-            for (var modelId in models) {
-                if (models.hasOwnProperty(modelId)) {
-                    model = models[modelId];
+            for (id in models) {
+                if (models.hasOwnProperty(id)) {
+                    model = models[id];
                     modelData = {
-                        id: model.id,
+                        id: id,
                         src: model.src
                     };
-                    translate = getTranslate(model);
+                    translate = getTranslate(id);
                     if (translate) {
                         modelData.translate = translate;
                     }
-                    scale = getScale(model);
+                    scale = getScale(id);
                     if (scale) {
                         modelData.scale = scale;
                     }
-                    rotate = getRotate(model);
+                    rotate = getRotate(id);
                     if (rotate) {
                         modelData.rotate = rotate;
                     }
@@ -1004,17 +1132,17 @@ ifcgl.Viewer = function(cfg) {
                 if (objects.hasOwnProperty(id)) {
                     object = objects[id];
                     objectData = null;
-                    translate = getTranslate(object);
+                    translate = getTranslate(id);
                     if (translate) {
                         objectData = objectData || (bookmark.objects[id] = {});
                         objectData.translate = translate;
                     }
-                    scale = getScale(object);
+                    scale = getScale(id);
                     if (scale) {
                         objectData = objectData || (bookmark.objects[id] = {});
                         objectData.scale = scale;
                     }
-                    rotate = getRotate(object);
+                    rotate = getRotate(id);
                     if (rotate) {
                         objectData = objectData || (bookmark.objects[id] = {});
                         objectData.rotate = rotate;
@@ -1024,6 +1152,10 @@ ifcgl.Viewer = function(cfg) {
                         objectData.visible = true;
                     } else if (objectData) {
                         objectData.visible = false;
+                    }
+                    if (object.modes.transparent) {
+                        objectData = objectData || (bookmark.objects[id] = {});
+                        objectData.opacity = object.material.opacity;
                     }
                 }
             }
@@ -1054,14 +1186,23 @@ ifcgl.Viewer = function(cfg) {
             var modelData = _modelsData[i];
             var id = modelData.id;
             self.loadModel(id, modelData.src, function () {
-                self.setTranslate(id, modelData.translate);
-                self.setScale(id, modelData.scale);
-                self.setRotate(id, modelData.rotate);
+                if (modelData.translate) {
+                    self.setTranslate(id, modelData.translate);
+                }
+                if (modelData.scale) {
+                    self.setScale(id, modelData.scale);
+                }
+                if (modelData.rotate) {
+                    self.setRotate(id, modelData.rotate);
+                }
                 loadModels(_modelsData, i + 1, ok);
             });
         }
 
         return function (bookmark) {
+            if (!bookmark.models || bookmark.models.length === 0) {
+                return;
+            }
             loadModels(bookmark.models, 0, function () {
                 var objectStates = bookmark.objects;
                 var objectState;
@@ -1081,11 +1222,14 @@ ifcgl.Viewer = function(cfg) {
                         if (objectState.rotate) {
                             self.setRotate(id, objectState.rotate);
                         }
+                        if (objectState.opacity !== undefined) {
+                            self.setOpacity(id, objectState.opacity); // FIXME: what if objects already loaded and transparent, but no opacity value here?
+                        }
                     }
                 }
                 self.hide();
                 self.show(visible);
-                self.lookat(bookmark.lookat.eye, bookmark.lookat.look, bookmark.lookat.up);
+                self.setEyeLookUp(bookmark.lookat.eye, bookmark.lookat.look, bookmark.lookat.up);
             });
         };
     })();
@@ -1110,7 +1254,5 @@ ifcgl.Viewer = function(cfg) {
         console.log(msg);
     }
 
-    if (cfg) {
-        this.bookmark(cfg);
-    }
-}
+    this.setBookmark(cfg);
+};

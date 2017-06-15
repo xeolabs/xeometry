@@ -1,18 +1,57 @@
-# ifcgl
+# xeoviz
 
-A lightweight open-source WebGL-based IFC model viewer API built on [xeogl](http://xeogl.org).
+A lightweight open-source WebGL-based IFC model viewing API built on [xeogl](http://xeogl.org).
  
-An **ifcgl** viewer is a single facade class that wraps xeogl, with methods to
+An **xeoviz** viewer is a single facade class that wraps xeogl, with methods to
 load models from  [glTF](https://github.com/KhronosGroup/glTF),
 query, animate and navigate their objects and create sharable custom views.
 
-When the objects within the glTF models are tagged with
+When the glTF models are tagged with
 [IFC](https://en.wikipedia.org/wiki/Industry_Foundation_Classes) element types (optional), then
-the viewer can manage the objects using those type codes. That's about as far as the viewer uses the IFC. For now, it's just about viewing them.
+the viewer can manage the objects using those type codes.
+
+You can also just operate on objects using their IDs:<br><br>
+[![](assets/sawObjects.png)](http://xeogl.org/examples/#presentation_annotations_tronTank)
+
+```` JavaScript
+var viewer = new xeoviz.Viewer({ canvasId: "theCanvas" });
+
+viewer.loadModel("saw", "models/Reciprocating_Saw.gltf", function () {
+     viewer.setOpacity([ // Make the red plastic casing transparent
+         "saw#body-node.entity.0",
+         "saw#body-node_1.entity.0",
+         "saw#body-node_2.entity.0",
+         "saw#body-node_3.entity.0",
+         "saw#body-node_11.entity.0",
+         "saw#body-node_110.entity.0",
+         "saw#body-node_29.entity.0",
+         "saw#body-node_7.entity.0",
+         "saw#body-node_6.entity.0"
+     ], 0.3);
+     viewer.viewFit(["saw"]);
+});
+````
+
+# Contents
+
+- [Examples](#examples)
+- [Features](#features)
+- [Usage](#usage)
+    + [Loading the libs](#loading-the-libs)
+    + [Creating and destroying viewers](#creating-and-destroying-viewers)
+    + [Loading and unloading models](#loading-and-unloading-models)
+      - [Tagging models with IFC types](#tagging-models-with-ifc-types)
+    + [Querying models and objects](#querying-models-and-objects)
+    + [Querying boundaries of models and objects](#querying-boundaries-of-models-and-objects)
+    + [Transforming models and objects](#transforming-models-and-objects)
+    + [Showing and hiding models and objects](#showing-and-hiding-models-and-objects)
+    + [Controlling the camera](#controlling-the-camera)
+    + [Picking and ray casting objects](#picking-and-ray-casting-objects)
+    + [Saving and loading bookmarks](#saving-and-loading-bookmarks)
 
 # Examples
 
-* [Examples collection](examples/index.html)
+* See the [examples gallery](examples/index.html).
 
 # Features
 
@@ -22,6 +61,8 @@ the viewer can manage the objects using those type codes. That's about as far as
 * Show and hide objects
 * Scale, rotate and translate objects
 * Query object boundaries
+* Find objects in boundary
+* Object surface picking and ray casting
 * Navigate camera to objects
 * Zoom, pan, rotate, spin, fly and jump camera
 * Save and load bookmarks
@@ -30,28 +71,28 @@ the viewer can manage the objects using those type codes. That's about as far as
 
 ### Loading the libs
 
-The first step is to link to the xeogl and ifcgl libraries:
+The first step is to link to the xeogl and xeoviz libraries:
 ````html
 <script src="xeogl.js"></script>
-<script src="ifcgl.js"></script>
+<script src="xeoviz.js"></script>
 ````
-ifcgl's only dependency is the xeogl library.
+xeoviz's only dependency is the xeogl library.
 
 ### Creating and destroying viewers
 
 Create a viewer with a default internally-created canvas that fills the page:
 ````javascript
-var viewer = new ifcgl.Viewer();
+var viewer = new xeoviz.Viewer();
 ````
 
 Create a viewer with an existing canvas:
 ````javascript
-var viewer = new ifcgl({
+var viewer = new xeoviz.Viewer({
     canvasId: "myCanvas"
 });
 ````
 
-You can create multiple viewers in the same page. 
+You can create multiple viewers in the same page.
 
 Destroy a viewer:
 ````javascript
@@ -79,7 +120,7 @@ viewer.unloadModel("gearbox");
 
 #### Tagging models with IFC types
 
-Any entity within a glTF file can have an ````extra```` property for any app-specific information. For ifcgl, we
+Any entity within a glTF file can have an ````extra```` property for any app-specific information. For xeoviz, we
 we use that that to tag our objects with IFC types, for example:
 
 ````json
@@ -270,11 +311,13 @@ viewer.setLook([0,0,0]);
 viewer.setUp([0,1,0]);
 ````
 
-Set how fast the camera flies to each new position:
+Set the duration of camera flight to each new position:
 ````javascript
 viewer.setFlightDuration(2); // Seconds
 var duration = viewer.getFlightDuration();
 ````
+
+When the duration is set to zero, the camera will snap straight to each new position, otherwise it will fly.
 
 Fly camera to given position:
 ````javascript
@@ -324,6 +367,12 @@ Switch camera to "jump" mode, where it will jump directly to each new position:
 viewer.viewFit(false);
 ````
 
+Jump camera to given position:
+````javascript
+// Eye, look and "up" vector
+viewer.setEyeLookUp([-100,0,0],[0,0,0],[0,1,0]);
+````
+
 Jump camera to fit two objects in view - note we don't need the callback anymore because camera is now jumping:
 ````javascript
 viewer.viewFit(["foo", "bar"]);
@@ -340,7 +389,47 @@ viewer.setViewFitFOV(20); // Degrees
 var fitFOV = viewer.fitFOV();
 ````
 
-### Saving and loading viewer state
+### Picking and ray casting objects
+
+You can pick and raycast objects through the API.
+
+Finding the object at the given canvas coordinates:
+````javascript
+var hit = viewer.pickObject([234, 567]);
+if (hit) {
+    console.log("object picked: " + hit.id);
+}
+````
+
+Finding the object at the given canvas coordinates, plus the 3D surface intersection:
+````javascript
+hit = viewer.pickSurface([234, 567]);
+if (hit) {
+    var worldPos = hit.worldPos;
+    console.log("object picked: " + hit.id);
+    console.log("surface coordinates: " + worldPos[0] + "," + worldPos[1] + "," + worldPos[2]);
+}
+````
+
+Finding the object that intersects a ray:
+````javascript
+hit = viewer.rayCastObject([0,0,-100], [0,0,1]);
+if (hit) {
+    console.log("object raycasted: " + hit.id + ");
+}
+````
+
+Finding the object that intersects a ray, plus the surface intersection:
+````javascript
+hit = viewer.rayCastSurface([0,0,-100], [0,0,1]);
+if (hit) {
+    var worldPos = hit.worldPos;
+    console.log("object raycasted: " + hit.id);
+    console.log("surface coordinates: " + worldPos[0] + "," + worldPos[1] + "," + worldPos[2]);
+}
+````
+
+### Saving and loading bookmarks
 
 You can save and restore the state of a viewer as a JSON bookmark. The bookmark will include:
 
