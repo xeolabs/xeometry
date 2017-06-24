@@ -17,9 +17,7 @@
 
 <div id="contents" class="container">
     <div id="list" class="content">
-        <h1><a href="../index.html">xeometry</a> / examples</h1>
-        <p>A WebGL glTF viewer built with <a href="http://xeogl.org">xeogl</a>.
-        </p>
+        <h1><a href="../index.html">xeometry</a> / examples /</h1>
     </div>
 </div>
 
@@ -38,7 +36,8 @@
         ],
         "Loading models": [
             "loadModel",
-            "loadTwoModels"
+            "loadTwoModels",
+            "copiesOfSameModel"
         ],
         "Camera control": [
             "showEachObject",
@@ -52,10 +51,17 @@
             "explodeObjects",
             "animateModelTransform"
         ],
-
         "Emphasis": [
+            "hideObjects",
+            "moveObjects",
+            "outlineObjects",
+            "outlineTypes",
             "xrayObjects",
-            "xrayObjectTypes"
+            "xrayTypes"
+        ],
+        "Annotations": [
+            "createAnnotations",
+            "mouseCreateAnnotations"
         ]
     };
 
@@ -78,8 +84,6 @@
 
     var divs = {};
     var selected = null;
-
-    container.appendChild(document.createElement('hr'));
 
     var clickedFile = null;
 

@@ -3,11 +3,14 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <script src="libs/xeogl.js"></script>
-    <script src="../js/xeometry.js"></script>
+    <script src="../build/xeometry.js"></script>
 
     <link href="css/styles.css" rel="stylesheet"/>
 <body>
+
+<div id="info" class="light">
+    <h1>xray view of a moving subset of objects</h1>
+</div>
 
 <script>
 
@@ -28,6 +31,7 @@
         var i = 0;
         var numVisObjects = 15;
         var visObjects;
+        var count = 5;
 
         setInterval(function () {
             if (i > 0) {
@@ -38,10 +42,14 @@
             }
             visObjects = objects.slice(i, i + numVisObjects);
             viewer.setOpacity(visObjects, 1.0);
-            viewer.viewFit(visObjects);
+
             i += 1;
 
-        }, 200)
+            if (--count == 0) {
+                count = 10;
+                viewer.viewFit(visObjects);
+            }
+        }, 100);
     });
 
 

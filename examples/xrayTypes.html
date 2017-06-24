@@ -3,15 +3,16 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <script src="libs/xeogl.js"></script>
-    <script src="../js/xeometry.js"></script>
+    <script src="../build/xeometry.js"></script>
     <link href="css/styles.css" rel="stylesheet"/>
 <body>
 
+<div id="info" class="light">
+    <h1>x-ray view of type instances</h1>
+    <h2>// Load gearbox model, make everything transparent except for objects of types "gear" and "shaft"</h2>
+</div>
 
 <script>
-
-    // Load gearbox, make everything transparent except for gears and shafts
 
     var viewer = new xeometry.Viewer();
 

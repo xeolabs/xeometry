@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <script src="../build/xeometry.js"></script>
+    <link href="css/styles.css" rel="stylesheet"/>
+<body>
+
+
+<script>
+
+    // Load model, rotate it, fit to view, annotate some objects
+
+    var viewer = new xeometry.Viewer();
+
+    viewer.setEye([-20, 20, 20]);
+    viewer.setLook([0, 0, 0]);
+
+    viewer.loadModel("saw", "models/Reciprocating_Saw/PBR-SpecGloss/Reciprocating_Saw.gltf", function () {
+
+        viewer.setRotate("saw", [90, 0, 0]);
+
+        viewer.hide([
+            "saw#body-node_1.entity.0",
+            "saw#body-node_2.entity.0",
+            "saw#body-node_3.entity.0"
+        ]);
+
+        viewer.createAnnotation("a1", {
+            object: "saw#body-node_33.entity.0",
+            primIndex: 3303,
+            bary: [0.33, 0.36, 0.31],
+            glyph: "A1",
+            title: "Bearing",
+            desc: "The armature consists of a set of electromagnets",
+            eye: [-196.905, 8.774, 71.670],
+            look: [-162.659, -16.130, 20.418],
+            up: [0.208, 0.927, -0.311],
+            pinShown: true,
+            labelShown: true,
+            occludable: true
+        });
+
+        viewer.createAnnotation("a2", {
+            object: "saw#body-node_45.entity.0",
+            primIndex: 1227,
+            bary: [0.188, 0.590, 0.220],
+            glyph: "A2",
+            title: "Armature",
+            desc: "The armature consists of a set of electromagnets",
+            eye: [-196.905, 8.774, 71.670],
+            look: [-162.659, -16.130, 20.418],
+            up: [0.208, 0.927, -0.311],
+            pinShown: true,
+            labelShown: true
+        });
+
+        viewer.setViewFitFOV(50);
+        viewer.viewFit("saw");
+    });
+
+</script>
+</body>
+</html>

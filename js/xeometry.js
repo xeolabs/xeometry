@@ -23,9 +23,12 @@ xeometry.Viewer = function (cfg) {
     var camera = scene.camera;
     var view = camera.view;
 
-    var types = {}; // List of objects for each IFC type
+    var types = {}; // List of objects for each type
     var models = {}; // Models mapped to their IDs
     var objects = {}; // Objects mapped to their IDs
+    var annotations = {}; // Annotations mapped to their IDs
+    var objectAnnotations = {}; // Annotations for each object
+    //var typeAnnotations = {}; // Annotations for each type
     var eulerAngles = {}; // Euler rotation angles for each model and object
     var rotations = {}; // xeogl.Rotate for each model and object
     var translations = {}; // xeogl.Translate for each model and object
@@ -46,7 +49,7 @@ xeometry.Viewer = function (cfg) {
 
     var cameraFlight = new xeogl.CameraFlightAnimation(scene, {
         fitFOV: 45,
-        duration: 1
+        duration: 0.1
     });
 
     var cameraControl = new xeogl.CameraControl(scene);
@@ -54,6 +57,22 @@ xeometry.Viewer = function (cfg) {
     //----------------------------------------------------------------------------------------------------
     // Models
     //----------------------------------------------------------------------------------------------------
+
+    /**
+     *
+     * @returns {*}
+     */
+    this.getCanvas = function () {
+        return scene.canvas.canvas;
+    };
+
+    /**
+     *
+     * @returns {*}
+     */
+    this.getOverlay = function () {
+        return scene.canvas.overlay;
+    };
 
     /**
      * Loads a model into the viewer.
@@ -75,6 +94,13 @@ xeometry.Viewer = function (cfg) {
                 return;
             }
             this.unload(id);
+        }
+        if (scene.components[id]) {
+            error("Component with this ID already exists: " + id);
+            if (ok) {
+                ok(model.id);
+            }
+            return;
         }
         model = new xeogl.GLTFModel(scene, {
             id: id,
@@ -134,7 +160,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the IDs of the objects within a model.
+     * Gets the IDs of the objects within a model or a type.
      *
      * Returns the IDs of all objects in the viewer when no arguments are given.
      *
@@ -208,6 +234,7 @@ xeometry.Viewer = function (cfg) {
                 this.unloadModel(id);
             }
         }
+        this.clearAnnotations();
     };
 
     /**
@@ -366,6 +393,20 @@ xeometry.Viewer = function (cfg) {
             translation = translations[id];
         }
         translation.xyz = xyz;
+    };
+
+    this.addTranslate = function (id, xyz) {
+        var translation = translations[id];
+        if (!translation) {
+            var component = getTransformableComponent(id);
+            if (!component) {
+                error("Model or object not found: " + id);
+                return;
+            }
+            translation = translations[id];
+        }
+        var xyzOld = translation.xyz;
+        translation.xyz = [xyzOld[0] + xyz[0], xyzOld[1] + xyz[1], xyzOld[2] + xyz[2]]
     };
 
     /**
@@ -590,6 +631,98 @@ xeometry.Viewer = function (cfg) {
     };
 
     //----------------------------------------------------------------------------------------------------
+    // Outlines
+    //----------------------------------------------------------------------------------------------------
+
+    /**
+     * Sets the thickness of outlines around objects.
+     * @param {Number} thickness Thickness in pixels.
+     */
+    this.setOutlineThickness = function (thickness) {
+        scene.outline.thickness = thickness;
+    };
+
+    /**
+     * Gets the thickness of outlines around objects.
+     * @return {Number} Thickness in pixels.
+     */
+    this.getOutlineThickness = function () {
+        return scene.outline.thickness;
+    };
+
+    /**
+     * Sets the color of outlines around objects.
+     * @param {[Number, Number, Number]} color RGB color.
+     */
+    this.setOutlineColor = function (color) {
+        scene.outline.color = color;
+    };
+
+    /**
+     * Returns the color of outlines around objects.
+     * @return {[Number, Number, Number]} RGB color.
+     */
+    this.getOutlineThickness = function () {
+        return scene.outline.color;
+    };
+
+    /**
+     * Shows outline around model(s) and/or object(s).
+     *
+     * Outlines all objects in the viewer when no arguments are given.
+     *
+     * @param {String|String[]} ids IDs of model(s) and/or object(s). Outlines all objects by default.
+     */
+    this.showOutline = function (ids) {
+        setOutline(ids, true);
+    };
+
+    /**
+     * Shows outline around model(s) and/or object(s).
+     *
+     * Hides all outlines in the viewer when no arguments are given.
+     *
+     * @param {String|String[]} ids IDs of model(s) and/or object(s).
+     */
+    this.hideOutline = function (ids) {
+        setOutline(ids, false);
+    };
+
+    function setOutline(ids, outline) {
+        if (ids === undefined || ids === null) {
+            setOutline(self.getObjects(), outline);
+            return;
+        }
+        if (xeogl._isString(ids)) {
+            var id = ids;
+            var object = objects[id];
+            if (object) {
+                object.modes.outline = outline;
+                return;
+            }
+            var model = models[id];
+            if (!model) {
+                var objectsOfType = types[id];
+                if (objectsOfType) {
+                    var typeIds = Object.keys(objectsOfType);
+                    if (typeIds.length === 0) {
+                        return;
+                    }
+                    setOutline(typeIds, outline);
+                    return
+                }
+                error("Model, object or type not found: " + id);
+                return;
+            }
+            setOutline(self.getObjects(id), outline);
+            return;
+        }
+        for (var i = 0, len = ids.length; i < len; i++) {
+            setOutline(ids[i], outline);
+        }
+    }
+
+    //----------------------------------------------------------------------------------------------------
     // Boundaries
     //----------------------------------------------------------------------------------------------------
 
@@ -615,7 +748,9 @@ xeometry.Viewer = function (cfg) {
      *
      * When no arguments are given, returns the collective boundary of all objects in the viewer.
      *
-     * @param {String|String[]} target IDs of models and/or objects.
+     * When you specify IDs of annotations, then the boundaries of the annotations' objects are considered.
+     *
+     * @param {String|String[]} target IDs of models, objects and/or annotations
      * @returns {[Number, Number, Number, Number, Number, Number]} An axis-aligned World-space bounding box, given as elements ````[xmin, ymin, zmin, xmax, ymax, zmax]````.
      */
     this.getAABB = function (target) {
@@ -794,6 +929,60 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
+     * Rotate 'eye' about 'look', around the 'up' vector
+     *
+     * @param {Number} angle Angle of rotation in degrees
+     */
+    this.rotateEyeY = function (angle) {
+        view.rotateEyeY(angle);
+    };
+
+    /**
+     * Rotate 'eye' about 'look' around the X-axis
+     *
+     * @param {Number} angle Angle of rotation in degrees
+     */
+    this.rotateEyeX = function (angle) {
+        view.rotateEyeX(angle);
+    };
+
+    /**
+     * Rotate 'look' about 'eye', around the 'up' vector
+     *
+     * <p>Applies constraints added with {@link #addConstraint}.</p>
+     *
+     * @param {Number} angle Angle of rotation in degrees
+     */
+    this.rotateLookY = function (angle) {
+        view.rotateLookY(angle);
+    };
+
+    /**
+     * Rotate 'eye' about 'look' around the X-axis
+     *
+     * @param {Number} angle Angle of rotation in degrees
+     */
+    this.rotateLookX = function (angle) {
+        view.rotateLookX(angle);
+    };
+
+    /**
+     * Pans the camera along X, Y or Z axis.
+     * @param pan The pan vector
+     */
+    this.pan = function (pan) {
+        view.pan(pan);
+    };
+
+    /**
+     * Increments/decrements zoom factor, ie. distance between eye and look.
+     * @param delta
+     */
+    this.zoom = function (delta) {
+        view.zoom(delta);
+    };
+
+    /**
      * Sets the flight duration when fitting elements to view.
      *
      * A value of zero (default) will cause the camera to instantly jump to each new target .
@@ -844,7 +1033,7 @@ xeometry.Viewer = function (cfg) {
      * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
      */
     this.viewFit = function (target, ok) {
-        (ok || cameraFlight.duration > 0) ? cameraFlight.flyTo({aabb: this.getAABB(target)}, ok) : cameraFlight.jumpTo({aabb: this.getAABB(target)});
+        (ok || cameraFlight.duration > 0.1) ? cameraFlight.flyTo({aabb: this.getAABB(target)}, ok) : cameraFlight.jumpTo({aabb: this.getAABB(target)});
     };
 
     /**
@@ -1005,12 +1194,12 @@ xeometry.Viewer = function (cfg) {
      *
      * @param {[Number, Number, Number]} origin World-space ray origin.
      * @param {[Number, Number, Number]} dir World-space ray direction vector.
-     * @returns {{id: *, worldPos: *}} If object found, the ID of objectand the World-space ray-surface intersection coordinates.
+     * @returns {{id: *, worldPos: *, primIndex: (*|number), bary: *}} If object found, the ID of object, World-space surface intersection, primitive index and barycentric coordinates.
      */
     this.rayCastSurface = function (origin, dir) {
         var hit = scene.pick({origin: origin, direction: dir, pickSurface: true});
         if (hit) {
-            return {id: hit.entity.id, worldPos: hit.worldPos};
+            return {id: hit.entity.id, worldPos: hit.worldPos, primIndex: hit.primIndex, bary: hit.bary};
         }
     };
 
@@ -1032,13 +1221,425 @@ xeometry.Viewer = function (cfg) {
      * object's surface coordinates at that position.
      *
      * @param {[Number, Number]} canvasPos Canvas position.
-     * @returns {{id: *, worldPos: *}} If object found, the ID of objectand the World-space ray-surface intersection coordinates.
+     * @returns {{id: *, worldPos: *, primIndex: (*|number), bary: *}} If object found, the ID of object, World-space surface intersection, primitive index and barycentric coordinates.
      */
     this.pickSurface = function (canvasPos) {
         var hit = scene.pick({canvasPos: canvasPos, pickSurface: true});
         if (hit) {
-            return {id: hit.entity.id, worldPos: hit.worldPos};
+            return {id: hit.entity.id, worldPos: hit.worldPos, primIndex: hit.primIndex, bary: hit.bary};
         }
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    // Annotations
+    //----------------------------------------------------------------------------------------------------
+
+    this.createAnnotation = function (id, cfg) {
+        if (scene.components[id]) {
+            error("Component with this ID already exists: " + id);
+            return;
+        }
+        if (cfg === undefined) {
+            error("Annotation configuration expected");
+            return;
+        }
+        var objectId = cfg.object;
+        if (objectId === undefined) {
+            error("Annotation property expected: objectId");
+            return;
+        }
+        var object = objects[objectId];
+        if (!object) {
+            error("Object not found: " + objectId);
+            return;
+        }
+        var primIndex = cfg.primIndex;
+        if (primIndex === undefined) {
+            error("Annotation property expected: primIndex");
+            return;
+        }
+        var annotation = new xeogl.Annotation(scene, {
+            id: id,
+            entity: object,
+            primIndex: primIndex,
+            bary: cfg.bary,
+            eye: cfg.eye,
+            look: cfg.look,
+            up: cfg.up,
+            occludable: cfg.occludable,
+            glyph: cfg.glyph,
+            title: cfg.title,
+            desc: cfg.desc,
+            pinShown: cfg.pinShown,
+            labelShown: cfg.labelShown
+        });
+        annotations[annotation.id] = annotation;
+        var oa = objectAnnotations[objectId] || (objectAnnotations[objectId] = {});
+        oa[annotation.id] = annotation;
+    };
+
+    this.getAnnotations = function (id) {
+        //if (id !== undefined || id === null) {
+        //    var objectsOfType = types[id];
+        //    if (objectsOfType) {
+        //    //    return Object.keys(objectsOfType);
+        //    }
+        //    var model = models[id];
+        //    if (!model) {
+        //        error("Model not found: " + id);
+        //        return [];
+        //    }
+        //    var entities = model.types["xeogl.Entity"];
+        //    if (!entities) {
+        //        return [];
+        //    }
+        //    return Object.keys(entities);
+        //}
+        return Object.keys(annotations);
+    };
+
+    this.destroyAnnotation = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            return;
+        }
+        if (annotation.entity) {
+            delete objectAnnotations[annotation.entity.id][annotation.id];
+        }
+        annotation.destroy();
+        delete annotations[id];
+    };
+
+    this.clearAnnotations = function () {
+        for (var ids = Object.keys(annotations), i = 0; i < ids.length; i++) {
+            this.destroyAnnotation(ids[i]);
+        }
+    };
+
+    this.setAnnotationPrimIndex = function (id, primIndex) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            this.error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        annotation.primIndex = primIndex;
+    };
+
+    this.getAnnotationPrimIndex = function (id) {
+        var annotation = getAnnotation(id);
+        if (!annotation) {
+            this.error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.primIndex;
+    };
+
+    this.setAnnotationTitle = function (id, title) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            this.error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        annotation.title = title;
+    };
+
+    this.getAnnotationTitle = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            this.error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.title;
+    };
+
+    this.setAnnotationDesc = function (id, desc) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            this.error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        annotation.desc = desc;
+    };
+
+    this.getAnnotationDesc = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            this.error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.desc;
+    };
+
+    this.setAnnotationBary = function (id, bary) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            this.error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        annotation.bary = bary;
+    };
+
+    this.getAnnotationBary = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            this.error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.bary;
+    };
+
+    this.setAnnotationObject = function (id, objectId) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            this.error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        var object = objects[objectId];
+        if (!object) {
+            this.error("Object not found: \"" + objectId + "\"");
+            return;
+        }
+        annotation.entity = object;
+    };
+
+    this.getAnnotationObject = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            this.error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        var entity = annotation.entity;
+        return entity ? entity.id : null;
+    };
+
+    this.setAnnotationEye = function (id, eye) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            this.error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        annotation.eye = eye;
+    };
+
+    this.getAnnotationEye = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            this.error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.eye;
+    };
+
+    this.setAnnotationLook = function (id, look) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            this.error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        annotation.look = look;
+    };
+
+    this.getAnnotationLook = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            this.error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.look;
+    };
+
+    this.setAnnotationUp = function (id, up) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            this.error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        annotation.up = up;
+    };
+
+    this.getAnnotationUp = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            this.error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.up;
+    };
+
+    this.setAnnotationOccludable = function (id, occludable) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            this.error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        annotation.occludable = occludable;
+    };
+
+    this.getAnnotationOccludable = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            this.error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.occludable;
+    };
+
+    this.setPinShown = function (id, pinShown) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            this.error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        annotation.pinShown = pinShown;
+    };
+
+    this.getAnnotationPinShown = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            this.error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.pinShown;
+    };
+
+    this.setAnnotationLabelShown = function (id, labelShown) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            this.error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        annotation.labelShown = labelShown;
+    };
+
+    this.getAnnotationLabelShown = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            this.error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.labelShown;
+    };
+
+    this.setAnnotationGlyph = function (id, glyph) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            this.error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        annotation.glyph = glyph;
+    };
+
+    this.getAnnotationGlyph = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            this.error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.glyph;
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    // Arbitrary clipping planes
+    //----------------------------------------------------------------------------------------------------
+
+    this.createclip = function (id, cfg) {
+        if (scene.components[id]) {
+            error("Component with this ID already exists: " + id);
+            return;
+        }
+        if (cfg === undefined) {
+            error("Clip configuration expected");
+            return;
+        }
+        var clip = new xeogl.Clip(scene, {
+            id: id,
+            entity: object,
+            primIndex: primIndex,
+            bary: cfg.bary,
+            eye: cfg.eye,
+            look: cfg.look,
+            up: cfg.up,
+            occludable: cfg.occludable,
+            glyph: cfg.glyph,
+            title: cfg.title,
+            desc: cfg.desc,
+            pinShown: cfg.pinShown,
+            labelShown: cfg.labelShown
+        });
+        clips[clip.id] = clip;
+        //scene.clips.clips = scene.clips.clips.push
+
+    };
+
+    this.getclips = function () {
+        //if (id !== undefined || id === null) {
+        //    var objectsOfType = types[id];
+        //    if (objectsOfType) {
+        //    //    return Object.keys(objectsOfType);
+        //    }
+        //    var model = models[id];
+        //    if (!model) {
+        //        error("Model not found: " + id);
+        //        return [];
+        //    }
+        //    var entities = model.types["xeogl.Entity"];
+        //    if (!entities) {
+        //        return [];
+        //    }
+        //    return Object.keys(entities);
+        //}
+        return Object.keys(clips);
+    };
+
+    this.destroyClip = function (id) {
+        var clip = clips[id];
+        if (!clip) {
+            return;
+        }
+        clip.destroy();
+        delete clips[id];
+    };
+
+    this.clearClips = function () {
+        for (var ids = Object.keys(clips), i = 0; i < ids.length; i++) {
+            this.destroyClip(ids[i]);
+        }
+    };
+
+    this.setClipPos = function (id, pos) {
+        var clip = clips[id];
+        if (!clip) {
+            this.error("Clip not found: \"" + id + "\"");
+            return;
+        }
+        clip.pos = pos;
+    };
+
+    this.getClipPos = function (id) {
+        var clip = getclip(id);
+        if (!clip) {
+            this.error("Clip not found: \"" + id + "\"");
+            return;
+        }
+        return clip.pos;
+    };
+
+    this.setClipDir = function (id, dir) {
+        var clip = clips[id];
+        if (!clip) {
+            this.error("Clip not found: \"" + id + "\"");
+            return;
+        }
+        clip.dir = dir;
+    };
+
+    this.getClipDir = function (id) {
+        var clip = clips(id);
+        if (!clip) {
+            this.error("Clip not found: \"" + id + "\"");
+            return;
+        }
+        return clip.dir;
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -1128,35 +1729,68 @@ xeometry.Viewer = function (cfg) {
             bookmark.objects = {};
             for (id in objects) {
                 var object;
-                var objectData;
+                var objectState;
                 if (objects.hasOwnProperty(id)) {
                     object = objects[id];
-                    objectData = null;
+                    objectState = null;
                     translate = getTranslate(id);
                     if (translate) {
-                        objectData = objectData || (bookmark.objects[id] = {});
-                        objectData.translate = translate;
+                        objectState = objectState || (bookmark.objects[id] = {});
+                        objectState.translate = translate;
                     }
                     scale = getScale(id);
                     if (scale) {
-                        objectData = objectData || (bookmark.objects[id] = {});
-                        objectData.scale = scale;
+                        objectState = objectState || (bookmark.objects[id] = {});
+                        objectState.scale = scale;
                     }
                     rotate = getRotate(id);
                     if (rotate) {
-                        objectData = objectData || (bookmark.objects[id] = {});
-                        objectData.rotate = rotate;
+                        objectState = objectState || (bookmark.objects[id] = {});
+                        objectState.rotate = rotate;
                     }
                     if (object.visibility.visible) {
-                        objectData = objectData || (bookmark.objects[id] = {});
-                        objectData.visible = true;
-                    } else if (objectData) {
-                        objectData.visible = false;
+                        objectState = objectState || (bookmark.objects[id] = {});
+                        objectState.visible = true;
+                    } else if (objectState) {
+                        objectState.visible = false;
                     }
                     if (object.modes.transparent) {
-                        objectData = objectData || (bookmark.objects[id] = {});
-                        objectData.opacity = object.material.opacity;
+                        objectState = objectState || (bookmark.objects[id] = {});
+                        objectState.opacity = object.material.opacity;
                     }
+                }
+            }
+            for (id in annotations) {
+                var annotation;
+                var annotationState;
+                if (annotations.hasOwnProperty(id)) {
+                    annotation = annotations[id];
+                    annotationState = {
+                        primIndex: annotation.primIndex,
+                        bary: vecToArray(annotation.bary),
+                        glyph: annotation.glyph,
+                        title: annotation.title,
+                        desc: annotation.desc,
+                        pinShown: annotation.pinShown,
+                        labelShown: annotation.labelShown,
+                        occludable: annotation.occludable
+                    };
+                    if (annotation.entity) {
+                        annotationState.object = annotation.entity.id;
+                    }
+                    if (annotation.eye) {
+                        annotationState.eye = vecToArray(annotation.eye);
+                    }
+                    if (annotation.look) {
+                        annotationState.look = vecToArray(annotation.look);
+                    }
+                    if (annotation.up) {
+                        annotationState.up = vecToArray(annotation.up);
+                    }
+                    if (!bookmark.annotations) {
+                        bookmark.annotations = {};
+                    }
+                    bookmark.annotations[id] = annotationState;
                 }
             }
             bookmark.lookat = {
@@ -1203,11 +1837,14 @@ xeometry.Viewer = function (cfg) {
             if (!bookmark.models || bookmark.models.length === 0) {
                 return;
             }
+            self.clearAnnotations();
+            // TODO: unload models that are not in bookmark
             loadModels(bookmark.models, 0, function () {
+                var id;
                 var objectStates = bookmark.objects;
                 var objectState;
                 var visible = [];
-                for (var id in objectStates) {
+                for (id in objectStates) {
                     if (objectStates.hasOwnProperty(id)) {
                         objectState = objectStates[id];
                         if (objectState.visible) {
@@ -1225,6 +1862,12 @@ xeometry.Viewer = function (cfg) {
                         if (objectState.opacity !== undefined) {
                             self.setOpacity(id, objectState.opacity); // FIXME: what if objects already loaded and transparent, but no opacity value here?
                         }
+                    }
+                }
+                var annotationStates = bookmark.annotations;
+                for (id in annotationStates) {
+                    if (annotationStates.hasOwnProperty(id)) {
+                        self.createAnnotation(id, annotationStates[id]);
                     }
                 }
                 self.hide();
@@ -1248,6 +1891,8 @@ xeometry.Viewer = function (cfg) {
         translations = {};
         rotations = {};
         scales = {};
+        annotations = {};
+        objectAnnotations = {};
     };
 
     function error(msg) {

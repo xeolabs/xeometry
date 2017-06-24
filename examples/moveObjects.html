@@ -8,8 +8,8 @@
 <body>
 
 <div id="info" class="light">
-    <h1>xray view of internal objects</h1>
-    <h2>// Load saw model, make handle transparent</h2>
+    <h1>move objects</h1>
+    <h2>// Load saw model, move part of the handle to reveal the motor</h2>
 </div>
 
 <script>
@@ -21,17 +21,9 @@
 
     viewer.loadModel("saw", "models/Reciprocating_Saw/PBR-SpecGloss/Reciprocating_Saw.gltf", function () {
         viewer.setRotate("saw", [90, 0, 0]);
-        viewer.setOpacity([
-            "saw#body-node.entity.0",
-            "saw#body-node_1.entity.0",
-            "saw#body-node_2.entity.0",
-            "saw#body-node_3.entity.0",
-            "saw#body-node_11.entity.0",
-            "saw#body-node_110.entity.0",
-            "saw#body-node_29.entity.0",
-            "saw#body-node_7.entity.0",
-            "saw#body-node_6.entity.0"
-        ], 0.3);
+        viewer.addTranslate("saw#body-node_1.entity.0", [-150, 0, 0]);
+        viewer.addTranslate("saw#body-node_2.entity.0", [-150, 0, 0]);
+        viewer.addTranslate("saw#body-node_3.entity.0", [-150, 0, 0]);
         viewer.viewFit(["saw"]);
     });
 

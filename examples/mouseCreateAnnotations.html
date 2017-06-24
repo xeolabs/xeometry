@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <script src="../build/xeometry.js"></script>
+    <link href="css/styles.css" rel="stylesheet"/>
+<body>
+
+<div id="info" class="light">
+    <h1>create annotations with mouse clicks</h1>
+    <h2>// Click on the model to create annotations</h2>
+</div>
+
+<script>
+
+    var viewer = new xeometry.Viewer();
+
+    viewer.setEye([-20, 20, 20]);
+    viewer.setLook([0, 0, 0]);
+
+    viewer.loadModel("saw", "models/Reciprocating_Saw/PBR-SpecGloss/Reciprocating_Saw.gltf", function () {
+
+        viewer.setRotate("saw", [90, 0, 0]);
+
+        var i = 0;
+
+        viewer.getOverlay().addEventListener("mousedown", function (e) {
+            if (e.which === 1) {// Left button
+                var canvasPos = getClickCoordsWithinElement(e);
+                var hit = viewer.pickSurface(canvasPos);
+                if (hit) {
+                    var id = "a" + i;
+                    viewer.createAnnotation(id, {
+                        object: hit.id,
+                        primIndex: hit.primIndex,
+                        bary: hit.bary,
+                        glyph: id,
+                        pinShown: true,
+                        labelShown: true,
+                        title: "Annotation " + i,
+                        desc: "Short descriptive text"
+                    });
+                    i++;
+                }
+            }
+            e.preventDefault();
+        });
+
+        function getClickCoordsWithinElement(event) {
+            var coords = [0, 0];
+            if (!event) {
+                event = window.event;
+                coords.x = event.x;
+                coords.y = event.y;
+            }
+            else {
+                var element = event.target;
+                var totalOffsetLeft = 0;
+                var totalOffsetTop = 0;
+
+                while (element.offsetParent) {
+                    totalOffsetLeft += element.offsetLeft;
+                    totalOffsetTop += element.offsetTop;
+                    element = element.offsetParent;
+                }
+                coords[0] = event.pageX - totalOffsetLeft;
+                coords[1] = event.pageY - totalOffsetTop;
+            }
+            return coords;
+        }
+
+        viewer.viewFit("saw");
+    });
+
+</script>
+</body>
+</html>

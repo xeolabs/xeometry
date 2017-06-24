@@ -3,26 +3,29 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <script src="libs/xeogl.js"></script>
-    <script src="../js/xeometry.js"></script>
+    <script src="../build/xeometry.js"></script>
 
     <script src="libs/gl-matrix-min.js"></script>
 
     <link href="css/styles.css" rel="stylesheet"/>
 <body>
 
+<div id="info" class="light">
+    <h1>explode objects</h1>
+    <h2>// Load saw model, animate objects' transforms to explode them away from the model center</h2>
+</div>
 
 <script>
 
     var viewer = new xeometry.Viewer();
 
-    viewer.loadModel("gearbox", "models/Reciprocating_Saw/PBR-SpecGloss/Reciprocating_Saw.gltf", function () {
+    viewer.loadModel("saw", "models/Reciprocating_Saw/PBR-SpecGloss/Reciprocating_Saw.gltf", function () {
 
         viewer.xspin(0.05);
 
         viewer.viewFit();
 
-        var modelCenter = viewer.getCenter("gearbox");
+        var modelCenter = viewer.getCenter("saw");
         var objectId;
         var objectCenter;
         var objects = viewer.getObjects();

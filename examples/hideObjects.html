@@ -4,15 +4,18 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <script src="../build/xeometry.js"></script>
+    <script src="js/pickQueryObject.js"></script>
     <link href="css/styles.css" rel="stylesheet"/>
 <body>
 
 <div id="info" class="light">
-    <h1>xray view of internal objects</h1>
-    <h2>// Load saw model, make handle transparent</h2>
+    <h1>hide objects</h1>
+    <h2>// Load saw model, hide part of the handle to reveal the motor</h2>
 </div>
 
 <script>
+
+    // Load saw, reveal motor by hiding objects
 
     var viewer = new xeometry.Viewer();
 
@@ -21,19 +24,15 @@
 
     viewer.loadModel("saw", "models/Reciprocating_Saw/PBR-SpecGloss/Reciprocating_Saw.gltf", function () {
         viewer.setRotate("saw", [90, 0, 0]);
-        viewer.setOpacity([
-            "saw#body-node.entity.0",
+        viewer.hide([
             "saw#body-node_1.entity.0",
             "saw#body-node_2.entity.0",
-            "saw#body-node_3.entity.0",
-            "saw#body-node_11.entity.0",
-            "saw#body-node_110.entity.0",
-            "saw#body-node_29.entity.0",
-            "saw#body-node_7.entity.0",
-            "saw#body-node_6.entity.0"
-        ], 0.3);
+            "saw#body-node_3.entity.0"
+        ]);
         viewer.viewFit(["saw"]);
     });
+
+    new PickQueryObject(viewer);
 
 </script>
 </body>

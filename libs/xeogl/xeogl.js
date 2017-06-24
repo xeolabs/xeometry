@@ -4,7 +4,7 @@
  * A WebGL-based 3D visualization engine from xeoLabs
  * http://xeogl.org/
  *
- * Built on 2017-05-30
+ * Built on 2017-06-23
  *
  * MIT License
  * Copyright 2017, Lindsay Kay
@@ -5431,6 +5431,14 @@ var Canvas2Image = (function () {
          */
         this.viewport = null;
 
+        /**
+         Outline state.
+         @property outline
+         @type {renderer.Outline}
+         */
+        this.outline = null;
+
+
         //----------------- Renderer dirty flags -------------------------------
 
         /**
@@ -5511,6 +5519,7 @@ var Canvas2Image = (function () {
         object.stationary = this.stationary;
         object.viewport = this.viewport;
         object.lights = this.lights;
+        object.outline = this.outline;
 
         // Build hash of the object's state configuration. This is used
         // to hash the object's shader so that it may be reused by other
@@ -5582,8 +5591,9 @@ var Canvas2Image = (function () {
         this._setChunk(object, 10, this.material.type, this.material); // Supports different material systems
         this._setChunk(object, 11, "clips", this.clips);
         this._setChunk(object, 12, "viewport", this.viewport);
-        this._setChunk(object, 13, "geometry", this.geometry);
-        this._setChunk(object, 14, "draw", this.geometry, true); // Must be last
+        this._setChunk(object, 13, "outline", this.outline);
+        this._setChunk(object, 14, "geometry", this.geometry);
+        this._setChunk(object, 15, "draw", this.geometry, true); // Must be last
 
         // Ambient light is global across everything in display, and
         // can never be disabled, so grab it now because we want to
@@ -5844,9 +5854,9 @@ var Canvas2Image = (function () {
             if (shadowObjectLists.hasOwnProperty(lightId)) {
                 shadowObjectList = shadowObjectLists[lightId];
                 light = shadowObjectList.light;
-             //   if (light.shadowDirty) {
-                    this._renderShadowMap(light, shadowObjectList.objects);
-             //   }
+                //   if (light.shadowDirty) {
+                this._renderShadowMap(light, shadowObjectList.objects);
+                //   }
             }
         }
     };
@@ -5929,125 +5939,195 @@ var Canvas2Image = (function () {
         renderBuf.unbind();
     };
 
-    xeogl.renderer.Renderer.prototype._renderObjectList = function (params) {
+    xeogl.renderer.Renderer.prototype._renderObjectList = (function () {
 
-        var gl = this.gl;
+        var outlinedObjects = [];
 
-        var ambient = this._ambient;
-        var ambientColor;
-        if (ambient) {
-            var color = ambient.color;
-            var intensity = ambient.intensity;
-            this.ambientColor[0] = color[0] * intensity;
-            this.ambientColor[1] = color[1] * intensity;
-            this.ambientColor[2] = color[2] * intensity;
-        } else {
-            this.ambientColor[0] = 0;
-            this.ambientColor[1] = 0;
-            this.ambientColor[2] = 0;
-        }
+        return function (params) {
 
-        var frameCtx = this._frameCtx;
+            var gl = this.gl;
 
-        frameCtx.renderTarget = null;
-        frameCtx.renderBuf = null;
-        frameCtx.depthbufEnabled = null;
-        frameCtx.clearDepth = null;
-        frameCtx.depthFunc = gl.LESS;
-        frameCtx.blendEnabled = false;
-        frameCtx.backfaces = true;
-        frameCtx.frontface = true; // true == "ccw" else "cw"
-        frameCtx.textureUnit = 0;
-        frameCtx.transparent = false; // True while rendering transparency bin
-        frameCtx.ambientColor = this.ambientColor;
-        frameCtx.drawElements = 0;
-        frameCtx.useProgram = 0;
-        frameCtx.bindTexture = 0;
-        frameCtx.bindArray = 0;
-        frameCtx.pass = params.pass;
-        frameCtx.bindOutputFramebuffer = this.bindOutputFramebuffer;
-        frameCtx.pickViewMatrix = params.pickViewMatrix;
-        frameCtx.pickProjMatrix = params.pickProjMatrix;
-        frameCtx.pickIndex = 0;
-
-        gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-
-        if (this.transparent) { // Canvas is transparent
-            gl.clearColor(0, 0, 0, 0);
-        } else {
-            gl.clearColor(this.ambientColor[0], this.ambientColor[1], this.ambientColor[2], 1.0);
-        }
-
-        gl.enable(gl.DEPTH_TEST);
-        gl.frontFace(gl.CCW);
-        gl.disable(gl.CULL_FACE);
-        gl.disable(gl.BLEND);
-
-        var i;
-        var len;
-        var object;
-        var j;
-        var lenj;
-        var chunks;
-        var chunk;
-
-        var lastChunkId = this._lastChunkId = this._lastChunkId || new Int32Array(30);
-        for (i = 0; i < 20; i++) {
-            lastChunkId[i] = -9999999999999;
-        }
-
-        var startTime = (new Date()).getTime();
-
-        if (this.bindOutputFramebuffer) {
-            this.bindOutputFramebuffer(params.pass);
-        }
-
-        if (params.clear) {
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        }
-
-        for (i = 0, len = this._objectListLen; i < len; i++) {
-            object = this._objectList[i];
-            if (!object.compiled || object.cull.culled === true || object.visibility.visible === false) {
-                continue;
+            var ambient = this._ambient;
+            if (ambient) {
+                var color = ambient.color;
+                var intensity = ambient.intensity;
+                this.ambientColor[0] = color[0] * intensity;
+                this.ambientColor[1] = color[1] * intensity;
+                this.ambientColor[2] = color[2] * intensity;
+            } else {
+                this.ambientColor[0] = 0;
+                this.ambientColor[1] = 0;
+                this.ambientColor[2] = 0;
             }
-            chunks = object.chunks;
-            for (j = 0, lenj = chunks.length; j < lenj; j++) {
-                chunk = chunks[j];
-                if (chunk) {
-                    if (chunk.draw && (chunk.unique || lastChunkId[j] !== chunk.id)) {
-                        chunk.draw(frameCtx);
-                        lastChunkId[j] = chunk.id;
+
+            var frameCtx = this._frameCtx;
+
+            frameCtx.renderTarget = null;
+            frameCtx.renderBuf = null;
+            frameCtx.depthbufEnabled = null;
+            frameCtx.clearDepth = null;
+            frameCtx.depthFunc = gl.LESS;
+            frameCtx.blendEnabled = false;
+            frameCtx.backfaces = true;
+            frameCtx.frontface = true; // true == "ccw" else "cw"
+            frameCtx.textureUnit = 0;
+            frameCtx.transparent = false; // True while rendering transparency bin
+            frameCtx.ambientColor = this.ambientColor;
+            frameCtx.drawElements = 0;
+            frameCtx.useProgram = 0;
+            frameCtx.bindTexture = 0;
+            frameCtx.bindArray = 0;
+            frameCtx.pass = params.pass;
+            frameCtx.bindOutputFramebuffer = this.bindOutputFramebuffer;
+            frameCtx.pickViewMatrix = params.pickViewMatrix;
+            frameCtx.pickProjMatrix = params.pickProjMatrix;
+            frameCtx.pickIndex = 0;
+
+            gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+
+            if (this.transparent) { // Canvas is transparent
+                gl.clearColor(0, 0, 0, 0);
+            } else {
+                gl.clearColor(this.ambientColor[0], this.ambientColor[1], this.ambientColor[2], 1.0);
+            }
+
+            gl.enable(gl.DEPTH_TEST);
+            gl.frontFace(gl.CCW);
+            gl.disable(gl.CULL_FACE);
+            gl.disable(gl.BLEND);
+
+            var i;
+            var len;
+            var object;
+            var j;
+            var lenj;
+            var chunks;
+            var chunk;
+
+            var lastChunkId = this._lastChunkId = this._lastChunkId || new Int32Array(30);
+            for (i = 0; i < 20; i++) {
+                lastChunkId[i] = -9999999999;
+            }
+
+            var startTime = (new Date()).getTime();
+
+            if (this.bindOutputFramebuffer) {
+                this.bindOutputFramebuffer(params.pass);
+            }
+
+            if (params.clear) {
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+            }
+
+            var numOutlinedObjects = 0;
+
+            for (i = 0, len = this._objectListLen; i < len; i++) {
+                object = this._objectList[i];
+                if (!object.compiled || object.cull.culled === true || object.visibility.visible === false) {
+                    continue;
+                }
+                if (object.modes.outline) {
+                    outlinedObjects[numOutlinedObjects++] = object;
+                    continue;
+                }
+                chunks = object.chunks;
+                for (j = 0, lenj = chunks.length; j < lenj; j++) {
+                    chunk = chunks[j];
+                    if (chunk) {
+                        if (chunk.draw && (chunk.unique || lastChunkId[j] !== chunk.id)) {
+                            chunk.draw(frameCtx);
+                            lastChunkId[j] = chunk.id;
+                        }
                     }
                 }
             }
-        }
 
-        var endTime = Date.now();
-        var frameStats = this.stats.frame;
+            if (numOutlinedObjects > 0) {
 
-        frameStats.renderTime = (endTime - startTime) / 1000.0;
-        frameStats.drawElements = frameCtx.drawElements;
-        frameStats.useProgram = frameCtx.useProgram;
-        frameStats.bindTexture = frameCtx.bindTexture;
-        frameStats.bindArray = frameCtx.bindArray;
+                gl.enable(gl.STENCIL_TEST);
+                gl.stencilFunc(gl.ALWAYS, 1, 1);
+                gl.stencilOp(gl.KEEP, gl.KEEP, gl.REPLACE);
+                gl.stencilMask(1);
+                gl.clearStencil(0);
+                gl.clear(gl.STENCIL_BUFFER_BIT);
+                gl.enable(gl.DEPTH_TEST);
 
-        if (frameCtx.renderBuf) {
-            frameCtx.renderBuf.unbind();
-        }
+                for (i = 0; i < 20; i++) {
+                    lastChunkId[i] = -999999999;
+                }
 
-        var numTextureUnits = gl.getParameter(gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS);
+                for (i = 0, len = numOutlinedObjects; i < len; i++) {
+                    object = outlinedObjects[i];
+                    chunks = object.chunks;
+                    for (j = 0, lenj = chunks.length; j < lenj; j++) {
+                        chunk = chunks[j];
+                        if (chunk) {
+                            if (chunk.draw && (chunk.unique || lastChunkId[j] !== chunk.id)) {
+                                chunk.draw(frameCtx);
+                                lastChunkId[j] = chunk.id;
+                            }
+                        }
+                    }
+                }
 
-        for (var ii = 0; ii < numTextureUnits; ii++) {
-            gl.activeTexture(gl.TEXTURE0 + ii);
-            gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
-            gl.bindTexture(gl.TEXTURE_2D, null);
-        }
+                //gl.flush();
 
-        if (this.unbindOutputFramebuffer) {
-            this.unbindOutputFramebuffer(params.pass);
-        }
-    };
+                gl.stencilFunc(gl.EQUAL, 0, 1);
+                gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+                gl.stencilMask(0x00);
+                gl.disable(gl.BLEND);
+                gl.disable(gl.CULL_FACE); // Need both faces for better corners with face-aligned normals
+
+                for (i = 0; i < 20; i++) {
+                    lastChunkId[i] = -999999999;
+                }
+
+                for (i = 0, len = numOutlinedObjects; i < len; i++) {
+                    object = outlinedObjects[i];
+                    chunks = object.chunks;
+                    for (j = 0, lenj = chunks.length; j < lenj; j++) {
+                        chunk = chunks[j];
+                        if (chunk) {
+                            if (chunk.outline && (chunk.unique || lastChunkId[j] !== chunk.id)) {
+                                chunk.outline(frameCtx);
+                                lastChunkId[j] = chunk.id;
+                            }
+                        }
+                    }
+                }
+
+                gl.disable(gl.STENCIL_TEST);
+            }
+
+            var endTime = Date.now();
+            var frameStats = this.stats.frame;
+
+            frameStats.renderTime = (endTime - startTime) / 1000.0;
+            frameStats.drawElements = frameCtx.drawElements;
+            frameStats.useProgram = frameCtx.useProgram;
+            frameStats.bindTexture = frameCtx.bindTexture;
+            frameStats.bindArray = frameCtx.bindArray;
+
+            if (frameCtx.renderBuf) {
+                frameCtx.renderBuf.unbind();
+            }
+
+            // TODO: Render outlined objects - normal render pass and outline pass
+
+
+            var numTextureUnits = gl.getParameter(gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS);
+
+            for (var ii = 0; ii < numTextureUnits; ii++) {
+                gl.activeTexture(gl.TEXTURE0 + ii);
+                gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+                gl.bindTexture(gl.TEXTURE_2D, null);
+            }
+
+            if (this.unbindOutputFramebuffer) {
+                this.unbindOutputFramebuffer(params.pass);
+            }
+        };
+    })();
 
     /**
      * Attempts to pick an object.
@@ -8136,6 +8216,23 @@ var Canvas2Image = (function () {
     xeogl.renderer.Viewport = xeogl.renderer.State.extend({
         _ids: new xeogl.utils.Map({})
     });
+
+    /**
+
+     Outline state.
+
+     renderer.Outline
+     @module xeogl
+
+     @constructor
+     @param cfg {*} Configs
+     @param [cfg.thickness=15] {Number} Thickness of the outline in pixels.
+     @param [cfg.color=[1,0,0]] {Array of Number} The outline color,
+     @extends renderer.State
+     */
+    xeogl.renderer.Outline = xeogl.renderer.State.extend({
+        _ids: new xeogl.utils.Map({})
+    });
 })();
 
 ;(function () {
@@ -8288,6 +8385,12 @@ var Canvas2Image = (function () {
         this.pickPrimitive = null;
 
         /**
+         * The outline program
+         * @type webgl.Program
+         */
+        this.outline = null;
+
+        /**
          * The count of display objects using this program
          * @type Number
          */
@@ -8345,6 +8448,7 @@ var Canvas2Image = (function () {
         this.shadow = new xeogl.renderer.webgl.Program(this.stats, gl, this.source.vertexShadow, this.source.fragmentShadow);
         this.pickObject = new xeogl.renderer.webgl.Program(this.stats, gl, this.source.vertexPickObject, this.source.fragmentPickObject);
         this.pickPrimitive = new xeogl.renderer.webgl.Program(this.stats, gl, this.source.vertexPickPrimitive, this.source.fragmentPickPrimitive);
+        this.outline = new xeogl.renderer.webgl.Program(this.stats, gl, this.source.vertexOutline, this.source.fragmentOutline);
 
         if (!this.draw.allocated) {
             this.errorLog = ["Draw program failed to allocate"].concat(this.draw.errorLog);
@@ -8363,6 +8467,11 @@ var Canvas2Image = (function () {
 
         if (!this.pickPrimitive.allocated) {
             this.errorLog = ["Primitive-picking program failed to allocate"].concat(this.pickPrimitive.errorLog);
+            return;
+        }
+
+        if (!this.outline.allocated) {
+            this.errorLog = ["Outline effect program failed to allocate"].concat(this.outline.errorLog);
             return;
         }
 
@@ -8388,6 +8497,11 @@ var Canvas2Image = (function () {
             return;
         }
 
+        if (!this.outline.compiled) {
+            this.errorLog = ["Outline effect program failed to compile"].concat(this.outline.errorLog);
+            return;
+        }
+
         this.compiled = true;
 
         if (!this.draw.linked) {
@@ -8410,6 +8524,11 @@ var Canvas2Image = (function () {
             return;
         }
 
+        if (!this.outline.linked) {
+            this.errorLog = ["Outline effect program failed to link"].concat(this.outline.errorLog);
+            return;
+        }
+
         this.linked = true;
 
         if (!this.draw.validated) {
@@ -8429,6 +8548,11 @@ var Canvas2Image = (function () {
 
         if (!this.pickPrimitive.validated) {
             this.errorLog = ["Primitive-picking program failed to validate"].concat(this.pickPrimitive.errorLog);
+            return;
+        }
+
+        if (!this.outline.validated) {
+            this.errorLog = ["Outline effect program failed to validate"].concat(this.outline.errorLog);
             return;
         }
 
@@ -8501,6 +8625,7 @@ var Canvas2Image = (function () {
             program.shadow.destroy();
             program.pickObject.destroy();
             program.pickPrimitive.destroy();
+            program.outline.destroy();
 
             xeogl.renderer.ProgramSourceFactory.putSource(program.hash);
 
@@ -8545,15 +8670,15 @@ var Canvas2Image = (function () {
      * @param {String} fragmentDraw Fragment shader source for drawing.
      * @param {String} vertexShadow Vertex shader source for drawing the shadow buffer.
      * @param {String} fragmentShadow Fragment shader source for drawing the shadow buffer.
-     * @param {String} vertexHighlight Vertex shader source for drawing highlight.
-     * @param {String} fragmentHighlight Fragment shader source for drawing highlight.
+     * @param {String} vertexOutline Vertex shader source for drawing outlines.
+     * @param {String} fragmentOutline Fragment shader source for drawing outlines.
      */
     xeogl.renderer.ProgramSource = function (hash,
                                              vertexPickObject, fragmentPickObject,
                                              vertexPickPrimitive, fragmentPickPrimitive,
                                              vertexDraw, fragmentDraw,
                                              vertexShadow, fragmentShadow,
-                                             vertexHighlight, fragmentHighlight) {
+                                             vertexOutline, fragmentOutline) {
 
         /**
          * Hash code identifying the capabilities of the {@link xeogl.renderer.Program} that is compiled from this source
@@ -8610,16 +8735,16 @@ var Canvas2Image = (function () {
         this.fragmentShadow = fragmentShadow;
 
         /**
-         * Vertex shader source for rendering highlight.
+         * Vertex shader source for rendering outlines.
          * @type {Array of String}
          */
-        this.vertexHighlight = vertexHighlight;
+        this.vertexOutline = vertexOutline;
 
         /**
-         * Fragment shader source for rendering highlight.
+         * Fragment shader source for rendering outlines.
          * @type {Array of String}
          */
-        this.fragmentHighlight = fragmentHighlight;
+        this.fragmentOutline = fragmentOutline;
 
         /**
          * Count of {@link xeogl.renderer.Program}s compiled from this program source code
@@ -8664,6 +8789,8 @@ var Canvas2Image = (function () {
         var fragmentPickPrimSrc;
         var vertexShadowSrc;
         var fragmentShadowSrc;
+        var vertexOutlineSrc;
+        var fragmentOutlineSrc;
 
         /**
          * Get source code for a program to render the given states.
@@ -8704,8 +8831,8 @@ var Canvas2Image = (function () {
                 fragmentDraw(),
                 vertexShadow(),
                 fragmentShadow(),
-                vertexHighlight(),
-                fragmentHighlight()
+                vertexOutline(),
+                fragmentOutline()
             );
 
             cache[hash] = source;
@@ -8891,28 +9018,43 @@ var Canvas2Image = (function () {
             return fragmentShadowSrc = end();
         }
 
-        function vertexHighlight() {
+        function vertexOutline() {
             begin();
-            add("// Highlight vertex shader");
-            add("attribute vec3 position;");
+            add("attribute vec4 position;");
             add("uniform mat4 modelMatrix;");
-            add("uniform mat4 shadowViewMatrix;");
-            add("uniform mat4 shadowProjMatrix;");
+            add("uniform mat4 viewMatrix;");
+            add("uniform mat4 projMatrix;");
+            add("uniform float thickness;");
+            if (normals) {
+                add("attribute vec3 normal;");
+            }
             add("void main(void) {");
-            add("   gl_Position = shadowProjMatrix * (shadowViewMatrix * (modelMatrix * (vec4(position, 1.0))));");
+            add("    vec4 modelVertex = position;");
+            if (normals) {
+                add("vec4 projPos = projMatrix * viewMatrix * modelMatrix * vec4(modelVertex.xyz, 1.0); ");
+                add("  vec3 offset = (normalize(normal) * (thickness * 0.0005 * (projPos.z/1.0)));");
+            } else {
+                add("  vec3 offset = vec3(0.0, 0.0, 0.0);");
+            }
+            add("vec4 worldVertex = modelMatrix * vec4(modelVertex.xyz + offset, 1.0); ");
+            add("mat4 viewMatrix = viewMatrix;");
+
+            // TODO: Skybox and stationary transforms
+
+            add("  gl_Position = projMatrix * (viewMatrix * worldVertex);");
             add("}");
-            return vertexShadowSrc = end();
+            return vertexOutlineSrc = end();
         }
 
-        function fragmentHighlight() {
+        function fragmentOutline() {
             begin();
-            add("// Highlight fragment shader");
             add("precision " + getFSFloatPrecision(states.gl) + " float;");
+            add("uniform vec3  color;");
             add("void main(void) {");
-            add("   gl_FragColor = vec4(gl_FragCoord.z, 0.0, 0.0, 0.0);");
-            //     add("   gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);");
+            add("   gl_FragColor = vec4(color, 1.0);");
             add("}");
-            return fragmentShadowSrc = end();
+
+            return fragmentOutlineSrc = end();
         }
 
         function vertexDraw() {
@@ -9681,7 +9823,8 @@ var Canvas2Image = (function () {
                     }
                     if (light.type === "dir" && light.space === "view") {
                         add("uniform vec3 lightDir" + i + ";");
-                    } if (light.type === "point" && light.space === "view") {
+                    }
+                    if (light.type === "point" && light.space === "view") {
                         add("uniform vec3 lightPos" + i + ";");
                     } else {
                         add("varying vec4 vViewLightReverseDirAndDist" + i + ";");
@@ -10393,6 +10536,10 @@ var Canvas2Image = (function () {
                     }
                 }
             }
+        },
+
+        outline: function(frameCtx) {
+            this.drawPick(frameCtx);
         }
     });
 
@@ -10568,6 +10715,10 @@ var Canvas2Image = (function () {
             if (pickPositions) {
                 gl.drawArrays(state.primitive, 0, pickPositions.numItems / 3);
             }
+        },
+
+        outline: function(frameCtx) {
+            this.draw(frameCtx);
         }
     });
 
@@ -10600,6 +10751,10 @@ var Canvas2Image = (function () {
             var pickPrimitive = this.program.pickPrimitive;
             this._aPositionPickPrimitive = pickPrimitive.getAttribute("position");
             this._aColorPickPrimitive = pickPrimitive.getAttribute("color");
+
+            var outline = this.program.outline;
+            this._aPositionOutline = outline.getAttribute("position");
+            this._aNormalOutline = outline.getAttribute("normal");
         },
 
         draw: function (frameCtx) {
@@ -10682,6 +10837,26 @@ var Canvas2Image = (function () {
 
             if (this._aColorPickPrimitive) {
                 this._aColorPickPrimitive.bindFloatArrayBuffer(state.getPickColors());
+            }
+        },
+
+        outline: function (frameCtx) {
+
+            var state = this.state;
+
+            if (this._aPositionOutline) {
+                this._aPositionOutline.bindFloatArrayBuffer(state.positions);
+                frameCtx.bindArray++;
+            }
+
+            if (this._aNormalOutline) {
+                this._aNormalOutline.bindFloatArrayBuffer(state.normals);
+                frameCtx.bindArray++;
+            }
+
+            if (state.indices) {
+                state.indices.bind();
+                frameCtx.bindArray++;
             }
         }
     });
@@ -10866,6 +11041,7 @@ var Canvas2Image = (function () {
             this._uModelMatrixShadow = this.program.shadow.getUniform("modelMatrix");
             this._uModelMatrixPickObject = this.program.pickObject.getUniform("modelMatrix");
             this._uModelMatrixPickPrimitive = this.program.pickPrimitive.getUniform("modelMatrix");
+            this._uModelMatrixOutline = this.program.outline.getUniform("modelMatrix");
         },
 
         draw: function () {
@@ -10892,6 +11068,12 @@ var Canvas2Image = (function () {
         pickPrimitive: function () {
             if (this._uModelMatrixPickPrimitive) {
                 this._uModelMatrixPickPrimitive.setValue(this.state.getMatrix());
+            }
+        },
+
+        outline: function () {
+            if (this._uModelMatrixOutline) {
+                this._uModelMatrixOutline.setValue(this.state.getMatrix());
             }
         }
     });
@@ -11050,8 +11232,43 @@ var Canvas2Image = (function () {
                 }
                 frameCtx.frontface = frontface;
             }
+        },
+
+        outline: function(frameCtx) {
+
         }
     });
+})();
+;(function () {
+
+    "use strict";
+
+    xeogl.renderer.ChunkFactory.createChunkType({
+
+        type: "outline",
+
+        build: function () {
+
+            var outline = this.program.outline;
+
+            this._uColor = outline.getUniform("color");
+            this._uThickness = outline.getUniform("thickness");
+        },
+
+        outline: function (frameCtx) {
+
+            var state = this.state;
+
+            if (this._uColor) {
+                this._uColor.setValue(state.color);
+            }
+
+            if (this._uThickness) {
+                this._uThickness.setValue(state.thickness);
+            }
+        }
+    });
+
 })();
 ;(function () {
 
@@ -11789,6 +12006,10 @@ var Canvas2Image = (function () {
 
         pickPrimitive: function () {
             this.program.pickPrimitive.bind();
+        },
+
+        outline: function () {
+            this.program.outline.bind();
         }
     });
 })();
@@ -11808,6 +12029,7 @@ var Canvas2Image = (function () {
             this._uProjMatrixShadow = this.program.shadow.getUniform("shadowProjMatrix");
             this._uProjMatrixPickObject = this.program.pickObject.getUniform("projMatrix");
             this._uProjMatrixPickPrimitive = this.program.pickPrimitive.getUniform("projMatrix");
+            this._uProjMatrixOutline = this.program.outline.getUniform("projMatrix");
         },
 
         draw: function () {
@@ -11831,6 +12053,12 @@ var Canvas2Image = (function () {
         pickPrimitive: function (frameCtx) {
             if (this._uProjMatrixPickPrimitive) {
                 this._uProjMatrixPickPrimitive.setValue(frameCtx.pickProjMatrix || this.state.getMatrix());
+            }
+        },
+
+        outline: function (frameCtx) {
+            if (this._uProjMatrixOutline) {
+                this._uProjMatrixOutline.setValue(this.state.getMatrix());
             }
         }
     });
@@ -11960,6 +12188,7 @@ var Canvas2Image = (function () {
             this._uViewMatrixShadow = this.program.pickObject.getUniform("shadowViewMatrix");
             this._uViewMatrixPickObject = this.program.pickObject.getUniform("viewMatrix");
             this._uViewMatrixPickPrimitive = this.program.pickPrimitive.getUniform("viewMatrix");
+            this._uViewMatrixOutline = this.program.outline.getUniform("viewMatrix");
         },
 
         draw: function () {
@@ -11990,6 +12219,12 @@ var Canvas2Image = (function () {
             if (this._uViewMatrixPickPrimitive) {
                 this._uViewMatrixPickPrimitive.setValue(frameCtx.pickViewMatrix || this.state.getMatrix());
             }
+        },
+
+        outline: function () {
+            if (this._uViewMatrixOutline) {
+                this._uViewMatrixOutline.setValue(this.state.getMatrix());
+            }
         }
     });
 
@@ -12014,18 +12249,19 @@ var Canvas2Image = (function () {
         },
 
         shadow: function () {
-            var boundary = this.state.boundary;
-            this.program.gl.viewport(boundary[0], boundary[1], boundary[2], boundary[3]);
+            this.draw();
         },
 
         pickObject: function () {
-            var boundary = this.state.boundary;
-            this.program.gl.viewport(boundary[0], boundary[1], boundary[2], boundary[3]);
+            this.draw();
         },
 
         pickPrimitive: function () {
-            var boundary = this.state.boundary;
-            this.program.gl.viewport(boundary[0], boundary[1], boundary[2], boundary[3]);
+            this.draw();
+        },
+
+        outline: function() {
+            this.draw();
         }
     });
 
@@ -13661,6 +13897,7 @@ var Canvas2Image = (function () {
             dummy = this.stage;
             dummy = this.transform;
             dummy = this.viewport;
+            dummy = this.background;
         },
 
         // Called by each component that is created with this Scene as parent.
@@ -13802,37 +14039,6 @@ var Canvas2Image = (function () {
                 //    }
                 //});
             }
-        },
-
-        load: function (cfg) {
-            var type = cfg.type;
-            if (!type) {
-                this.error("xeogl.Scene.load: 'type' required");
-                return;
-            }
-            var id = cfg.id;
-            if (!id) {
-                this.error("xeogl.Scene.load: 'id' required");
-                return;
-            }
-            var component = this.components[id];
-            if (component) {
-                if (type !== component.type) {
-                    this.error("xeogl.Scene.load: Type unexpected");
-                    return;
-                }
-                return;
-            }
-            var claz = xeogl[type.substring(6)];
-            if (!claz) {
-                this.error("xeogl.Scene.load: Component type not found: " + type);
-                return;
-            }
-            if (!xeogl._isComponentType(type, "xeogl.Component")) {
-                this.error("xeogl.Scene.load: Expected a xeogl.Component type or subtype");
-                return;
-            }
-            return new claz(this, cfg);
         },
 
         /**
@@ -14612,6 +14818,32 @@ var Canvas2Image = (function () {
                     return this.components["default.viewport"] ||
                         new xeogl.Viewport(this, {
                             id: "default.viewport",
+                            autoBoundary: true,
+                            isDefault: true
+                        });
+                }
+            },
+
+            /**
+             * The default {{#crossLink "Outline"}}{{/crossLink}} provided by this Scene.
+             *
+             * This {{#crossLink "Outline"}}{{/crossLink}} has
+             * an {{#crossLink "Component/id:property"}}id{{/crossLink}} equal to "default.outline",
+             * a {{#crossLink "Outline/color:property"}}color{{/crossLink}} set to ````[1,0,0]````
+             * a {{#crossLink "Outline/thickness:property"}}thickness{{/crossLink}} set to ````16````.
+             *
+             * {{#crossLink "Entity"}}Entities{{/crossLink}} within this Scene are attached to this
+             * {{#crossLink "Outline"}}{{/crossLink}} by default.
+             *
+             * @property outline
+             * @final
+             * @type Outline
+             */
+            outline: {
+                get: function () {
+                    return this.components["default.outline"] ||
+                        new xeogl.Outline(this, {
+                            id: "default.outline",
                             autoBoundary: true,
                             isDefault: true
                         });
@@ -16730,6 +16962,8 @@ var Canvas2Image = (function () {
             if (this.contextAttr.preserveDrawingBuffer === undefined || this.contextAttr.preserveDrawingBuffer === null) {
                 this.contextAttr.preserveDrawingBuffer = false;
             }
+
+            this.contextAttr.stencil = true;
 
             if (!cfg.canvas) {
 
@@ -33004,6 +33238,191 @@ xeogl.GLTFLoaderUtils = Object.create(Object, {
     });
 
 })();;/**
+ * An outline rendering effect for emphasis.
+ *
+ * @module xeogl
+ * @submodule outline
+ */;/**
+ A **Outline** controls the appearance of outlines around attached {{#crossLink "Entity"}}Entities{{/crossLink}}.
+
+ ## Overview
+
+ TODO
+
+ <img src="../../../assets/images/Outline.png"></img>
+
+ ## Usage
+
+TODO
+
+ ````javascript
+
+ var outline = new xeogl.Outline({
+    thickness: 15,      // Default
+    color: [1,0,0]      // Default
+ });
+
+ new xeogl.Entity({
+     geometry: new xeogl.TorusGeometry(),
+     outline: outline,
+     modes: new xeogl.Modes({
+        outline: false  // Default
+     });
+ });
+
+ new xeogl.Entity({
+     geometry: new xeogl.BoxGeometry(),
+     outline: outline,
+     modes: new xeogl.Modes({
+        outline: true
+     });
+ });
+ ````
+
+ @class Outline
+ @module xeogl
+ @submodule outline
+ @constructor
+ @param [scene] {Scene} Parent {{#crossLink "Scene"}}Scene{{/crossLink}}, creates this Outline within the
+ default {{#crossLink "Scene"}}Scene{{/crossLink}} when omitted.
+ @param [cfg] {*} Outline configuration
+ @param [cfg.id] {String} Optional ID, unique among all components in the parent {{#crossLink "Scene"}}Scene{{/crossLink}}, generated automatically when omitted.
+ @param [cfg.meta] {String:Object} Optional map of user-defined metadata to attach to this Outline.
+ @param [cfg.thickness=15] {Number} Thickness of the outline in pixels.
+ @param [cfg.color=[1,0,0]] {Array of Number} The outline color.
+ @extends Component
+ */
+(function () {
+
+    "use strict";
+
+    xeogl.Outline = xeogl.Component.extend({
+
+        type: "xeogl.Outline",
+
+        _init: function (cfg) {
+
+            this._state = new xeogl.renderer.Outline({
+                thickness: 15,
+                color: xeogl.math.vec3([1.0, 0.0, 0.0])
+            });
+
+            this.thickness = cfg.thickness;
+            this.color = cfg.color;
+        },
+
+        _props: {
+
+            /**
+             * The Outline's thickness in pixels.
+             *
+             * Fires a {{#crossLink "Outline/thickness:event"}}{{/crossLink}} event on change.
+             *
+             * @property thickness
+             * @default 15
+             * @type Number
+             */
+            thickness: {
+
+                set: function (value) {
+
+                    // TODO: Only accept rendering thickness in range [0...MAX_thickness]
+
+                    value = value || 15;
+
+                    value = Math.round(value);
+
+
+                    if (value === this._state.thickness) {
+                        return;
+                    }
+
+                    this._state.thickness = value;
+
+                    this._renderer.imageDirty = true;
+
+                    /**
+                     * Fired whenever this Outline's  {{#crossLink "Outline/thickness:property"}}{{/crossLink}} property changes.
+                     *
+                     * @event thickness
+                     * @param value The property's new value
+                     */
+                    this.fire("thickness", this._state.thickness);
+                },
+
+                get: function () {
+                    return this._state.thickness;
+                }
+            },
+
+            /**
+             The Outline's color.
+
+             Fires a {{#crossLink "Outline/color:event"}}{{/crossLink}} event on change.
+
+             @property color
+             @default [1.0, 0.0, 0.0]
+             @type Float32Array
+             */
+            color: {
+
+                set: function (value) {
+
+                    var color = this._state.color;
+
+                    if (!color) {
+                        color = this._state.color = new Float32Array(3);
+
+                    } else if (value && color[0] === value[0] && color[1] === value[1] && color[2] === value[2]) {
+                        return;
+                    }
+
+                    if (value) {
+                        color[0] = value[0];
+                        color[1] = value[1];
+                        color[2] = value[2];
+
+                    } else {
+                        color[0] = 1;
+                        color[1] = 0;
+                        color[2] = 0;
+                    }
+
+                    this._renderer.imageDirty = true;
+
+                    /**
+                     * Fired whenever this Outline's {{#crossLink "Outline/color:property"}}{{/crossLink}} property changes.
+                     *
+                     * @event color
+                     * @param value {Float32Array} The property's new value
+                     */
+                    this.fire("color", this._state.color);
+                },
+
+                get: function () {
+                    return this._state.color;
+                }
+            }
+        },
+
+        _compile: function () {
+            this._renderer.outline = this._state;
+        },
+
+        _getJSON: function () {
+            return {
+                thickness: this._state.thickness,
+                color: xeogl.math.vecToArray(this._state.color)
+            };
+        },
+
+        _destroy: function () {
+            this._state.destroy();
+        }
+    });
+
+})();
+;/**
  * Components to define the surface appearance of Entities.
  *
  * @module xeogl
@@ -37690,6 +38109,8 @@ xeogl.GLTFLoaderUtils = Object.create(Object, {
  {{#crossLink "Scene/transform:property"}}transform{{/crossLink}} (which is an identity matrix which performs no transformation).
  @param [cfg.viewport] {String|Viewport} ID or instance of a {{#crossLink "Viewport"}}{{/crossLink}} attached to this Entity. Must be within the same {{#crossLink "Scene"}}Scene{{/crossLink}} as this Entity. Defaults to the parent {{#crossLink "Scene"}}Scene{{/crossLink}}'s default instance,
  {{#crossLink "Scene/viewport:property"}}{{/crossLink}}, which is automatically resizes to the canvas.
+ @param [cfg.outline] {String|Outline} ID or instance of a {{#crossLink "Outline"}}{{/crossLink}} attached to this Entity. Must be within the same {{#crossLink "Scene"}}Scene{{/crossLink}} as this Entity. Defaults to the parent {{#crossLink "Scene"}}Scene{{/crossLink}}'s default instance,
+ {{#crossLink "Scene/outline:property"}}{{/crossLink}}.
  @param [cfg.loading] {Boolean} Flag which indicates that this Entity is freshly loaded. This will increment the
  {{#crossLink "Spinner/processes:property"}}Spinner processes{{/crossLink}} count, and then when this Entity is first
  rendered, will decrement the count again.
@@ -37741,6 +38162,7 @@ xeogl.GLTFLoaderUtils = Object.create(Object, {
             this.billboard = cfg.billboard;
             this.stationary = cfg.stationary;
             this.viewport = cfg.viewport;
+            this.outline = cfg.outline;
 
             // Cached boundary for each coordinate space
             // The Entity's Geometry component caches the Local-space boundary
@@ -38566,6 +38988,41 @@ xeogl.GLTFLoaderUtils = Object.create(Object, {
             },
 
             /**
+             * The {{#crossLink "Outline"}}Outline{{/crossLink}} attached to this Entity.
+             *
+             * Must be within the same {{#crossLink "Scene"}}Scene{{/crossLink}} as this Entity. Defaults to the parent
+             * {{#crossLink "Scene"}}Scene{{/crossLink}}'s default {{#crossLink "Scene/outline:property"}}Outline{{/crossLink}} when set to
+             * a null or undefined value.
+             *
+             * Fires an {{#crossLink "Entity/outline:event"}}{{/crossLink}} event on change.
+             *
+             * @property outline
+             * @type Outline
+             */
+            outline: {
+
+                set: function (value) {
+
+                    /**
+                     * Fired whenever this Entity's  {{#crossLink "Entity/Outline:property"}}{{/crossLink}} property changes.
+                     *
+                     * @event Outline
+                     * @param value The property's new value
+                     */
+                    this._attach({
+                        name: "outline",
+                        type: "xeogl.Outline",
+                        component: value,
+                        sceneDefault: true
+                    });
+                },
+
+                get: function () {
+                    return this._attached.outline;
+                }
+            },
+
+            /**
              * Local-space 3D boundary of this Entity.
              *
              * This is a {{#crossLink "Boundary3D"}}{{/crossLink}} that encloses
@@ -38978,6 +39435,7 @@ xeogl.GLTFLoaderUtils = Object.create(Object, {
             attached.billboard._compile();
             attached.stationary._compile();
             attached.viewport._compile();
+            attached.outline._compile();
 
             // (Re)build this Entity in the renderer; for each Entity in teh scene graph,
             // there is an "object" in the renderer, that has the same ID as the entity
@@ -39030,7 +39488,8 @@ xeogl.GLTFLoaderUtils = Object.create(Object, {
                 transform: attached.transform.id,
                 billboard: attached.billboard.id,
                 stationary: attached.stationary.id,
-                viewport: attached.viewport.id
+                viewport: attached.viewport.id,
+                outline: attached.outline.id
             };
         },
 
@@ -39999,7 +40458,8 @@ xeogl.GLTFLoaderUtils = Object.create(Object, {
     clippable true,             // Enable effect of xeogl.Clip components
     transparent : false,        // Disable transparency
     backfaces : true,           // Render backfaces
-    frontface : "ccw"
+    frontface : "ccw",          // Front faces have counter-clockwise vertex winding
+    outline: false              // Don't outline for emphasis
  });
 
  var boxGeometry = new xeogl.BoxGeometry();
@@ -40044,6 +40504,7 @@ xeogl.GLTFLoaderUtils = Object.create(Object, {
  {{#crossLink "Entity"}}Entities{{/crossLink}} are things like helpers or indicators that should not be included in boundary calculations.
  @param [cfg.castShadow=true] {Boolean} Whether attached {{#crossLink "Entity"}}Entities{{/crossLink}} cast shadows.
  @param [cfg.receiveShadow=true] {Boolean} Whether attached {{#crossLink "Entity"}}Entities{{/crossLink}} receive shadows.
+ @param [cfg.outline=false] {Boolean} Whether an outline is drawn around the attached {{#crossLink "Entity"}}Entities{{/crossLink}}.
  @extends Component
  */
 (function () {
@@ -40065,6 +40526,7 @@ xeogl.GLTFLoaderUtils = Object.create(Object, {
                 collidable: null,
                 castShadow: null,
                 receiveShadow: null,
+                outline: null,
                 hash: ""
             });
 
@@ -40076,6 +40538,7 @@ xeogl.GLTFLoaderUtils = Object.create(Object, {
             this.collidable = cfg.collidable;
             this.castShadow = cfg.castShadow;
             this.receiveShadow = cfg.receiveShadow;
+            this.outline = cfg.outline;
         },
 
         _props: {
@@ -40399,6 +40862,43 @@ xeogl.GLTFLoaderUtils = Object.create(Object, {
                 get: function () {
                     return this._state.receiveShadow;
                 }
+            },
+
+            /**
+             Whether an outline is drawn around attached {{#crossLink "Entity"}}Entities{{/crossLink}}.
+
+             Fires a {{#crossLink "Modes/outline:event"}}{{/crossLink}} event on change.
+
+             @property outline
+             @default false
+             @type Boolean
+             */
+            outline: {
+
+                set: function (value) {
+
+                    value = !!value;
+
+                    if (value === this._state.outline) {
+                        return;
+                    }
+
+                    this._state.outline = value;
+
+                    this._renderer.imageDirty = true;
+
+                    /**
+                     Fired whenever this Modes' {{#crossLink "Modes/outline:property"}}{{/crossLink}} property changes.
+
+                     @event outline
+                     @param value The property's new value
+                     */
+                    this.fire("outline", this._state.outline);
+                },
+
+                get: function () {
+                    return this._state.outline;
+                }
             }
         },
 
@@ -40415,7 +40915,8 @@ xeogl.GLTFLoaderUtils = Object.create(Object, {
                 frontface: this._state.frontface,
                 collidable: this._state.collidable,
                 castShadow: this._state.castShadow,
-                receiveShadow: this._state.receiveShadow
+                receiveShadow: this._state.receiveShadow,
+                outline: this._state.outline
             };
         },
 
