@@ -3,8 +3,8 @@
  *
  * Find usage instructions at http://xeolabs.com-xeometry
  *
- * @param {*} cfg
- * @param
+ * @param {Object} cfg
+ * @param {Function(src, ok, error)} cfg.load
  */
 var xeometry = {};
 
@@ -14,9 +14,12 @@ xeometry.Viewer = function (cfg) {
 
     cfg = cfg || {};
 
+    var load = cfg.load; // Optional callback to load models
+
     var scene = new xeogl.Scene({
-        canvas: cfg.canvas,
-        transparent: true
+        canvas: cfg.canvas
+        //,
+        //transparent: true
     });
 
     var math = xeogl.math;
@@ -52,23 +55,25 @@ xeometry.Viewer = function (cfg) {
         duration: 0.1
     });
 
-    var cameraControl = new xeogl.CameraControl(scene);
+    //var cameraControl = new xeogl.CameraControl(scene);
 
     //----------------------------------------------------------------------------------------------------
     // Models
     //----------------------------------------------------------------------------------------------------
 
     /**
+     * Gets the WebGL canvas.
      *
-     * @returns {*}
+     * @returns {HTMLCanvasElement}
      */
     this.getCanvas = function () {
         return scene.canvas.canvas;
     };
 
     /**
+     * Gets the DIV that overlays the WebGL canvas.
      *
-     * @returns {*}
+     * @returns {HTMLElement}
      */
     this.getOverlay = function () {
         return scene.canvas.overlay;
@@ -77,34 +82,34 @@ xeometry.Viewer = function (cfg) {
     /**
      * Loads a model into the viewer.
      *
-     * Also assigns the model an ID, which gets prefixed to
-     * the IDs of the model's objects.
+     * Also assigns the model an ID, which gets prefixed to the IDs of the model's objects.
      *
      * @param {String} id ID to assign to the model.
-     * @param {String} src Path a glTF file.
+     * @param {String|Object} src If the viewer was configured with a load callback, then this should be
+     * ID with which to get an embedded glTF JSON file through the loader, otherwise it should be a path a glTF file.
      * @param {Function} [ok] Callback fired when model loaded.
      */
     this.loadModel = function (id, src, ok) {
+        var isFilePath = xeogl._isString(src);
         var model = models[id];
         if (model) {
-            if (src === model.src) {
+            if (isFilePath && src === model.src) {
                 if (ok) {
                     ok(model.id);
                 }
                 return;
             }
-            this.unload(id);
+            this.unloadModel(id);
         }
         if (scene.components[id]) {
             error("Component with this ID already exists: " + id);
             if (ok) {
-                ok(model.id);
+                ok(id);
             }
             return;
         }
         model = new xeogl.GLTFModel(scene, {
             id: id,
-            src: src,
             transform: new xeogl.Scale(scene, {
                 parent: new xeogl.Quaternion(scene, {
                     parent: new xeogl.Translate(scene)
@@ -122,7 +127,7 @@ xeometry.Viewer = function (cfg) {
                     model.add(object.material = object.material.clone());
                     objects[id] = object;
                     objectModels[id] = model;
-                    // Register for IFC type
+                    // Register for type
                     meta = object.meta;
                     var type = meta && meta.type ? meta.type : "DEFAULT";
                     var objectsOfType = (types[type] || (types[type] = {}));
@@ -133,6 +138,20 @@ xeometry.Viewer = function (cfg) {
                 ok(model.id);
             }
         });
+        if (load) {
+            load(src, function (gltf) {
+                    var basePath = null;
+                    xeogl.GLTFModel.parse(model, gltf, basePath); // Synchronous
+                },
+                function (errMsg) {
+                    error("Error loading model: " + errMsg);
+                    if (ok) {
+                        ok();
+                    }
+                })
+        } else {
+            model.src = src;
+        }
     };
 
     /**
@@ -164,7 +183,7 @@ xeometry.Viewer = function (cfg) {
      *
      * Returns the IDs of all objects in the viewer when no arguments are given.
      *
-     * @param {String|String[]} id ID of a model or an IFC type.
+     * @param {String|String[]} id ID of a model or a type.
      * @return {String[]} IDs of the objects.
      */
     this.getObjects = function (id) {
@@ -204,7 +223,7 @@ xeometry.Viewer = function (cfg) {
         for (var entityId in entities) {
             if (entities.hasOwnProperty(entityId)) {
                 entity = entities[entityId];
-                // Deregister for IFC type
+                // Deregister for type
                 meta = entity.meta;
                 var type = meta && meta.type ? meta.type : "DEFAULT";
                 var objectsOfType = types[type];
@@ -238,10 +257,10 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Assigns an IFC type to the given object(s).
+     * Assigns a type to the given object(s).
      *
      * @param {String} id ID of an object or model. When a model ID is given, the type will be assigned to all the model's objects.
-     * @param {String} type The IFC type.
+     * @param {String} type The type.
      */
     this.setType = function (id, type) {
         type = type || "DEFAULT";
@@ -270,10 +289,10 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the IFC type of an object.
+     * Gets the type of an object.
      *
      * @param {String} id ID of the object.
-     * @returns {String} The IFC type of the object.
+     * @returns {String} The type of the object.
      */
     this.getType = function (id) {
         var object = objects[id];
@@ -285,9 +304,9 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets all IFC types currently in the viewer.
+     * Gets all types currently in the viewer.
      *
-     * @returns {String} The IFC types in the viewer.
+     * @returns {String} The types in the viewer.
      */
     this.getTypes = function () {
         return Object.keys(types);
@@ -597,7 +616,6 @@ xeometry.Viewer = function (cfg) {
             if (object) {
                 object.modes.transparent = (opacity < 1);
                 object.material.opacity = opacity;
-                //object.visibility.opacity = opacity;
                 return;
             }
             var model = models[id];
@@ -623,11 +641,87 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
+     * Gets the opacity of an object.
      *
-     * @param id
+     * @param {String|String} id ID of an object.
+     * @return {Number} Degree of opacity in range [0..1].
      */
     this.getOpacity = function (id) {
+        var object = objects[id];
+        if (!object) {
+            error("Model, object or type not found: " + id);
+            return 1.0;
+        }
+        return object.material.opacity;
+    };
 
+    //----------------------------------------------------------------------------------------------------
+    // Color
+    //----------------------------------------------------------------------------------------------------
+
+    /**
+     * Sets the color of model(s), object(s) or type(s).
+     *
+     * @param {String|String[]} ids IDs of models, objects or types. Applies to all objects by default.
+     * @param {[Number, Number, Number]} color The RGB color, with each element in range [0..1].
+     */
+    this.setColor = function (ids, color) {
+        if (color === null || color === undefined) {
+            color = 1.0;
+        }
+        if (ids === undefined || ids === null) {
+            self.setColor(self.getObjects(), color);
+            return;
+        }
+        if (xeogl._isString(ids)) {
+            var id = ids;
+            var object = objects[id];
+            if (object) {
+                var material = object.material;
+                if (material.diffuse) {
+                    material.diffuse = color; // xeogl.SpecularMaterial or xeogl.Phongmaterial
+                } else {
+                    material.baseColor = color; // xeogl.MetallicMaterial
+                }
+                return;
+            }
+            var model = models[id];
+            if (!model) {
+                var objectsOfType = types[id];
+                if (objectsOfType) {
+                    var typeIds = Object.keys(objectsOfType);
+                    if (typeIds.length === 0) {
+                        return;
+                    }
+                    self.setColor(typeIds, color);
+                    return
+                }
+                error("Model, object or type not found: " + id);
+                return;
+            }
+            self.setColor(self.getObjects(id), color);
+            return;
+        }
+        for (var i = 0, len = ids.length; i < len; i++) {
+            self.setColor(ids[i], color);
+        }
+    };
+
+    /**
+     * Gets the albedo color of an object.
+     *
+     * @param {String|String} id ID of an object.
+     * @return {[Number, Number, Number]} color The RGB color of the object, with each element in range [0..1].
+     */
+    this.getColor = function (id) {
+        var object = objects[id];
+        if (!object) {
+            error("Model, object or type not found: " + id);
+            return 1.0;
+        }
+        var material = object.material;
+        var color = material.diffuse || material.baseColor || [1,1,1]; // PhongMaterial || SpecularMaterial || MetallicMaterial
+        return color.slice();
     };
 
     //----------------------------------------------------------------------------------------------------
