@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <script src="../build/xeometry.js"></script>
+    <script src="js/cameraControl.js"></script>
+    <link href="css/styles.css" rel="stylesheet"/>
+<body>
+
+<div id="info" class="light">
+    <h1>x-ray view of type instances</h1>
+    <h2>// Load gearbox model, make everything transparent except for objects of types "gear" and "shaft"</h2>
+</div>
+
+<script>
+
+    var viewer = new xeometry.Viewer();
+
+    viewer.setEye([15, 0, -20]);
+    viewer.setLook([0, 0, 0]);
+
+    viewer.loadModel("gearbox", "models/gltf/GearboxAssy/glTF/GearboxAssy.gltf", function () {
+        viewer.setOpacity("gearbox", 0.3); // Everything in model transparent
+        viewer.setOpacity(["bearing", "shaft"], 1.0); // Bearings and shafts opaque
+        viewer.viewFit(["bearing", "shaft"]); // Fit 3D view to bearings and shafts
+    });
+
+    new xeometry.CameraControl(viewer);
+
+</script>
+</body>
+</html>

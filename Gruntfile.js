@@ -4,9 +4,10 @@ module.exports = function (grunt) {
 
     var devScripts = [
         "libs/xeogl/xeogl.js",
-        "libs/xeogl/pin.js",
-        "libs/xeogl/annotation.js",
-        "libs/xeogl/annotation-style.js",
+        "libs/xeogl/annotations/pin.js",
+        "libs/xeogl/annotations/annotation.js",
+        "libs/xeogl/annotations/annotation-style.js",
+        "libs/xeogl/models/glTFModel.js",
         "js/xeometry.js"
     ];
 

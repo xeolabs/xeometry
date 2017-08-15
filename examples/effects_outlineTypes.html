@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <script src="../build/xeometry.js"></script>
+    <script src="js/cameraControl.js"></script>
+    <link href="css/styles.css" rel="stylesheet"/>
+<body>
+
+<div id="info" class="light">
+    <h1>outline types</h1>
+    <h2>// Load gearbox model, outline objects of types "bearing" and "spring"</h2>
+</div>
+
+<script>
+
+    var viewer = new xeometry.Viewer();
+
+    viewer.setEye([15, 0, -20]);
+    viewer.setLook([0, 0, 0]);
+
+    viewer.loadModel("gearbox", "models/gltf/GearboxAssy/glTF/GearboxAssy.gltf", function () {
+
+        viewer.setOutlineColor([1, 1, 0]); // Yellow outlines
+        viewer.setOutlineThickness(8); // 8 pixels thick
+
+        viewer.showOutline(["bearing", "spring"]); // Show outline around bearings and springs
+        viewer.viewFit(["bearing", "spring"]); // Fit view to bearings and springs
+
+        viewer.yspin(-0.1);
+    });
+
+    new xeometry.CameraControl(viewer);
+
+</script>
+</body>
+</html>

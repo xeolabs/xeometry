@@ -1,8 +1,8 @@
 # xeometry
 
-A lightweight open-source WebGL-based IFC model viewing API built on [xeogl](http://xeogl.org).
+An open-source WebGL-based glTF viewing toolkit built on [xeogl](http://xeogl.org).
  
-An **xeometry** viewer is a single facade class that wraps xeogl, with methods to
+A **xeometry** viewer is a single facade class that wraps xeogl, with methods to
 load models from  [glTF](https://github.com/KhronosGroup/glTF),
 query, animate and navigate their objects and create sharable custom views.
 

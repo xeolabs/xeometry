@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <script src="../build/xeometry.js"></script>
+    <script src="js/cameraControl.js"></script>
+    <link href="css/styles.css" rel="stylesheet"/>
+<body>
+
+<script>
+
+    var viewer = new xeometry.Viewer();
+
+    viewer.setViewFitFOV(55);
+    viewer.setViewFitDuration(1);
+
+    viewer.loadModel("house", "models/gltf/vianney_house_2/scene.gltf", function () {
+
+        viewer.viewFit();
+
+        var i = 0;
+        setInterval(function () {
+            switch (i) {
+                case 0:
+                    viewer.viewFitLeft();
+                    break;
+                case 1:
+                    viewer.viewFitFront();
+                    break;
+                case 2:
+                    viewer.viewFitRight();
+                    break;
+                case 3:
+                    viewer.viewFitTop();
+                    break;
+                case 4:
+                    viewer.viewFitBack();
+                    break;
+                case 5:
+                    viewer.viewFitBottom();
+                    break;
+            }
+            i = (i == 5) ? 0 : i + 1;
+        }, 2000)
+    });
+
+    new xeometry.CameraControl(viewer);
+
+</script>
+</body>
+</html>

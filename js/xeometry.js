@@ -71,9 +71,12 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the DIV that overlays the WebGL canvas.
+     * Returns the viewer's HTML overlay element, which overlays the canvas.
      *
-     * @returns {HTMLElement}
+     * This element exists to catch input events over the canvas, while allowing
+     * the HTML elements for annotations (etc) to avoid getting those events.
+     *
+     * @returns {HTMLDivElement}
      */
     this.getOverlay = function () {
         return scene.canvas.overlay;
@@ -245,7 +248,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Unloads all models and objects.
+     * Unloads all models, objects, annotations and clipping planes.
      */
     this.clear = function () {
         for (var id in models) {
@@ -319,6 +322,8 @@ xeometry.Viewer = function (cfg) {
     /**
      * Sets the scale of a model or object.
      *
+     * An object's scale is applied relative to its model's scale.
+     *
      * @param {String} id ID of a model or object.
      * @param {[Number, Number, Number]} xyz Scale factors for the X, Y and Z axis.
      */
@@ -338,6 +343,8 @@ xeometry.Viewer = function (cfg) {
     /**
      * Gets the scale of a model or object.
      *
+     * An object's scale is applied relative to its model's scale.
+     *
      * @param {String} id ID of a model or object.
      * @return {[Number, Number, Number]} scale Scale factors for the X, Y and Z axis.
      */
@@ -356,6 +363,8 @@ xeometry.Viewer = function (cfg) {
 
     /**
      * Sets the rotation of a model or object.
+     *
+     * An object's rotation is applied relative to its model's scale.
      *
      * @param {String} id ID of a model or object.
      * @param {[Number, Number, Number]} xyz Rotation angles for the X, Y and Z axis.
@@ -382,6 +391,8 @@ xeometry.Viewer = function (cfg) {
     /**
      * Gets the rotation of a model or object.
      *
+     * An object's rotation is applied relative to its model's scale.
+     *
      * @param {String} id ID of a model or object.
      * @return {[Number, Number, Number]} Rotation angles for the X, Y and Z axis.
      */
@@ -397,6 +408,8 @@ xeometry.Viewer = function (cfg) {
 
     /**
      * Sets the translation of a model or object.
+     *
+     * An object's translation is applied relative to its model's scale.
      *
      * @param {String} id ID of a model or object.
      * @param {[Number, Number, Number]} xyz World-space translation vector.
@@ -414,6 +427,14 @@ xeometry.Viewer = function (cfg) {
         translation.xyz = xyz;
     };
 
+    /**
+     * Increments the translation of a model or object.
+     *
+     * An object's translation is applied relative to its model's translation.
+     *
+     * @param {String} id ID of a model or object.
+     * @param {[Number, Number, Number]} xyz World-space translation vector.
+     */
     this.addTranslate = function (id, xyz) {
         var translation = translations[id];
         if (!translation) {
@@ -430,6 +451,8 @@ xeometry.Viewer = function (cfg) {
 
     /**
      * Gets the translation of a model or object.
+     *
+     * An object's translation is applied relative to its model's translation.
      *
      * @param {String} id ID of a model or object.
      * @return {[Number, Number, Number]} World-space translation vector.
@@ -720,7 +743,7 @@ xeometry.Viewer = function (cfg) {
             return 1.0;
         }
         var material = object.material;
-        var color = material.diffuse || material.baseColor || [1,1,1]; // PhongMaterial || SpecularMaterial || MetallicMaterial
+        var color = material.diffuse || material.baseColor || [1, 1, 1]; // PhongMaterial || SpecularMaterial || MetallicMaterial
         return color.slice();
     };
 
@@ -746,7 +769,7 @@ xeometry.Viewer = function (cfg) {
 
     /**
      * Sets the color of outlines around objects.
-     * @param {[Number, Number, Number]} color RGB color.
+     * @param {[Number, Number, Number]} color RGB color as a value per channel, in range [0..1].
      */
     this.setOutlineColor = function (color) {
         scene.outline.color = color;
@@ -754,9 +777,9 @@ xeometry.Viewer = function (cfg) {
 
     /**
      * Returns the color of outlines around objects.
-     * @return {[Number, Number, Number]} RGB color.
+     * @return {[Number, Number, Number]} RGB color as a value per channel, in range [0..1].
      */
-    this.getOutlineThickness = function () {
+    this.getOutlineColor = function () {
         return scene.outline.color;
     };
 
@@ -1023,7 +1046,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Rotate 'eye' about 'look', around the 'up' vector
+     * Rotates the camera's 'eye' position about its 'look' position, around the 'up' vector.
      *
      * @param {Number} angle Angle of rotation in degrees
      */
@@ -1032,7 +1055,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Rotate 'eye' about 'look' around the X-axis
+     * Rotates the camera's 'eye' position about its 'look' position, pivoting around the X-axis.
      *
      * @param {Number} angle Angle of rotation in degrees
      */
@@ -1041,7 +1064,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Rotate 'look' about 'eye', around the 'up' vector
+     * Rotates the camera's 'look' position about its 'eye' position, pivoting around the 'up' vector.
      *
      * <p>Applies constraints added with {@link #addConstraint}.</p>
      *
@@ -1052,7 +1075,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Rotate 'eye' about 'look' around the X-axis
+     * Rotates the camera's 'eye' position about its 'look' position, pivoting around the X-axis.
      *
      * @param {Number} angle Angle of rotation in degrees
      */
@@ -1061,7 +1084,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Pans the camera along X, Y or Z axis.
+     * Pans the camera along its local X, Y or Z axis.
      * @param pan The pan vector
      */
     this.pan = function (pan) {
@@ -1069,7 +1092,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Increments/decrements zoom factor, ie. distance between eye and look.
+     * Increments/decrements the camera's zoom distance, ie. distance between eye and look.
      * @param delta
      */
     this.zoom = function (delta) {
@@ -1077,7 +1100,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Sets the flight duration when fitting elements to view.
+     * Sets the camera's flight duration when fitting elements to view.
      *
      * A value of zero (default) will cause the camera to instantly jump to each new target .
      *
@@ -1088,7 +1111,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the flight duration when fitting elements to view.
+     * Gets the camera's flight duration when fitting elements to view.
      *
      * @returns {Number} The current flight duration, in seconds.
      */
@@ -1098,6 +1121,9 @@ xeometry.Viewer = function (cfg) {
 
     /**
      * Sets the target field-of-view (FOV) angle when fitting elements to view.
+     *
+     * This is the portion of the total frustum FOV that the elements' boundary
+     * will occupy when fitted to view.
      *
      * Default value is 45.
      *
@@ -1131,7 +1157,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking down the +X axis.
+     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking dalong the +X axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
      * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
@@ -1141,7 +1167,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking down the +Z axis.
+     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the +Z axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
      * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
@@ -1151,7 +1177,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking down the -X axis.
+     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the -X axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
      * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
@@ -1161,7 +1187,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking down the +X axis.
+     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the +X axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
      * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
@@ -1171,7 +1197,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking down the -Y axis.
+     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the -Y axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
      * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
@@ -1181,7 +1207,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking down the +X axis.
+     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the +X axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
      * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
@@ -1256,10 +1282,26 @@ xeometry.Viewer = function (cfg) {
         view.zoom(zoom);
     };
 
+    /**
+     * Rotates the camera's 'eye' position about its 'look' position, pivoting
+     * about the camera's local horizontal axis, by the given increment on each frame.
+     *
+     * Call with a zero value to stop spinning about this axis.
+     *
+     * @param {Number} value The increment angle, in degrees.
+     */
     this.yspin = function (value) {
         return (arguments.length === 0) ? yspin : yspin = value;
     };
 
+    /**
+     * Rotates the camera's 'eye' position about its 'look' position, pivoting
+     * about the camera's horizontal axis, by the given  increment on each frame.
+     *
+     * Call again with a zero value to stop spinning about this axis.
+     *
+     * @param {Number} value The increment angle, in degrees.
+     */
     this.xspin = function (value) {
         return (arguments.length === 0) ? xspin : xspin = value;
     };
@@ -1288,12 +1330,18 @@ xeometry.Viewer = function (cfg) {
      *
      * @param {[Number, Number, Number]} origin World-space ray origin.
      * @param {[Number, Number, Number]} dir World-space ray direction vector.
-     * @returns {{id: *, worldPos: *, primIndex: (*|number), bary: *}} If object found, the ID of object, World-space surface intersection, primitive index and barycentric coordinates.
+     * @returns {{id: *, worldPos: *, primIndex: (*|number), bary: *}} If object found, the ID of object, World-space
+     * surface intersection, primitive index and barycentric coordinates.
      */
     this.rayCastSurface = function (origin, dir) {
         var hit = scene.pick({origin: origin, direction: dir, pickSurface: true});
         if (hit) {
-            return {id: hit.entity.id, worldPos: hit.worldPos, primIndex: hit.primIndex, bary: hit.bary};
+            return {
+                id: hit.entity.id,
+                worldPos: hit.worldPos,
+                primIndex: hit.primIndex,
+                bary: hit.bary
+            };
         }
     };
 
@@ -1320,7 +1368,12 @@ xeometry.Viewer = function (cfg) {
     this.pickSurface = function (canvasPos) {
         var hit = scene.pick({canvasPos: canvasPos, pickSurface: true});
         if (hit) {
-            return {id: hit.entity.id, worldPos: hit.worldPos, primIndex: hit.primIndex, bary: hit.bary};
+            return {
+                id: hit.entity.id,
+                worldPos: hit.worldPos,
+                primIndex: hit.primIndex,
+                bary: hit.bary
+            };
         }
     };
 

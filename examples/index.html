@@ -32,36 +32,39 @@
 
     var files = {
         "Creating viewers": [
-            "multipleViewers"
+            "viewer_multipleViewers"
         ],
         "Loading models": [
-            "loadModel",
-            "loadTwoModels",
-            "copiesOfSameModel"
+            "loading_loadGearbox",
+            "loading_loadHouse",
+            "loading_loadTwoModels",
+            "loading_sameModelTwice",
+            "loading_customLoader"
         ],
         "Camera control": [
-            "showEachObject",
-            "viewFitRandomObjects",
-            "cycleThroughObjects",
-            "axisViews",
-            "objectExplorer",
-            "typeExplorer"
+            "camera_axisViews",
+
+            "cycleThroughObjects"
         ],
-        "Animation": [
-            "explodeObjects",
-            "animateModelTransform"
+        "Interaction": [
+            "interaction_objectExplorer",
+            "interaction_typeExplorer"
         ],
-        "Emphasis": [
-            "hideObjects",
-            "moveObjects",
-            "outlineObjects",
-            "outlineTypes",
-            "xrayObjects",
-            "xrayTypes"
+        "Effects": [
+            "effects_hideObjects",
+            "effects_showEachObject",
+            "effects_moveModel",
+            "effects_moveObjects",
+            "effects_explodeObjects",
+            "effects_outlineObjects",
+            "effects_outlineTypes",
+            "effects_xrayObjects",
+            "effects_xrayTypes",
+            "effects_focusRandomObjects"
         ],
         "Annotations": [
-            "createAnnotations",
-            "mouseCreateAnnotations"
+            "annotations_createAnnotations",
+            "annotations_mouseCreateAnnotations"
         ]
     };
 
@@ -89,11 +92,17 @@
 
     for (var key in files) {
         var section = files[key];
+
+        var div = document.createElement('div');
+        div.className = 'category';
+        div.textContent = key;
+        container.appendChild(div);
+
         for (var i = 0; i < section.length; i++) {
             var file = section[i];
             (function (file) {
                 var name = file.split('_');
-                // name.shift();
+                 name.shift();
                 name = name.join(' / ');
                 var div = document.createElement('div');
                 div.className = 'link';

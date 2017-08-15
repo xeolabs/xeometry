@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <script src="../build/xeometry.js"></script>
+    <script src="js/cameraControl.js"></script>
+    <link href="css/styles.css" rel="stylesheet"/>
+<body>
+
+<div id="explorer" class="dark">
+</div>
+
+<script>
+
+    var viewer = new xeometry.Viewer();
+
+    viewer.setEyeLookUp([0, 10, 35], [0, 10, 0], [0, 1, 0]);
+
+    viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF/ReciprocatingSaw.gltf", function () {
+        viewer.show("saw");
+        viewer.setTranslate("saw", [10, 17, 0]);
+        viewer.setScale("saw", [.09, .09, .09]);
+        viewer.setRotate("saw", [90, 0, 0]);
+        viewer.setViewFitFOV(20);
+    });
+
+    var explorer = document.getElementById("explorer");
+    var bookmarks = [];
+
+    document.addEventListener('keydown', (function () {
+        var html = [""];
+        return function (event) {
+            if (event.code == 'KeyZ' && (event.ctrlKey || event.metaKey)) {
+                bookmarks.push(viewer.getBookmark());
+                html.push("<a href='javascript:viewer.setBookmark(bookmarks[" + (bookmarks.length - 1) + "])'>bookmark</a><br>")
+                explorer.innerHTML = html.join("");
+            }
+        };
+    })());
+
+    new xeometry.CameraControl(viewer);
+
+</script>
+</body>
+</html>

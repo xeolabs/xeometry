@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <script src="../build/xeometry.js"></script>
+    <script src="js/cameraControl.js"></script>
+    <link href="css/styles.css" rel="stylesheet"/>
+<body>
+
+<script>
+
+    var assetPaths = {
+        "asset0": "models/gltf/GearboxAssy/glTF-Embedded/GearboxAssy.gltf",
+        "asset1": "models/gltf/ReciprocatingSaw/glTF-Embedded/ReciprocatingSaw.gltf"
+    };
+
+    var viewer = new xeometry.Viewer({
+
+        // Custom loader
+
+        load: function (src, ok, error) {
+
+            var src2 = assetPaths[src];
+            if (!src2) {
+                error("Asset not found: " + src);
+            }
+
+            var request = new XMLHttpRequest();
+            request.overrideMimeType("application/json");
+            request.open('GET', src2, true);
+            request.onreadystatechange = function () {
+                if (request.readyState == 4 && // Request finished, response ready
+                        request.status == "200") { // Status OK
+                    var json = JSON.parse(request.responseText);
+                    ok(json, this);
+                }
+            };
+            request.send(null);
+        }
+    });
+
+    viewer.loadModel("gearbox", "asset0", function () {
+        viewer.setViewFitDuration(0);
+        viewer.viewFit("gearbox");
+    });
+
+    new xeometry.CameraControl(viewer);
+
+</script>
+</body>
+</html>

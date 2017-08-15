@@ -169,7 +169,6 @@ body {
     font-size: 25px;
     font-weight: normal;
     text-decoration: none !important;
-    font-weight: bold;
 }
 
 
@@ -397,6 +396,19 @@ ul ul {
     padding-right: 10px;
     line-height: 18px;
     overflow-x: hidden;
+}
+
+#contents #list .category {
+    color: #7f7c7f;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    padding-top: 15px;
+    text-decoration: none;
+    font-weight: normal;
+    background: #fdfbff;
+    cursor: pointer;
+    line-height: 2.2em;
+font-size: 20px;
 }
 
 #contents #list .link {

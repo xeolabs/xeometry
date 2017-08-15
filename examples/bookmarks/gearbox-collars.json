@@ -2,7 +2,7 @@
   "models": [
     {
       "id": "gearbox",
-      "src": "models/GearboxAssy/glTF/GearboxAssy.gltf"
+      "src": "models/gltf/GearboxAssy/glTF/GearboxAssy.gltf"
     }
   ],
   "objects": {
