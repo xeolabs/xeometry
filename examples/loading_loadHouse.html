@@ -13,9 +13,11 @@
     var viewer = new xeometry.Viewer();
 
     viewer.setViewFitDuration(0);
+    viewer.setViewFitFOV(70);
 
     viewer.loadModel("house", "models/gltf/vianney_house_2/scene.gltf", function () {
-        viewer.viewFit();
+        viewer.viewFitRight("house");
+        viewer.yspin(0.05);
     });
 
     new xeometry.CameraControl(viewer);

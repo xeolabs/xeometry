@@ -19,7 +19,7 @@
 
         // Custom loader
 
-        load: function (src, ok, error) {
+        loadModel: function (modelId, src, ok, error) {
 
             var src2 = assetPaths[src];
             if (!src2) {
@@ -37,6 +37,11 @@
                 }
             };
             request.send(null);
+        },
+
+        loadedModel: function(modelId, src, ok) {
+            console.log("Loaded modelId=" + modelId + " from src=" + src);
+            ok();
         }
     });
 

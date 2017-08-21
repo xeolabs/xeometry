@@ -14,7 +14,8 @@ xeometry.Viewer = function (cfg) {
 
     cfg = cfg || {};
 
-    var load = cfg.load; // Optional callback to load models
+    var loadModel = cfg.loadModel; // Optional callback to load models
+    var loadedModel = cfg.loadedModel; // Optional callback to fire after each model is loaded
 
     var scene = new xeogl.Scene({
         canvas: cfg.canvas
@@ -55,6 +56,17 @@ xeometry.Viewer = function (cfg) {
         duration: 0.1
     });
 
+    var projections = { // Camera projections to switch between
+        perspective: camera.project, // Camera has a xeogl.Perspective by default
+        orthographic: new xeogl.Ortho(scene, {
+            scale: 1.0,
+            near: 0.1,
+            far: 5000
+        })
+    };
+
+    var projectionType = "perspective";
+
     //var cameraControl = new xeogl.CameraControl(scene);
 
     //----------------------------------------------------------------------------------------------------
@@ -88,7 +100,7 @@ xeometry.Viewer = function (cfg) {
      * Also assigns the model an ID, which gets prefixed to the IDs of the model's objects.
      *
      * @param {String} id ID to assign to the model.
-     * @param {String|Object} src If the viewer was configured with a load callback, then this should be
+     * @param {String|Object} src If the viewer was configured with a loadModel callback, then this should be
      * ID with which to get an embedded glTF JSON file through the loader, otherwise it should be a path a glTF file.
      * @param {Function} [ok] Callback fired when model loaded.
      */
@@ -100,7 +112,7 @@ xeometry.Viewer = function (cfg) {
                 if (ok) {
                     ok(model.id);
                 }
-                return;
+                return this;
             }
             this.unloadModel(id);
         }
@@ -109,7 +121,7 @@ xeometry.Viewer = function (cfg) {
             if (ok) {
                 ok(id);
             }
-            return;
+            return this;
         }
         model = new xeogl.GLTFModel(scene, {
             id: id,
@@ -119,7 +131,7 @@ xeometry.Viewer = function (cfg) {
                 })
             })
         });
-        models[model.id] = model;
+        models[id] = model;
         model.on("loaded", function () {
             var entities = model.types["xeogl.Entity"];
             var object;
@@ -137,12 +149,18 @@ xeometry.Viewer = function (cfg) {
                     objectsOfType[id] = object;
                 }
             }
-            if (ok) {
-                ok(model.id);
+            if (loadedModel) {
+                loadedModel(id, src, function() {
+                    ok(id);
+                });
+            } else {
+                if (ok) {
+                    ok(id);
+                }
             }
         });
-        if (load) {
-            load(src, function (gltf) {
+        if (loadModel) {
+            loadModel(id, src, function (gltf) {
                     var basePath = null;
                     xeogl.GLTFModel.parse(model, gltf, basePath); // Synchronous
                 },
@@ -155,6 +173,7 @@ xeometry.Viewer = function (cfg) {
         } else {
             model.src = src;
         }
+        return this;
     };
 
     /**
@@ -218,7 +237,7 @@ xeometry.Viewer = function (cfg) {
         var model = models[id];
         if (!model) {
             error("Model not found: " + id);
-            return;
+            return this;
         }
         var entities = model.types["xeogl.Entity"];
         var entity;
@@ -245,6 +264,7 @@ xeometry.Viewer = function (cfg) {
         model.destroy();
         delete models[id];
         delete eulerAngles[id];
+        return this;
     };
 
     /**
@@ -272,7 +292,7 @@ xeometry.Viewer = function (cfg) {
             var meta = object.meta;
             var currentType = meta && meta.type ? meta.type : "DEFAULT";
             if (currentType === type) {
-                return;
+                return this;
             }
             var currentTypes = types[currentType];
             if (currentTypes) {
@@ -281,14 +301,15 @@ xeometry.Viewer = function (cfg) {
             var newTypes = (types[type] || (types[type] = {}));
             newTypes[id] = object;
             object.meta.type = type;
-            return;
+            return this;
         }
         var model = models[id];
         if (model) {
             //.. TODO
-            return;
+            return this;
         }
         error("Model, object or type not found: " + id);
+        return this;
     };
 
     /**
@@ -333,11 +354,12 @@ xeometry.Viewer = function (cfg) {
             var component = getTransformableComponent(id);
             if (!component) {
                 error("Model or object not found: " + id);
-                return;
+                return this;
             }
             scale = scales[id];
         }
         scale.xyz = xyz;
+        return this;
     };
 
     /**
@@ -354,7 +376,7 @@ xeometry.Viewer = function (cfg) {
             var component = getTransformableComponent(id);
             if (!component) {
                 error("Model or object not found: " + id);
-                return;
+                return this;
             }
             scale = scales[id];
         }
@@ -377,7 +399,7 @@ xeometry.Viewer = function (cfg) {
                 var component = getTransformableComponent(id);
                 if (!component) {
                     error("Model or object not found: " + id);
-                    return;
+                    return this;
                 }
                 rotation = rotations[id];
             }
@@ -385,6 +407,7 @@ xeometry.Viewer = function (cfg) {
             rotation.xyzw = quat;
             var saveAngles = eulerAngles[id] || (eulerAngles[id] = math.vec3());
             saveAngles.set(xyz);
+            return this;
         };
     })();
 
@@ -400,7 +423,7 @@ xeometry.Viewer = function (cfg) {
         var component = getTransformableComponent(id);
         if (!component) {
             error("Model or object not found: " + id);
-            return;
+            return 0;
         }
         var angles = eulerAngles[id];
         return angles ? angles.slice() : math.vec3([0, 0, 0]);
@@ -420,11 +443,12 @@ xeometry.Viewer = function (cfg) {
             var component = getTransformableComponent(id);
             if (!component) {
                 error("Model or object not found: " + id);
-                return;
+                return this;
             }
             translation = translations[id];
         }
         translation.xyz = xyz;
+        return this;
     };
 
     /**
@@ -441,12 +465,13 @@ xeometry.Viewer = function (cfg) {
             var component = getTransformableComponent(id);
             if (!component) {
                 error("Model or object not found: " + id);
-                return;
+                return this;
             }
             translation = translations[id];
         }
         var xyzOld = translation.xyz;
         translation.xyz = [xyzOld[0] + xyz[0], xyzOld[1] + xyz[1], xyzOld[2] + xyz[2]]
+        return this;
     };
 
     /**
@@ -463,7 +488,7 @@ xeometry.Viewer = function (cfg) {
             var component = getTransformableComponent(id);
             if (!component) {
                 error("Model or object not found: " + id);
-                return;
+                return 0;
             }
             translation = translations[id];
         }
@@ -568,6 +593,7 @@ xeometry.Viewer = function (cfg) {
      */
     this.show = function (ids) {
         setVisible(ids, true);
+        return this;
     };
 
     /**
@@ -579,6 +605,7 @@ xeometry.Viewer = function (cfg) {
      */
     this.hide = function (ids) {
         setVisible(ids, false);
+        return this;
     };
 
     function setVisible(ids, visible) {
@@ -590,7 +617,7 @@ xeometry.Viewer = function (cfg) {
             var id = ids;
             var object = objects[id];
             if (object) {
-                object.visibility.visible = visible;
+                object.visible = visible;
                 return;
             }
             var model = models[id];
@@ -631,14 +658,14 @@ xeometry.Viewer = function (cfg) {
         }
         if (ids === undefined || ids === null) {
             self.setOpacity(self.getObjects(), opacity);
-            return;
+            return this;
         }
         if (xeogl._isString(ids)) {
             var id = ids;
             var object = objects[id];
             if (object) {
-                object.modes.transparent = (opacity < 1);
-                object.material.opacity = opacity;
+                object.material.alphaMode = (opacity < 1) ? "blend" : "opaque";
+                object.material.alpha = opacity;
                 return;
             }
             var model = models[id];
@@ -647,20 +674,21 @@ xeometry.Viewer = function (cfg) {
                 if (objectsOfType) {
                     var typeIds = Object.keys(objectsOfType);
                     if (typeIds.length === 0) {
-                        return;
+                        return this;
                     }
                     self.setOpacity(typeIds, opacity);
-                    return
+                    return this;
                 }
                 error("Model, object or type not found: " + id);
-                return;
+                return this;
             }
             self.setOpacity(self.getObjects(id), opacity);
-            return;
+            return this;
         }
         for (var i = 0, len = ids.length; i < len; i++) {
             self.setOpacity(ids[i], opacity);
         }
+        return this;
     };
 
     /**
@@ -675,7 +703,7 @@ xeometry.Viewer = function (cfg) {
             error("Model, object or type not found: " + id);
             return 1.0;
         }
-        return object.material.opacity;
+        return object.material.alpha;
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -694,7 +722,7 @@ xeometry.Viewer = function (cfg) {
         }
         if (ids === undefined || ids === null) {
             self.setColor(self.getObjects(), color);
-            return;
+            return this;
         }
         if (xeogl._isString(ids)) {
             var id = ids;
@@ -706,7 +734,7 @@ xeometry.Viewer = function (cfg) {
                 } else {
                     material.baseColor = color; // xeogl.MetallicMaterial
                 }
-                return;
+                return this;
             }
             var model = models[id];
             if (!model) {
@@ -717,17 +745,18 @@ xeometry.Viewer = function (cfg) {
                         return;
                     }
                     self.setColor(typeIds, color);
-                    return
+                    return this;
                 }
                 error("Model, object or type not found: " + id);
-                return;
+                return this;
             }
             self.setColor(self.getObjects(id), color);
-            return;
+            return this;
         }
         for (var i = 0, len = ids.length; i < len; i++) {
             self.setColor(ids[i], color);
         }
+        return this;
     };
 
     /**
@@ -740,7 +769,7 @@ xeometry.Viewer = function (cfg) {
         var object = objects[id];
         if (!object) {
             error("Model, object or type not found: " + id);
-            return 1.0;
+            return [1, 1, 1];
         }
         var material = object.material;
         var color = material.diffuse || material.baseColor || [1, 1, 1]; // PhongMaterial || SpecularMaterial || MetallicMaterial
@@ -757,6 +786,7 @@ xeometry.Viewer = function (cfg) {
      */
     this.setOutlineThickness = function (thickness) {
         scene.outline.thickness = thickness;
+        return this;
     };
 
     /**
@@ -773,6 +803,7 @@ xeometry.Viewer = function (cfg) {
      */
     this.setOutlineColor = function (color) {
         scene.outline.color = color;
+        return this;
     };
 
     /**
@@ -792,6 +823,7 @@ xeometry.Viewer = function (cfg) {
      */
     this.showOutline = function (ids) {
         setOutline(ids, true);
+        return this;
     };
 
     /**
@@ -803,19 +835,20 @@ xeometry.Viewer = function (cfg) {
      */
     this.hideOutline = function (ids) {
         setOutline(ids, false);
+        return this;
     };
 
     function setOutline(ids, outline) {
         if (ids === undefined || ids === null) {
             setOutline(self.getObjects(), outline);
-            return;
+            return this;
         }
         if (xeogl._isString(ids)) {
             var id = ids;
             var object = objects[id];
             if (object) {
-                object.modes.outline = outline;
-                return;
+                object.outlined = outline;
+                return this;
             }
             var model = models[id];
             if (!model) {
@@ -823,20 +856,21 @@ xeometry.Viewer = function (cfg) {
                 if (objectsOfType) {
                     var typeIds = Object.keys(objectsOfType);
                     if (typeIds.length === 0) {
-                        return;
+                        return this;
                     }
                     setOutline(typeIds, outline);
                     return
                 }
                 error("Model, object or type not found: " + id);
-                return;
+                return this;
             }
             setOutline(self.getObjects(id), outline);
-            return;
+            return this;
         }
         for (var i = 0, len = ids.length; i < len; i++) {
             setOutline(ids[i], outline);
         }
+        return this;
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -979,12 +1013,154 @@ xeometry.Viewer = function (cfg) {
     //----------------------------------------------------------------------------------------------------
 
     /**
+     * Sets the Field-of-view angle for perspective projection.
+     *
+     * @param {Number} fov Field-of-view angle, in degrees, on Y-axis.
+     */
+    this.setPerspectiveFOV = function (fov) {
+        perspective.fovy = fov;
+        return this;
+    };
+
+    /**
+     * Gets the Field-of-view angle for perspective projection.
+     *
+     * @return  {Number} Field-of-view angle, in degrees, on Y-axis.
+     */
+    this.getPerspectiveFOV = function () {
+        return perspective.fovy;
+    };
+
+    /**
+     * Sets the position of the near plane on the View-space Z-axis for perspective projection.
+     *
+     * @param {Number} near Position of the near plane on the View-space Z-axis.
+     */
+    this.setPerspectiveNear = function (near) {
+        perspective.near = near;
+        return this;
+    };
+
+    /**
+     * gets the position of the near plane on the View-space Z-axis for perspective projection.
+     *
+     * @return  {Number} Position of the near clipping plane on the View-space Z-axis.
+     */
+    this.getPerspectiveNear = function () {
+        return perspective.near;
+    };
+
+    /**
+     * Sets the position of the far clipping plane on the View-space Z-axis for perspective projection.
+     *
+     * @param {Number} far Position of the far clipping plane on the View-space Z-axis.
+     */
+    this.setPerspectiveFar = function (far) {
+        perspective.far = far;
+        return this;
+    };
+
+    /**
+     * Gets the position of the far clipping plane on the View-space Z-axis for perspective projection.
+     *
+     * @return  {Number} Position of the far clipping plane on the View-space Z-axis.
+     */
+    this.getPerspectiveFar = function () {
+        return perspective.far;
+    };
+
+    /**
+     * Sets the orthographic projection boundary scale on X and Y axis.
+     *
+     * @param {Number} scale The scale factor.
+     */
+    this.setOrthoScale = function (scale) {
+        ortho.scale = scale;
+        return this;
+    };
+
+    /**
+     * Sets the orthographic projection boundary scale.
+     *
+     * @return  {Number} The scale factor.
+     */
+    this.getOrthoScale = function () {
+        return ortho.scale;
+    };
+
+    /**
+     * Sets the position of the near plane on the View-space Z-axis for ortho projection.
+     *
+     * @param {Number} near Position of the near plane on the View-space Z-axis.
+     */
+    this.setOrthoNear = function (near) {
+        ortho.near = near;
+        return this;
+    };
+
+    /**
+     * gets the position of the near plane on the View-space Z-axis for ortho projection.
+     *
+     * @return  {Number} Position of the near clipping plane on the View-space Z-axis.
+     */
+    this.getOrthoNear = function () {
+        return ortho.near;
+    };
+
+    /**
+     * Sets the position of the far clipping plane on the View-space Z-axis for ortho projection.
+     *
+     * @param {Number} far Position of the far clipping plane on the View-space Z-axis.
+     */
+    this.setOrthoFar = function (far) {
+        ortho.far = far;
+    };
+
+    /**
+     * Gets the position of the far clipping plane on the View-space Z-axis for ortho projection.
+     *
+     * @return  {Number} Position of the far clipping plane on the View-space Z-axis.
+     */
+    this.getOrthoFar = function () {
+        return ortho.far;
+    };
+
+    /**
+     * Sets the camera's current projection type.
+     *
+     * @param {String} type Either "perspective" or "ortho".
+     */
+    this.setProjection = function (type) {
+        if (projectionType === type) {
+            return;
+        }
+        var projection = projections[type];
+        if (!projection) {
+            this.error("Unsupported camera projection type: " + type);
+        } else {
+            camera.project = projection;
+            projectionType = type;
+        }
+        return this;
+    };
+
+    /**
+     * Gets the camera's current projection type.
+     *
+     * @return {String} Either "perspective" or "ortho".
+     */
+    this.getProjection = function () {
+        return projectionType;
+    };
+
+    /**
      * Sets the camera viewpoint.
      *
      * @param {[Number, Number, Number]} eye The new viewpoint.
      */
     this.setEye = function (eye) {
         view.eye = eye;
+        return this;
     };
 
     /**
@@ -1003,6 +1179,7 @@ xeometry.Viewer = function (cfg) {
      */
     this.setLook = function (look) {
         view.look = look;
+        return this;
     };
 
     /**
@@ -1021,6 +1198,7 @@ xeometry.Viewer = function (cfg) {
      */
     this.setUp = function (up) {
         view.up = up;
+        return this;
     };
 
     /**
@@ -1043,6 +1221,7 @@ xeometry.Viewer = function (cfg) {
         view.eye = eye;
         view.look = look;
         view.up = up || [0, 1, 0];
+        return this;
     };
 
     /**
@@ -1052,6 +1231,7 @@ xeometry.Viewer = function (cfg) {
      */
     this.rotateEyeY = function (angle) {
         view.rotateEyeY(angle);
+        return this;
     };
 
     /**
@@ -1061,6 +1241,7 @@ xeometry.Viewer = function (cfg) {
      */
     this.rotateEyeX = function (angle) {
         view.rotateEyeX(angle);
+        return this;
     };
 
     /**
@@ -1072,6 +1253,7 @@ xeometry.Viewer = function (cfg) {
      */
     this.rotateLookY = function (angle) {
         view.rotateLookY(angle);
+        return this;
     };
 
     /**
@@ -1081,6 +1263,7 @@ xeometry.Viewer = function (cfg) {
      */
     this.rotateLookX = function (angle) {
         view.rotateLookX(angle);
+        return this;
     };
 
     /**
@@ -1089,6 +1272,7 @@ xeometry.Viewer = function (cfg) {
      */
     this.pan = function (pan) {
         view.pan(pan);
+        return this;
     };
 
     /**
@@ -1097,6 +1281,7 @@ xeometry.Viewer = function (cfg) {
      */
     this.zoom = function (delta) {
         view.zoom(delta);
+        return this;
     };
 
     /**
@@ -1108,6 +1293,7 @@ xeometry.Viewer = function (cfg) {
      */
     this.setViewFitDuration = function (value) {
         cameraFlight.duration = value;
+        return this;
     };
 
     /**
@@ -1117,6 +1303,7 @@ xeometry.Viewer = function (cfg) {
      */
     this.getViewFitDuration = function () {
         return cameraFlight.duration;
+        return this;
     };
 
     /**
@@ -1131,6 +1318,7 @@ xeometry.Viewer = function (cfg) {
      */
     this.setViewFitFOV = function (value) {
         cameraFlight.fitFOV = value;
+        return this;
     };
 
     /**
@@ -1154,6 +1342,7 @@ xeometry.Viewer = function (cfg) {
      */
     this.viewFit = function (target, ok) {
         (ok || cameraFlight.duration > 0.1) ? cameraFlight.flyTo({aabb: this.getAABB(target)}, ok) : cameraFlight.jumpTo({aabb: this.getAABB(target)});
+        return this;
     };
 
     /**
@@ -1164,6 +1353,7 @@ xeometry.Viewer = function (cfg) {
      */
     this.viewFitRight = function (target, ok) {
         viewFitAxis(target, 0, ok);
+        return this;
     };
 
     /**
@@ -1174,6 +1364,7 @@ xeometry.Viewer = function (cfg) {
      */
     this.viewFitBack = function (target, ok) {
         viewFitAxis(target, 1, ok);
+        return this;
     };
 
     /**
@@ -1184,6 +1375,7 @@ xeometry.Viewer = function (cfg) {
      */
     this.viewFitLeft = function (target, ok) {
         viewFitAxis(target, 2, ok);
+        return this;
     };
 
     /**
@@ -1194,6 +1386,7 @@ xeometry.Viewer = function (cfg) {
      */
     this.viewFitFront = function (target, ok) {
         viewFitAxis(target, 3, ok);
+        return this;
     };
 
     /**
@@ -1204,6 +1397,7 @@ xeometry.Viewer = function (cfg) {
      */
     this.viewFitTop = function (target, ok) {
         viewFitAxis(target, 4, ok);
+        return this;
     };
 
     /**
@@ -1214,6 +1408,7 @@ xeometry.Viewer = function (cfg) {
      */
     this.viewFitBottom = function (target, ok) {
         viewFitAxis(target, 5, ok);
+        return this;
     };
 
     var viewFitAxis = (function () {
@@ -1275,11 +1470,13 @@ xeometry.Viewer = function (cfg) {
             } else {
                 cameraFlight.jumpTo(cameraTarget);
             }
+            return this;
         };
     })();
 
     this.zoom = function (zoom) {
         view.zoom(zoom);
+        return this;
     };
 
     /**
@@ -1384,26 +1581,26 @@ xeometry.Viewer = function (cfg) {
     this.createAnnotation = function (id, cfg) {
         if (scene.components[id]) {
             error("Component with this ID already exists: " + id);
-            return;
+            return this;
         }
         if (cfg === undefined) {
             error("Annotation configuration expected");
-            return;
+            return this;
         }
         var objectId = cfg.object;
         if (objectId === undefined) {
             error("Annotation property expected: objectId");
-            return;
+            return this;
         }
         var object = objects[objectId];
         if (!object) {
             error("Object not found: " + objectId);
-            return;
+            return this;
         }
         var primIndex = cfg.primIndex;
         if (primIndex === undefined) {
             error("Annotation property expected: primIndex");
-            return;
+            return this;
         }
         var annotation = new xeogl.Annotation(scene, {
             id: id,
@@ -1423,6 +1620,7 @@ xeometry.Viewer = function (cfg) {
         annotations[annotation.id] = annotation;
         var oa = objectAnnotations[objectId] || (objectAnnotations[objectId] = {});
         oa[annotation.id] = annotation;
+        return this;
     };
 
     this.getAnnotations = function (id) {
@@ -1448,28 +1646,32 @@ xeometry.Viewer = function (cfg) {
     this.destroyAnnotation = function (id) {
         var annotation = annotations[id];
         if (!annotation) {
-            return;
+            return this;
         }
         if (annotation.entity) {
             delete objectAnnotations[annotation.entity.id][annotation.id];
         }
         annotation.destroy();
         delete annotations[id];
+        return this;
+
     };
 
     this.clearAnnotations = function () {
         for (var ids = Object.keys(annotations), i = 0; i < ids.length; i++) {
             this.destroyAnnotation(ids[i]);
         }
+        return this;
     };
 
     this.setAnnotationPrimIndex = function (id, primIndex) {
         var annotation = annotations[id];
         if (!annotation) {
             this.error("Annotation not found: \"" + id + "\"");
-            return;
+            return this;
         }
         annotation.primIndex = primIndex;
+        return this;
     };
 
     this.getAnnotationPrimIndex = function (id) {
@@ -1485,9 +1687,10 @@ xeometry.Viewer = function (cfg) {
         var annotation = annotations[id];
         if (!annotation) {
             this.error("Annotation not found: \"" + id + "\"");
-            return;
+            return this;
         }
         annotation.title = title;
+        return this;
     };
 
     this.getAnnotationTitle = function (id) {
@@ -1503,9 +1706,10 @@ xeometry.Viewer = function (cfg) {
         var annotation = annotations[id];
         if (!annotation) {
             this.error("Annotation not found: \"" + id + "\"");
-            return;
+            return this;
         }
         annotation.desc = desc;
+        return this;
     };
 
     this.getAnnotationDesc = function (id) {
@@ -1521,9 +1725,10 @@ xeometry.Viewer = function (cfg) {
         var annotation = annotations[id];
         if (!annotation) {
             this.error("Annotation not found: \"" + id + "\"");
-            return;
+            return this;
         }
         annotation.bary = bary;
+        return this;
     };
 
     this.getAnnotationBary = function (id) {
@@ -1539,14 +1744,15 @@ xeometry.Viewer = function (cfg) {
         var annotation = annotations[id];
         if (!annotation) {
             this.error("Annotation not found: \"" + id + "\"");
-            return;
+            return this;
         }
         var object = objects[objectId];
         if (!object) {
             this.error("Object not found: \"" + objectId + "\"");
-            return;
+            return this;
         }
         annotation.entity = object;
+        return this;
     };
 
     this.getAnnotationObject = function (id) {
@@ -1563,9 +1769,10 @@ xeometry.Viewer = function (cfg) {
         var annotation = annotations[id];
         if (!annotation) {
             this.error("Annotation not found: \"" + id + "\"");
-            return;
+            return this;
         }
         annotation.eye = eye;
+        return this;
     };
 
     this.getAnnotationEye = function (id) {
@@ -1581,9 +1788,10 @@ xeometry.Viewer = function (cfg) {
         var annotation = annotations[id];
         if (!annotation) {
             this.error("Annotation not found: \"" + id + "\"");
-            return;
+            return this;
         }
         annotation.look = look;
+        return this;
     };
 
     this.getAnnotationLook = function (id) {
@@ -1599,9 +1807,10 @@ xeometry.Viewer = function (cfg) {
         var annotation = annotations[id];
         if (!annotation) {
             this.error("Annotation not found: \"" + id + "\"");
-            return;
+            return this;
         }
         annotation.up = up;
+        return this;
     };
 
     this.getAnnotationUp = function (id) {
@@ -1617,9 +1826,10 @@ xeometry.Viewer = function (cfg) {
         var annotation = annotations[id];
         if (!annotation) {
             this.error("Annotation not found: \"" + id + "\"");
-            return;
+            return this;
         }
         annotation.occludable = occludable;
+        return this;
     };
 
     this.getAnnotationOccludable = function (id) {
@@ -1635,9 +1845,10 @@ xeometry.Viewer = function (cfg) {
         var annotation = annotations[id];
         if (!annotation) {
             this.error("Annotation not found: \"" + id + "\"");
-            return;
+            return this;
         }
         annotation.pinShown = pinShown;
+        return this;
     };
 
     this.getAnnotationPinShown = function (id) {
@@ -1653,9 +1864,10 @@ xeometry.Viewer = function (cfg) {
         var annotation = annotations[id];
         if (!annotation) {
             this.error("Annotation not found: \"" + id + "\"");
-            return;
+            return this;
         }
         annotation.labelShown = labelShown;
+        return this;
     };
 
     this.getAnnotationLabelShown = function (id) {
@@ -1671,9 +1883,10 @@ xeometry.Viewer = function (cfg) {
         var annotation = annotations[id];
         if (!annotation) {
             this.error("Annotation not found: \"" + id + "\"");
-            return;
+            return this;
         }
         annotation.glyph = glyph;
+        return this;
     };
 
     this.getAnnotationGlyph = function (id) {
@@ -1692,11 +1905,11 @@ xeometry.Viewer = function (cfg) {
     this.createclip = function (id, cfg) {
         if (scene.components[id]) {
             error("Component with this ID already exists: " + id);
-            return;
+            return this;
         }
         if (cfg === undefined) {
             error("Clip configuration expected");
-            return;
+            return this;
         }
         var clip = new xeogl.Clip(scene, {
             id: id,
@@ -1715,7 +1928,7 @@ xeometry.Viewer = function (cfg) {
         });
         clips[clip.id] = clip;
         //scene.clips.clips = scene.clips.clips.push
-
+        return this;
     };
 
     this.getclips = function () {
@@ -1741,25 +1954,28 @@ xeometry.Viewer = function (cfg) {
     this.destroyClip = function (id) {
         var clip = clips[id];
         if (!clip) {
-            return;
+            return this;
         }
         clip.destroy();
         delete clips[id];
+        return this;
     };
 
     this.clearClips = function () {
         for (var ids = Object.keys(clips), i = 0; i < ids.length; i++) {
             this.destroyClip(ids[i]);
         }
+        return this;
     };
 
     this.setClipPos = function (id, pos) {
         var clip = clips[id];
         if (!clip) {
             this.error("Clip not found: \"" + id + "\"");
-            return;
+            return this;
         }
         clip.pos = pos;
+        return this;
     };
 
     this.getClipPos = function (id) {
@@ -1775,9 +1991,10 @@ xeometry.Viewer = function (cfg) {
         var clip = clips[id];
         if (!clip) {
             this.error("Clip not found: \"" + id + "\"");
-            return;
+            return this;
         }
         clip.dir = dir;
+        return this;
     };
 
     this.getClipDir = function (id) {
@@ -1895,15 +2112,15 @@ xeometry.Viewer = function (cfg) {
                         objectState = objectState || (bookmark.objects[id] = {});
                         objectState.rotate = rotate;
                     }
-                    if (object.visibility.visible) {
+                    if (object.visible) {
                         objectState = objectState || (bookmark.objects[id] = {});
                         objectState.visible = true;
                     } else if (objectState) {
                         objectState.visible = false;
                     }
-                    if (object.modes.transparent) {
+                    if (object.material.alphaMode === "blend") {
                         objectState = objectState || (bookmark.objects[id] = {});
-                        objectState.opacity = object.material.opacity;
+                        objectState.opacity = object.material.alpha;
                     }
                 }
             }
@@ -1940,11 +2157,23 @@ xeometry.Viewer = function (cfg) {
                     bookmark.annotations[id] = annotationState;
                 }
             }
+
             bookmark.lookat = {
                 eye: vecToArray(view.eye),
                 look: vecToArray(view.look),
                 up: vecToArray(view.up)
             };
+
+            bookmark.projection = projectionType;
+
+            bookmark.perspectiveNear = projections.perspective.near;
+            bookmark.perspectiveFar = projections.perspective.far;
+            bookmark.perspectiveFOV = projections.perspective.fovy;
+
+            bookmark.orthoNear = projections.ortho.near;
+            bookmark.orthoFar = projections.ortho.far;
+            bookmark.orthoScale = projections.ortho.scale;
+
             return bookmark;
         };
     })();
@@ -2020,6 +2249,13 @@ xeometry.Viewer = function (cfg) {
                 self.hide();
                 self.show(visible);
                 self.setEyeLookUp(bookmark.lookat.eye, bookmark.lookat.look, bookmark.lookat.up);
+                self.setProjection(bookmark.projection);
+                self.setPerspectiveNear(bookmark.perspectiveNear);
+                self.setPerspectiveFar(bookmark.perspectiveFar);
+                self.setPerspectiveFOV(bookmark.perspectiveFOV);
+                self.setOrthoNear(bookmark.orthoNear);
+                self.setOrthoFar(bookmark.orthoFar);
+                self.setOrthoScale(bookmark.orthoScale);
             });
         };
     })();
