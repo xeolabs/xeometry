@@ -43182,7 +43182,7 @@ xeometry.Viewer = function (cfg) {
                 function (gltf) {
                     var basePath = null;
                     xeogl.GLTFModel.parse(model, gltf, basePath);
-                    // model then fires "loaded" once it's finished parsing
+                    // model then fires "loaded" once its finished parsing
                 },
                 function (errMsg) {
                     error("Error loading model: " + errMsg);
@@ -44182,7 +44182,6 @@ xeometry.Viewer = function (cfg) {
         }
         return this;
     };
-
 
     /**
      * Gets the camera's current projection type.
