@@ -171,6 +171,10 @@ xeometry.Viewer = function (cfg) {
                         ok(id);
                     }
                 });
+            } else {
+                if (ok) {
+                    ok(id);
+                }
             }
         });
         if (loadModel) {
