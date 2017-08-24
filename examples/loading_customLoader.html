@@ -10,6 +10,8 @@
 
 <script>
 
+    // Map of glTF files with embedded resources
+
     var assetPaths = {
         "asset0": "models/gltf/GearboxAssy/glTF-Embedded/GearboxAssy.gltf",
         "asset1": "models/gltf/ReciprocatingSaw/glTF-Embedded/ReciprocatingSaw.gltf"
@@ -17,9 +19,11 @@
 
     var viewer = new xeometry.Viewer({
 
-        // Custom loader
+        // Custom loader, gets glTF files by ID, via the map
 
         loadModel: function (modelId, src, ok, error) {
+
+            console.log("Loading modelId=" + modelId);
 
             var src2 = assetPaths[src];
             if (!src2) {
@@ -39,9 +43,17 @@
             request.send(null);
         },
 
+        // Callback fired after each model loaded
+
         loadedModel: function(modelId, src, ok) {
-            console.log("Loaded modelId=" + modelId + " from src=" + src);
-            ok();
+            console.log("Loaded modelId=" + modelId);
+            ok(); // Unblock the viewer
+        },
+
+        // Callback fired after each model unloaded
+
+        unloadedModel: function(modelId, src) {
+            console.log("Unloaded modelId=" + modelId);
         }
     });
 

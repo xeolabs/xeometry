@@ -4,7 +4,7 @@
  * A WebGL-based 3D visualization engine from xeoLabs
  * http://xeolabs.com/xeometry
  *
- * Built on 2017-08-21
+ * Built on 2017-08-24
  *
  * MIT License
  * Copyright 2017, Lindsay Kay
@@ -43020,9 +43020,14 @@ xeometry.Viewer = function (cfg) {
 
     var loadModel = cfg.loadModel; // Optional callback to load models
     var loadedModel = cfg.loadedModel; // Optional callback to fire after each model is loaded
+    var unloadedModel = cfg.unloadedModel; // Optional callback to fire after each model is unloaded
 
     var scene = new xeogl.Scene({
-        canvas: cfg.canvas
+        canvas: cfg.canvas,
+        webgl2: false,
+        contextAttr: {
+            preserveDrawingBuffer: false
+        }
         //,
         //transparent: true
     });
@@ -43033,6 +43038,7 @@ xeometry.Viewer = function (cfg) {
 
     var types = {}; // List of objects for each type
     var models = {}; // Models mapped to their IDs
+    var modelSrcs = {}; // Data ID each model was loaded from
     var objects = {}; // Objects mapped to their IDs
     var annotations = {}; // Annotations mapped to their IDs
     var objectAnnotations = {}; // Annotations for each object
@@ -43108,6 +43114,15 @@ xeometry.Viewer = function (cfg) {
      * ID with which to get an embedded glTF JSON file through the loader, otherwise it should be a path a glTF file.
      * @param {Function} [ok] Callback fired when model loaded.
      */
+    /**
+     * Loads a model into the viewer.
+     *
+     * Also assigns the model an ID, which gets prefixed to the IDs of the model's objects.
+     *
+     * @param {String} id ID to assign to the model.
+     * @param {String || Object} src Locates the model.
+     * @param {Function} [ok] Callback fired when model loaded.
+     */
     this.loadModel = function (id, src, ok) {
         var isFilePath = xeogl._isString(src);
         var model = models[id];
@@ -43136,44 +43151,45 @@ xeometry.Viewer = function (cfg) {
             })
         });
         models[id] = model;
+        modelSrcs[id] = src;
         model.on("loaded", function () {
             var entities = model.types["xeogl.Entity"];
             var object;
             var meta;
-            for (var id in entities) {
-                if (entities.hasOwnProperty(id)) {
-                    object = entities[id];
-                    model.add(object.material = object.material.clone());
-                    objects[id] = object;
-                    objectModels[id] = model;
+            for (var objectId in entities) {
+                if (entities.hasOwnProperty(objectId)) {
+                    object = entities[objectId];
+                    // model.add(object.material = object.material.clone()); // Ensure unique materials
+                    objects[objectId] = object;
+                    objectModels[objectId] = model;
                     // Register for type
                     meta = object.meta;
                     var type = meta && meta.type ? meta.type : "DEFAULT";
                     var objectsOfType = (types[type] || (types[type] = {}));
-                    objectsOfType[id] = object;
+                    objectsOfType[objectId] = object;
                 }
             }
             if (loadedModel) {
-                loadedModel(id, src, function() {
-                    ok(id);
+                loadedModel(id, src, function () {
+                    if (ok) {
+                        ok(id);
+                    }
                 });
-            } else {
-                if (ok) {
-                    ok(id);
-                }
             }
         });
         if (loadModel) {
-            loadModel(id, src, function (gltf) {
+            loadModel(id, src,
+                function (gltf) {
                     var basePath = null;
-                    xeogl.GLTFModel.parse(model, gltf, basePath); // Synchronous
+                    xeogl.GLTFModel.parse(model, gltf, basePath);
+                    // model then fires "loaded" once it's finished parsing
                 },
                 function (errMsg) {
                     error("Error loading model: " + errMsg);
                     if (ok) {
                         ok();
                     }
-                })
+                });
         } else {
             model.src = src;
         }
@@ -43187,6 +43203,21 @@ xeometry.Viewer = function (cfg) {
      */
     this.getModels = function () {
         return Object.keys(models);
+    };
+
+    /**
+     * Gets the source of a model.
+     *
+     * @param {String|String[]} id ID of a model or a type.
+     * @return {String} Model source.
+     */
+    this.getModelSrc = function (id) {
+        var src = modelSrcs[id];
+        if (!src) {
+            error("Model not found: " + id);
+            return null;
+        }
+        return src;
     };
 
     /**
@@ -43267,7 +43298,11 @@ xeometry.Viewer = function (cfg) {
         }
         model.destroy();
         delete models[id];
+        delete modelSrcs[id];
         delete eulerAngles[id];
+        if (unloadedModel) {
+            unloadedModel(id);
+        }
         return this;
     };
 
@@ -44022,7 +44057,7 @@ xeometry.Viewer = function (cfg) {
      * @param {Number} fov Field-of-view angle, in degrees, on Y-axis.
      */
     this.setPerspectiveFOV = function (fov) {
-        perspective.fovy = fov;
+        projections.perspective.fovy = fov;
         return this;
     };
 
@@ -44032,7 +44067,7 @@ xeometry.Viewer = function (cfg) {
      * @return  {Number} Field-of-view angle, in degrees, on Y-axis.
      */
     this.getPerspectiveFOV = function () {
-        return perspective.fovy;
+        return projections.perspective.fovy;
     };
 
     /**
@@ -44041,7 +44076,7 @@ xeometry.Viewer = function (cfg) {
      * @param {Number} near Position of the near plane on the View-space Z-axis.
      */
     this.setPerspectiveNear = function (near) {
-        perspective.near = near;
+        projections.perspective.near = near;
         return this;
     };
 
@@ -44051,7 +44086,7 @@ xeometry.Viewer = function (cfg) {
      * @return  {Number} Position of the near clipping plane on the View-space Z-axis.
      */
     this.getPerspectiveNear = function () {
-        return perspective.near;
+        return projections.perspective.near;
     };
 
     /**
@@ -44060,7 +44095,7 @@ xeometry.Viewer = function (cfg) {
      * @param {Number} far Position of the far clipping plane on the View-space Z-axis.
      */
     this.setPerspectiveFar = function (far) {
-        perspective.far = far;
+        projections.perspective.far = far;
         return this;
     };
 
@@ -44070,7 +44105,7 @@ xeometry.Viewer = function (cfg) {
      * @return  {Number} Position of the far clipping plane on the View-space Z-axis.
      */
     this.getPerspectiveFar = function () {
-        return perspective.far;
+        return projections.perspective.far;
     };
 
     /**
@@ -44079,7 +44114,7 @@ xeometry.Viewer = function (cfg) {
      * @param {Number} scale The scale factor.
      */
     this.setOrthoScale = function (scale) {
-        ortho.scale = scale;
+        projections.orthographic.scale = scale;
         return this;
     };
 
@@ -44089,7 +44124,7 @@ xeometry.Viewer = function (cfg) {
      * @return  {Number} The scale factor.
      */
     this.getOrthoScale = function () {
-        return ortho.scale;
+        return projections.orthographic.scale;
     };
 
     /**
@@ -44098,7 +44133,7 @@ xeometry.Viewer = function (cfg) {
      * @param {Number} near Position of the near plane on the View-space Z-axis.
      */
     this.setOrthoNear = function (near) {
-        ortho.near = near;
+        projections.orthographic.near = near;
         return this;
     };
 
@@ -44108,7 +44143,7 @@ xeometry.Viewer = function (cfg) {
      * @return  {Number} Position of the near clipping plane on the View-space Z-axis.
      */
     this.getOrthoNear = function () {
-        return ortho.near;
+        return projections.orthographic.near;
     };
 
     /**
@@ -44117,7 +44152,7 @@ xeometry.Viewer = function (cfg) {
      * @param {Number} far Position of the far clipping plane on the View-space Z-axis.
      */
     this.setOrthoFar = function (far) {
-        ortho.far = far;
+        projections.orthographic.far = far;
     };
 
     /**
@@ -44126,7 +44161,7 @@ xeometry.Viewer = function (cfg) {
      * @return  {Number} Position of the far clipping plane on the View-space Z-axis.
      */
     this.getOrthoFar = function () {
-        return ortho.far;
+        return projections.orthographic.far;
     };
 
     /**
@@ -44147,6 +44182,7 @@ xeometry.Viewer = function (cfg) {
         }
         return this;
     };
+
 
     /**
      * Gets the camera's current projection type.
@@ -44225,6 +44261,23 @@ xeometry.Viewer = function (cfg) {
         view.eye = eye;
         view.look = look;
         view.up = up || [0, 1, 0];
+        return this;
+    };
+
+
+    /**
+     * Locks the camera's vertical rotation axis to the World-space Y axis.
+     */
+    this.lockGimbalY = function () {
+        view.gimbalLockY = true;
+        return this;
+    };
+
+    /**
+     * Allows camera yaw rotation around the "up" vector.
+     */
+    this.unlockGimbalY = function () {
+        view.gimbalLockY = false;
         return this;
     };
 
@@ -44436,7 +44489,7 @@ xeometry.Viewer = function (cfg) {
                 case 1: // Back view
                     cameraTarget = {
                         look: center,
-                        eye: [center[0], center[1], center[2] + dist],
+                        eye: [center[0], center[1], center[2] - dist],
                         up: [0, 1, 0]
                     };
                     break;
@@ -44450,22 +44503,22 @@ xeometry.Viewer = function (cfg) {
                 case 3: // Front view
                     cameraTarget = {
                         look: center,
-                        eye: [center[0], center[1], center[2] - dist],
+                        eye: [center[0], center[1], center[2] + dist],
                         up: [0, 1, 0]
                     };
                     break;
                 case 4: // Top view
                     cameraTarget = {
                         look: center,
-                        eye: [center[0], center[1] - dist, center[2]],
-                        up: [0, 0, -1]
+                        eye: [center[0], center[1] + dist, center[2]],
+                        up: [0, 0, 1]
                     };
                     break;
                 case 5: // Bottom view
                     cameraTarget = {
                         look: center,
-                        eye: [center[0], center[1] + dist, center[2]],
-                        up: [0, 0, 1]
+                        eye: [center[0], center[1] - dist, center[2]],
+                        up: [0, 0, -1]
                     };
                     break;
             }
@@ -45077,7 +45130,7 @@ xeometry.Viewer = function (cfg) {
                     model = models[id];
                     modelData = {
                         id: id,
-                        src: model.src
+                        src: modelSrcs[id]
                     };
                     translate = getTranslate(id);
                     if (translate) {
@@ -45174,9 +45227,9 @@ xeometry.Viewer = function (cfg) {
             bookmark.perspectiveFar = projections.perspective.far;
             bookmark.perspectiveFOV = projections.perspective.fovy;
 
-            bookmark.orthoNear = projections.ortho.near;
-            bookmark.orthoFar = projections.ortho.far;
-            bookmark.orthoScale = projections.ortho.scale;
+            bookmark.orthoNear = projections.orthographic.near;
+            bookmark.orthoFar = projections.orthographic.far;
+            bookmark.orthoScale = projections.orthographic.scale;
 
             return bookmark;
         };
@@ -45263,6 +45316,19 @@ xeometry.Viewer = function (cfg) {
             });
         };
     })();
+
+    /**
+     * Gets a screenshot as a data URL.
+     * @return {String} An image in the data URI format.
+     */
+    this.getScreenshot = function (params) {
+        params = params || {};
+        return scene.canvas.getSnapshot({
+            width: params.width, // Defaults to size of canvas
+            height: params.height,
+            format: params.format || "png" // Options are "jpeg" (default), "png" and "bmp"
+        });
+    };
 
     /**
      * Clears and destroys this viewer.

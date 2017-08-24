@@ -8,6 +8,20 @@
     <link href="css/styles.css" rel="stylesheet"/>
 <body>
 
+<div id="info">
+    <h1>Selecting camera axis views</h1>
+
+    <h2>Axis views:</h2>
+    <ul>
+        <li><a href="javascript:viewer.viewFitFront()"><pre>viewer.viewFitFront()</pre></a></li>
+        <li><a href="javascript:viewer.viewFitLeft()"><pre>viewer.viewFitLeft()</pre></a></li>
+        <li><a href="javascript:viewer.viewFitBack()"><pre>viewer.viewFitBack()</pre></a></li>
+        <li><a href="javascript:viewer.viewFitRight()"><pre>viewer.viewFitRight()</pre></a></li>
+        <li><a href="javascript:viewer.viewFitTop()"><pre>viewer.viewFitTop()</pre></a></li>
+        <li><a href="javascript:viewer.viewFitBottom()"><pre>viewer.viewFitBottom()</pre></a></li>
+    </ul>
+</div>
+
 <script>
 
     var viewer = new xeometry.Viewer();
@@ -16,33 +30,7 @@
     viewer.setViewFitDuration(1);
 
     viewer.loadModel("house", "models/gltf/vianney_house_2/scene.gltf", function () {
-
         viewer.viewFit();
-
-        var i = 0;
-        setInterval(function () {
-            switch (i) {
-                case 0:
-                    viewer.viewFitLeft();
-                    break;
-                case 1:
-                    viewer.viewFitFront();
-                    break;
-                case 2:
-                    viewer.viewFitRight();
-                    break;
-                case 3:
-                    viewer.viewFitTop();
-                    break;
-                case 4:
-                    viewer.viewFitBack();
-                    break;
-                case 5:
-                    viewer.viewFitBottom();
-                    break;
-            }
-            i = (i == 5) ? 0 : i + 1;
-        }, 2000)
     });
 
     new xeometry.CameraControl(viewer);
