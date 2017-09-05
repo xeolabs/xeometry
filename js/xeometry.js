@@ -76,6 +76,29 @@ xeometry.Viewer = function (cfg) {
     //var cameraControl = new xeogl.CameraControl(scene);
 
     //----------------------------------------------------------------------------------------------------
+    // Task management
+    //----------------------------------------------------------------------------------------------------
+
+    /**
+     * Schedules a task for the viewer to run at the next frame.
+     *
+     * Internally, this pushes the task to a FIFO queue. Within each frame interval, the viewer processes the queue
+     * for a certain period of time, popping tasks and running them. After each frame interval, tasks that did not
+     * get a chance to run during the task are left in the queue to be run next time.
+     *
+     * @method scheduleTask
+     * @param {Function} callback Callback that runs the task.
+     * @param {Object} [scope] Scope for the callback.
+     */
+    this.scheduleTask = function (callback, scope) {
+        if (!callback) {
+            error("scheduleTask() - Missing callback");
+            return;
+        }
+        xeogl.scheduleTask(callback, scope);
+    };
+
+    //----------------------------------------------------------------------------------------------------
     // Models
     //----------------------------------------------------------------------------------------------------
 
@@ -244,7 +267,14 @@ xeometry.Viewer = function (cfg) {
      * @return {String[]} IDs of the objects.
      */
     this.getObjects = function (id) {
-        if (id !== undefined || id === null) {
+        if (id === undefined || id === null) {
+            return Object.keys(objects);
+        }
+        if (xeogl._isString(id)) {
+            var object = objects[id];
+            if (object) {
+                return [id];
+            }
             var objectsOfType = types[id];
             if (objectsOfType) {
                 return Object.keys(objectsOfType);
@@ -260,7 +290,22 @@ xeometry.Viewer = function (cfg) {
             }
             return Object.keys(entities);
         }
-        return Object.keys(objects);
+        if (xeogl._isArray(id)) {
+            var result = [];
+            var got = {};
+            for (var i = 0; i < id.length; i++) {
+                var buf = this.getObjects(id[i]);
+                for (var j = 0; j < buf.length; j++) {
+                    var id2 = buf[j];
+                    if (!got[id2]) {
+                        got[id2] = true;
+                        result.push(id2);
+                    }
+                }
+            }
+            return result;
+        }
+        return [];
     };
 
     /**
@@ -373,6 +418,55 @@ xeometry.Viewer = function (cfg) {
      */
     this.getTypes = function () {
         return Object.keys(types);
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    // Geometry
+    //----------------------------------------------------------------------------------------------------
+
+    /**
+     * Gets the geometry primitive type of an object.
+     *
+     * This determines the layout of the indices array of the object's geometry.
+     *
+     * @param {String} id ID of the object.
+     * @returns {String} The primitive type. Possible values are 'points', 'lines', 'line-loop',
+     * 'line-strip', 'triangles', 'triangle-strip' and 'triangle-fan'.
+     */
+    this.getPrimitive = function (id) {
+        var object = objects[id];
+        if (object) {
+            return object.geometry.primitive;
+        }
+        error("Object not found: " + id);
+    };
+
+    /**
+     * Gets the geometry vertex positions of an object.
+     *
+     * @param {String} id ID of the object.
+     * @returns {Float32Array} The vertex positions.
+     */
+    this.getPositions = function (id) { // TODO: Transform to World-space
+        var object = objects[id];
+        if (object) {
+            return object.geometry.positions;
+        }
+        error("Object not found: " + id);
+    };
+
+    /**
+     * Gets the geometry primitive indices of an object.
+     *
+     * @param {String} id ID of the object.
+     * @returns {Int32Array} The indices.
+     */
+    this.getIndices = function (id) {
+        var object = objects[id];
+        if (object) {
+            return object.geometry.indices;
+        }
+        error("Object not found: " + id);
     };
 
     //----------------------------------------------------------------------------------------------------
