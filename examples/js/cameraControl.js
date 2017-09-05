@@ -5,6 +5,7 @@ xeometry.CameraControl = function (viewer, cfg) {
     var firstPerson = !!cfg.firstPerson;
     var mouseOrbitSens = cfg.mouseOrbitSens || 1.0;
     var mousePanSens = cfg.mousePanSens || 0.1;
+    var mouseZoomSens = cfg.mouseZoomSens || 1.0;
 
     var canvas = viewer.getOverlay();
 
@@ -151,6 +152,109 @@ xeometry.CameraControl = function (viewer, cfg) {
                 viewer.pan([xDelta, yDelta, 0]);
             }
         });
+
+    })();
+
+    // Mouse wheel zoom
+
+    (function () {
+
+        var delta = 0;
+        var target = 0;
+        var newTarget = false;
+        var targeting = false;
+        var progress = 0;
+
+        var eyeVec = new Float32Array(3);
+        var lookVec = new Float32Array(3);
+        var tempVec3 = new Float32Array(3);
+
+        function dotVec3(u, v) {
+            return (u[0] * v[0] + u[1] * v[1] + u[2] * v[2]);
+        }
+
+        function sqLenVec3(v) {
+            return dotVec3(v, v);
+        }
+
+        function lenVec3(v) {
+            return Math.sqrt(sqLenVec3(v));
+        }
+
+        function subVec3(u, v, dest) {
+            if (!dest) {
+                dest = u;
+            }
+            dest[0] = u[0] - v[0];
+            dest[1] = u[1] - v[1];
+            dest[2] = u[2] - v[2];
+            return dest;
+        }
+
+        canvas.addEventListener("wheel", function (e) {
+            delta = Math.max(-1, Math.min(1, -e.deltaY * 40));
+            if (delta === 0) {
+                targeting = false;
+                newTarget = false;
+            } else {
+                newTarget = true;
+            }
+        });
+
+        var tick = function () {
+
+            var eye = viewer.getEye();
+            var look = viewer.getLook();
+
+            eyeVec[0] = eye[0];
+            eyeVec[1] = eye[1];
+            eyeVec[2] = eye[2];
+
+            lookVec[0] = look[0];
+            lookVec[1] = look[1];
+            lookVec[2] = look[2];
+
+            subVec3(eyeVec, lookVec, tempVec3);
+
+            var lenLook = Math.abs(lenVec3(tempVec3));
+            var lenLimits = 1000;
+            var f = mouseZoomSens * (2.0 + (lenLook / lenLimits));
+
+            if (newTarget) {
+                target = delta * f;
+                progress = 0;
+                newTarget = false;
+                targeting = true;
+            }
+
+            if (targeting) {
+
+                if (delta > 0) {
+
+                    progress += 0.2 * f;
+
+                    if (progress > target) {
+                        targeting = false;
+                    }
+
+                } else if (delta < 0) {
+
+                    progress -= 0.2 * f;
+
+                    if (progress < target) {
+                        targeting = false;
+                    }
+                }
+
+                if (targeting) {
+                    viewer.zoom(progress);
+                }
+            }
+
+            requestAnimationFrame(tick);
+        };
+
+        tick();
 
     })();
 
