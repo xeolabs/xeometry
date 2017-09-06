@@ -4,7 +4,7 @@
  * A WebGL-based 3D visualization engine from xeoLabs
  * http://xeogl.org/
  *
- * Built on 2017-08-21
+ * Built on 2017-09-06
  *
  * MIT License
  * Copyright 2017, Lindsay Kay
@@ -23,6 +23,52 @@
 (function () {
 
     "use strict";
+
+    // Fast queue that avoids using potentially inefficient array .shift() calls
+    // Based on https://github.com/creationix/fastqueue
+    var Queue = function () {
+
+        var head = [];
+        var headLength = 0;
+        var tail = [];
+        var index = 0;
+        this.length = 0;
+
+        this.shift = function () {
+            if (index >= headLength) {
+                var t = head;
+                t.length = 0;
+                head = tail;
+                tail = t;
+                index = 0;
+                headLength = head.length;
+                if (!headLength) {
+                    return;
+                }
+            }
+            var value = head[index];
+            if (index < 0) {
+                delete head[index++];
+            }
+            else {
+                head[index++] = undefined;
+            }
+            this.length--;
+            return value;
+        };
+
+        this.push = function (item) {
+            this.length++;
+            tail.push(item);
+            return this;
+        };
+
+        this.unshift = function (item) {
+            head[--index] = item;
+            this.length++;
+            return this;
+        };
+    };
 
     var xeogl = function () {
 
@@ -172,7 +218,8 @@
         // Task queue, which is pumped on each frame;
         // tasks are pushed to it with calls to xeogl.schedule
 
-        this._taskQueue = [];
+        this._taskQueue = new Queue();
+      //  this._taskQueue = [];
 
         //-----------------------------------------------------------------------
         // Game loop
@@ -413,7 +460,7 @@
          * for a certain period of time, popping tasks and running them. After each frame interval, tasks that did not
          * get a chance to run during the task are left in the queue to be run next time.
          *
-         * @method schedule
+         * @method scheduleTask
          * @param {Function} callback Callback that runs the task.
          * @param {Object} [scope] Scope for the callback.
          */
@@ -1875,7 +1922,7 @@ var Canvas2Image = (function () {
         })(),
 
         /**
-         * Converts a three-element vector to a JSON-serializable
+         * Converts an n-element vector to a JSON-serializable
          * array with values rounded to two decimal places.
          */
         vecToArray: (function () {
@@ -5251,7 +5298,6 @@ var Canvas2Image = (function () {
         this.modelTransform = null;
         this.viewTransform = null;
         this.projTransform = null;
-        this.billboard = null;
         this.clips = null;
         this.geometry = null;
         this.viewport = null;
@@ -5300,7 +5346,6 @@ var Canvas2Image = (function () {
 
         object.material = this.material;
         object.geometry = this.geometry;
-        object.billboard = this.billboard;
         object.viewport = this.viewport;
         object.lights = this.lights;
         object.outline = this.outline;
@@ -5316,7 +5361,6 @@ var Canvas2Image = (function () {
             this.clips.hash,
             this.material.hash,
             this.lights.hash,
-            this.billboard.hash,
             this.modes.hash
         ]).join(";");
 
@@ -8634,12 +8678,14 @@ var Canvas2Image = (function () {
                 add("attribute vec3 normal;");
             }
 
-            if (states.billboard.active) {
+            var billboard = states.modes.billboard;
+
+            if (billboard === "spherical" || billboard === "cylindrical") {
                 add("void billboard(inout mat4 mat) {");
                 add("   mat[0][0] = 1.0;");
                 add("   mat[0][1] = 0.0;");
                 add("   mat[0][2] = 0.0;");
-                if (states.billboard.spherical) {
+                if (billboard === "spherical") {
                     add("   mat[1][0] = 0.0;");
                     add("   mat[1][1] = 1.0;");
                     add("   mat[1][2] = 0.0;");
@@ -8659,7 +8705,7 @@ var Canvas2Image = (function () {
                 add("viewMatrix2[3][0] = viewMatrix2[3][1] = viewMatrix2[3][2] = 0.0;")
             }
 
-            if (states.billboard.active) {
+            if (billboard === "spherical" || billboard === "cylindrical") {
                 add("billboard(modelMatrix2);");
                 add("billboard(viewMatrix2);");
             }
@@ -8771,14 +8817,16 @@ var Canvas2Image = (function () {
                 add("uniform float pointSize;");
             }
 
-            if (states.billboard.active) {
+            var billboard = states.modes.billboard;
+
+            if (billboard === "spherical" || billboard === "cylindrical") {
 
                 add("void billboard(inout mat4 mat) {");
                 add("   mat[0][0] = 1.0;");
                 add("   mat[0][1] = 0.0;");
                 add("   mat[0][2] = 0.0;");
 
-                if (states.billboard.spherical) {
+                if (billboard === "spherical") {
                     add("   mat[1][0] = 0.0;");
                     add("   mat[1][1] = 1.0;");
                     add("   mat[1][2] = 0.0;");
@@ -8819,7 +8867,7 @@ var Canvas2Image = (function () {
                 add("viewMatrix2[3][0] = viewMatrix2[3][1] = viewMatrix2[3][2] = 0.0;")
             }
 
-            if (states.billboard.active) {
+            if (billboard === "spherical" || billboard === "cylindrical") {
 
                 add("mat4 modelViewMatrix = viewMatrix2 * modelMatrix2;");
 
@@ -13874,30 +13922,6 @@ var Canvas2Image = (function () {
                     return this.components["default.transform"] ||
                         new xeogl.Transform(this, {
                             id: "default.transform",
-                            isDefault: true
-                        });
-                }
-            },
-
-            /**
-             * The default {{#crossLink "Billboard"}}Billboard{{/crossLink}} provided by this Scene.
-             *
-             * This {{#crossLink "Billboard"}}Billboard{{/crossLink}} has an {{#crossLink "Component/id:property"}}id{{/crossLink}} equal to "default.billboard"
-             * and an {{#crossLink "Billboard/active:property"}}{{/crossLink}} property set to false, to disable it.
-             *
-             * {{#crossLink "Entity"}}Entities{{/crossLink}} within this Scene are attached to this
-             * {{#crossLink "Billboard"}}Billboard{{/crossLink}} by default.
-             *
-             * @property billboard
-             * @final
-             * @type Billboard
-             */
-            billboard: {
-                get: function () {
-                    return this.components["default.billboard"] ||
-                        new xeogl.Billboard(this, {
-                            id: "default.billboard",
-                            active: false,
                             isDefault: true
                         });
                 }
@@ -30730,7 +30754,7 @@ TODO
 
  ### Alpha Masking
 
- Let's make holes in our torus. We'll give its PhongMaterial an {{#crossLink "PhongMaterial/alphaMap:property"}}{{/crossLink}}
+ Now let's make holes in our torus instead. We'll give its PhongMaterial an {{#crossLink "PhongMaterial/alphaMap:property"}}{{/crossLink}}
  and configure {{#crossLink "PhongMaterial/alpha:property"}}{{/crossLink}}, {{#crossLink "PhongMaterial/alphaMode:property"}}{{/crossLink}},
  and {{#crossLink "PhongMaterial/alphaCutoff:property"}}{{/crossLink}} to treat it as an alpha mask:
 
@@ -30762,7 +30786,6 @@ TODO
  @param [cfg.specular=[ 1.0, 1.0, 1.0 ]] {Array of Number} PhongMaterial specular color.
  @param [cfg.emissive=[ 0.0, 0.0, 0.0 ]] {Array of Number} PhongMaterial emissive color.
  @param [cfg.alpha=1] {Number} Scalar in range 0-1 that controls alpha, where 0 is completely transparent and 1 is completely opaque.
- Only applies while {{#crossLink "Modes"}}Modes{{/crossLink}} {{#crossLink "Modes/transparent:property"}}transparent{{/crossLink}} equals ````true````.
  @param [cfg.shininess=80] {Number} Scalar in range 0-128 that determines the size and sharpness of specular highlights.
  @param [cfg.reflectivity=1] {Number} Scalar in range 0-1 that controls how much {{#crossLink "CubeMap"}}CubeMap{{/crossLink}} is reflected.
  @param [cfg.lineWidth=1] {Number} Scalar that controls the width of lines for {{#crossLink "Geometry"}}{{/crossLink}} with {{#crossLink "Geometry/primitive:property"}}{{/crossLink}} set to "lines".
@@ -30805,15 +30828,15 @@ TODO
                 specular: xeogl.math.vec3([1.0, 1.0, 1.0]),
                 emissive: xeogl.math.vec3([0.0, 0.0, 0.0]),
 
-                alpha: 1.0,
-                shininess: 80.0,
-                reflectivity: 1.0,
+                alpha: null,
+                shininess: null,
+                reflectivity: null,
 
-                alphaMode: 0, // "opaque"
-                alphaCutoff: 0.5,
+                alphaMode: null,
+                alphaCutoff: null,
 
-                lineWidth: 1.0,
-                pointSize: 1.0,
+                lineWidth: null,
+                pointSize: null,
 
                 backfaces: null,
                 frontface: null, // Boolean for speed; true == "ccw", false == "cw"
@@ -31111,10 +31134,6 @@ TODO
              Factor in the range [0..1] indicating how transparent the PhongMaterial is.
 
              A value of 0.0 indicates fully transparent, 1.0 is fully opaque.
-
-             Attached {{#crossLink "Entity"}}Entities{{/crossLink}} will appear transparent only if they are also attached
-             to {{#crossLink "Modes"}}Modes{{/crossLink}} that have {{#crossLink "Modes/transparent:property"}}transparent{{/crossLink}}
-             set to **true**.
 
              Multiplies by {{#crossLink "PhongMaterial/alphaMap:property"}}{{/crossLink}}.
 
@@ -31731,11 +31750,8 @@ TODO
              @type {String}
              */
             alphaMode: (function () {
-                var modes = {
-                    "opaque": 0,
-                    "mask": 1,
-                    "blend": 2
-                };
+                var modes = {"opaque": 0, "mask": 1, "blend": 2};
+                var modeNames = ["opaque", "mask", "blend"];
                 return {
                     set: function (alphaMode) {
 
@@ -31756,7 +31772,7 @@ TODO
                         this._renderer.imageDirty = true;
 
                         /**
-                         Fired whenever this PhongMaterial's {{#crossLink "PhongMaterial/look:property"}}{{/crossLink}} property changes.
+                         Fired whenever this PhongMaterial's {{#crossLink "PhongMaterial/alphaMode:property"}}{{/crossLink}} property changes.
 
                          @event alphaMode
                          @param value {Number} The property's new value
@@ -31764,7 +31780,7 @@ TODO
                         this.fire("alphaMode", this._state.alphaMode);
                     },
                     get: function () {
-                        return modes[this._state.alphaMode];
+                        return modeNames[this._state.alphaMode];
                     }
                 };
             })(),
@@ -32309,7 +32325,7 @@ TODO
 
  ### Alpha Masking
 
- Let's make holes in our plastered sphere. We'll give its SpecularMaterial an {{#crossLink "SpecularMaterial/alphaMap:property"}}{{/crossLink}}
+ Now let's make holes in our plastered sphere. We'll give its SpecularMaterial an {{#crossLink "SpecularMaterial/alphaMap:property"}}{{/crossLink}}
  and configure {{#crossLink "SpecularMaterial/alpha:property"}}{{/crossLink}}, {{#crossLink "SpecularMaterial/alphaMode:property"}}{{/crossLink}},
  and {{#crossLink "SpecularMaterial/alphaCutoff:property"}}{{/crossLink}} to treat it as an alpha mask:
 
@@ -32385,9 +32401,7 @@ TODO
  @param [cfg.alpha=1.0] {Number} Factor in the range 0..1 indicating how transparent this SpecularMaterial is.
  A value of 0.0 indicates fully transparent, 1.0 is fully opaque. Multiplies by the *R* component of
  {{#crossLink "SpecularMaterial/alphaMap:property"}}{{/crossLink}} and the *A* component, if present, of
- {{#crossLink "SpecularMaterial/diffuseMap:property"}}{{/crossLink}}. Attached {{#crossLink "Entity"}}Entities{{/crossLink}}
- will appear transparent only if they are also attached to {{#crossLink "Modes"}}Modes{{/crossLink}} that
- have {{#crossLink "Modes/transparent:property"}}transparent{{/crossLink}} set to **true**.
+ {{#crossLink "SpecularMaterial/diffuseMap:property"}}{{/crossLink}}.
 
  @param [cfg.alphaMap=undefined] {Texture} RGB {{#crossLink "Texture"}}{{/crossLink}} containing this SpecularMaterial's
  alpha in its *R* component. The *R* component multiplies by the {{#crossLink "SpecularMaterial/alpha:property"}}{{/crossLink}} property. Must
@@ -32419,9 +32433,9 @@ TODO
                 diffuse: xeogl.math.vec4([1.0, 1.0, 1.0]),
                 emissive: xeogl.math.vec4([0.0, 0.0, 0.0]),
                 specular: xeogl.math.vec4([1.0, 1.0, 1.0]),
-                glossiness: 1.0,
-                specularF0: 0.0,
-                alpha: 1.0,
+                glossiness: null,
+                specularF0: null,
+                alpha: null,
 
                 diffuseMap: null,
                 emissiveMap: null,
@@ -32431,8 +32445,8 @@ TODO
                 occlusionMap: null,
                 alphaMap: null,
                 normalMap: null,
-                alphaMode: 0, // "opaque"
-                alphaCutoff: 0.5,
+                alphaMode: null,
+                alphaCutoff: null,
                 hash: null
             });
 
@@ -32549,10 +32563,6 @@ TODO
 
              The *RGB* components multiply by the {{#crossLink "SpecularMaterial/diffuse:property"}}{{/crossLink}} property,
              while the *A* component, if present, multiplies by the {{#crossLink "SpecularMaterial/alpha:property"}}{{/crossLink}} property.
-
-             Attached {{#crossLink "Entity"}}Entities{{/crossLink}} will appear transparent only if they are also attached
-             to {{#crossLink "Modes"}}Modes{{/crossLink}} that have {{#crossLink "Modes/transparent:property"}}transparent{{/crossLink}}
-             set to **true**.
 
              Must be within the same {{#crossLink "Scene"}}Scene{{/crossLink}} as this SpecularMaterial.
 
@@ -32895,10 +32905,6 @@ TODO
              Multiplies by the *R* component of {{#crossLink "SpecularMaterial/alphaMap:property"}}{{/crossLink}} and
              the *A* component, if present, of {{#crossLink "SpecularMaterial/diffuseMap:property"}}{{/crossLink}}.
 
-             Attached {{#crossLink "Entity"}}Entities{{/crossLink}} will appear transparent only if they are also attached
-             to {{#crossLink "Modes"}}Modes{{/crossLink}} that have {{#crossLink "Modes/transparent:property"}}transparent{{/crossLink}}
-             set to **true**.
-
              Fires an {{#crossLink "SpecularMaterial/alpha:event"}}{{/crossLink}} event on change.
 
              @property alpha
@@ -33042,11 +33048,8 @@ TODO
              @type {String}
              */
             alphaMode: (function () {
-                var modes = {
-                    "opaque": 0,
-                    "mask": 1,
-                    "blend": 2
-                };
+                var modes = {"opaque": 0, "mask": 1, "blend": 2};
+                var modeNames = ["opaque", "mask", "blend"];
                 return {
                     set: function (alphaMode) {
 
@@ -33067,7 +33070,7 @@ TODO
                         this._renderer.imageDirty = true;
 
                         /**
-                         Fired whenever this SpecularMaterial's {{#crossLink "SpecularMaterial/look:property"}}{{/crossLink}} property changes.
+                         Fired whenever this SpecularMaterial's {{#crossLink "SpecularMaterial/alphaMode:property"}}{{/crossLink}} property changes.
 
                          @event alphaMode
                          @param value {Number} The property's new value
@@ -33075,7 +33078,7 @@ TODO
                         this.fire("alphaMode", this._state.alphaMode);
                     },
                     get: function () {
-                        return modes[this._state.alphaMode];
+                        return modeNames[this._state.alphaMode];
                     }
                 };
             })(),
@@ -33559,7 +33562,7 @@ TODO
  Let's apply an alpha mask to our hydrant.
 
  We'll give its MetallicMaterial an {{#crossLink "MetallicMaterial/alphaMap:property"}}{{/crossLink}}
-  and configure {{#crossLink "MetallicMaterial/alpha:property"}}{{/crossLink}}, {{#crossLink "MetallicMaterial/alphaMode:property"}}{{/crossLink}},
+ and configure {{#crossLink "MetallicMaterial/alpha:property"}}{{/crossLink}}, {{#crossLink "MetallicMaterial/alphaMode:property"}}{{/crossLink}},
  and {{#crossLink "MetallicMaterial/alphaCutoff:property"}}{{/crossLink}} to treat it as an alpha mask:
 
  ````javascript
@@ -33669,10 +33672,10 @@ TODO
                 type: "MetallicMaterial",
                 baseColor: xeogl.math.vec4([1.0, 1.0, 1.0]),
                 emissive: xeogl.math.vec4([0.0, 0.0, 0.0]),
-                metallic: 1.0,
-                roughness: 1.0,
-                specularF0: 0.0,
-                alpha: 1.0,
+                metallic: null,
+                roughness: null,
+                specularF0: null,
+                alpha: null,
                 baseColorMap: null,
                 alphaMap: null,
                 metallicMap: null,
@@ -33681,8 +33684,8 @@ TODO
                 emissiveMap: null,
                 occlusionMap: null,
                 normalMap: null,
-                alphaMode: 0, // "opaque"
-                alphaCutoff: 0.5,
+                alphaMode: null, // "opaque"
+                alphaCutoff: null,
                 backfaces: null,
                 frontface: null, // Boolean for speed; true == "ccw", false == "cw"
                 hash: null
@@ -34277,11 +34280,8 @@ TODO
              @type {String}
              */
             alphaMode: (function () {
-                var modes = {
-                    "opaque": 0,
-                    "mask": 1,
-                    "blend": 2
-                };
+                var modes = {"opaque": 0, "mask": 1, "blend": 2};
+                var modeNames = ["opaque", "mask", "blend"];
                 return {
                     set: function (alphaMode) {
 
@@ -34302,7 +34302,7 @@ TODO
                         this._renderer.imageDirty = true;
 
                         /**
-                         Fired whenever this MetallicMaterial's {{#crossLink "MetallicMaterial/look:property"}}{{/crossLink}} property changes.
+                         Fired whenever this MetallicMaterial's {{#crossLink "MetallicMaterial/alphaMode:property"}}{{/crossLink}} property changes.
 
                          @event alphaMode
                          @param value {Number} The property's new value
@@ -34310,7 +34310,7 @@ TODO
                         this.fire("alphaMode", this._state.alphaMode);
                     },
                     get: function () {
-                        return modes[this._state.alphaMode];
+                        return modeNames[this._state.alphaMode];
                     }
                 };
             })(),
@@ -35104,8 +35104,8 @@ TODO
             /**
              * How this Texture is sampled when a texel covers less than one pixel.
              *
-             * Options are:
              *
+             * Options are:
              *
              *     * **"nearest"** - Uses the value of the texture element that is nearest
              *     (in Manhattan distance) to the center of the pixel being textured.
@@ -35839,6 +35839,42 @@ TODO
  });
  ````
 
+ ## Billboarding
+
+ An {{#crossLink "Entity"}}{{/crossLink}} has a {{#crossLink "Entity/billboard:property"}}{{/crossLink}} property
+ that can make it behave as a billboard.
+
+ Two billboard types are supported:
+
+ * **Spherical** billboards are free to rotate their {{#crossLink "Entity"}}Entities{{/crossLink}} in any direction and always face the {{#crossLink "Camera"}}{{/crossLink}} perfectly.
+ * **Cylindrical** billboards rotate their {{#crossLink "Entity"}}Entities{{/crossLink}} towards the {{#crossLink "Camera"}}{{/crossLink}}, but only about the Y-axis.
+
+ Note that {{#crossLink "Scale"}}{{/crossLink}} transformations to have no effect on billboarded {{#crossLink "Entity"}}Entities{{/crossLink}}.
+
+ The example below shows a box that remains rotated directly towards the viewpoint, using spherical billboarding:
+
+ ````javascript
+ new xeogl.Entity({
+
+     geometry: new xeogl.BoxGeometry(),
+
+     material: new xeogl.PhongMaterial({
+         diffuseMap: new xeogl.Texture({
+            src: "textures/diffuse/uvGrid2.jpg"
+         })
+     }),
+
+     billboard: "spherical"
+ });
+ ````
+
+ #### Examples
+
+ * [Spherical billboards](../../examples/#transforms_billboard_spherical)
+ * [Cylindrical billboards](../../examples/#transforms_billboard_cylindrical)
+ * [Clouds using billboards](../../examples/#transforms_billboard_spherical_clouds)
+
+
  @class Entity
  @module xeogl
  @submodule entities
@@ -35867,7 +35903,6 @@ TODO
  {{#crossLink "Scene/outline:property"}}{{/crossLink}}.
  @param [cfg.xray] {String|XRay} ID or instance of a {{#crossLink "XRay"}}{{/crossLink}} attached to this Entity. Must be within the same {{#crossLink "Scene"}}Scene{{/crossLink}} as this Entity. Defaults to the parent {{#crossLink "Scene"}}Scene{{/crossLink}}'s default instance,
  {{#crossLink "Scene/xray:property"}}{{/crossLink}}.
-
  @param [cfg.visible=true] {Boolean}  Indicates if this Entity is visible.
  @param [cfg.culled=true] {Boolean}  Indicates if this Entity is culled from view.
  @param [cfg.pickable=true] {Boolean}  Indicates if this Entity is pickable.
@@ -35878,8 +35913,8 @@ TODO
  @param [cfg.receiveShadow=true] {Boolean} Whether this Entity receives shadows.
  @param [cfg.outlined=false] {Boolean} Whether an outline is rendered around this entity, as configured by the Entity's {{#crossLink "Outline"}}{{/crossLink}} component
  @param [cfg.layer=0] {Number} Indicates this Entity's rendering priority, typically used for transparency sorting,
- @param [cfg.stationary=false] {Boolean} Disables the effect of {{#crossLink "Lookat"}}view transform{{/crossLink}}
- * translations for this Entity. This is useful for skybox Entities.
+ @param [cfg.stationary=false] {Boolean} Disables the effect of {{#crossLink "Lookat"}}view transform{{/crossLink}} translations for this Entity. This is useful for skybox Entities.
+ @param [cfg.billboard="none"] {String} Specifies the billboarding behaviour for this Entity. Options are "none", "spherical" and "cylindrical".
  @param [cfg.loading] {Boolean} Flag which indicates that this Entity is freshly loaded. This will increment the
  {{#crossLink "Spinner/processes:property"}}Spinner processes{{/crossLink}} count, and then when this Entity is first
  rendered, will decrement the count again.
@@ -35915,6 +35950,7 @@ TODO
                 receiveShadow: null,
                 outlined: null,
                 layer: null,
+                billboard: null,
                 hash: ""
             });
 
@@ -35931,7 +35967,6 @@ TODO
             this.material = cfg.material;
             this.morphTargets = cfg.morphTargets;
             this.transform = cfg.transform;
-            this.billboard = cfg.billboard;
             this.stationary = cfg.stationary;
             this.viewport = cfg.viewport;
             this.outline = cfg.outline;
@@ -35948,6 +35983,7 @@ TODO
             this.outlined = cfg.outlined;
             this.layer = cfg.layer;
             this.stationary = cfg.stationary;
+            this.billboard = cfg.billboard;
 
             // Cached boundary for each coordinate space
             // The Entity's Geometry component caches the Local-space boundary
@@ -35955,8 +35991,10 @@ TODO
             this._worldBoundary = null;
             this._viewBoundary = null;
             this._canvasBoundary = null;
+            this._worldPositions = null;
 
             this._worldBoundaryDirty = true;
+            this._worldPositionsDirty = true;
             this._viewBoundaryDirty = true;
             this._canvasBoundaryDirty = true;
         },
@@ -36268,46 +36306,7 @@ TODO
                     return this._attached.transform;
                 }
             },
-
-            /**
-             * The {{#crossLink "Billboard"}}{{/crossLink}} attached to this Entity.
-             *
-             * When {{#crossLink "Billboard/property:active"}}{{/crossLink}}, the {{#crossLink "Billboard"}}{{/crossLink}}
-             * will keep this Entity oriented towards the viewpoint.
-             *
-             * Must be within the same {{#crossLink "Scene"}}Scene{{/crossLink}} as this Entity. Defaults to the parent
-             * {{#crossLink "Scene"}}Scene{{/crossLink}}'s default {{#crossLink "Scene/billboard:property"}}billboard{{/crossLink}}
-             * (an identity matrix) when set to a null or undefined value.
-             *
-             * Fires an {{#crossLink "Entity/billboard:event"}}{{/crossLink}} event on change.
-             *
-             * @property billboard
-             * @type Billboard
-             */
-            billboard: {
-
-                set: function (value) {
-
-                    /**
-                     * Fired whenever this Entity's {{#crossLink "Entity/billboard:property"}}{{/crossLink}}
-                     * property changes.
-                     *
-                     * @event billboard
-                     * @param value The property's new value
-                     */
-                    this._attach({
-                        name: "billboard",
-                        type: "xeogl.Billboard",
-                        component: value,
-                        sceneDefault: true
-                    });
-                },
-
-                get: function () {
-                    return this._attached.billboard;
-                }
-            },
-
+            
             /**
              * The {{#crossLink "Viewport"}}{{/crossLink}} attached to this Entity.
              *
@@ -36808,6 +36807,7 @@ TODO
              * Fires an {{#crossLink "Entity/stationary:event"}}{{/crossLink}} event on change.
              *
              * @property stationary
+             * @default false
              * @type Boolean
              */
             stationary: {
@@ -36822,7 +36822,7 @@ TODO
 
                     this._state.stationary = value;
 
-                    this._state.hash = (this._state.stationary ? "a;" : ";");
+                  //  this._state.hash = (this._state.stationary ? "a;" : ";");
 
                     this.fire("dirty", this);
 
@@ -36836,6 +36836,61 @@ TODO
 
                 get: function () {
                     return this._state.stationary;
+                }
+            },
+
+            /**
+             * Specifies the billboarding behaviour for this Entity.
+             *
+             * Options are:
+             *
+             *     * **"none"** -  **(default)** - No billboarding.
+             *     * **"spherical"** - Entity is billboarded to face the viewpoint, rotating both vertically and horizontally.
+             *     * **"cylindrical"** - Entity is billboarded to face the viewpoint, rotating only about its vertically
+             *     axis. Use this mode for things like trees on a landscape.
+             *
+             * Fires an {{#crossLink "Entity/billboard:event"}}{{/crossLink}} event on change.
+             *
+             * @property billboard
+             * @default "none"
+             * @type String
+             */
+            billboard: {
+
+                set: function (value) {
+
+                    value = value || "none";
+
+                    if (value !== "spherical" &&
+                        value !== "cylindrical" &&
+                        value !== "none") {
+
+                        this.error("Unsupported value for 'billboard': " + value + " - accepted values are " +
+                            "'spherical', 'cylindrical' and 'none' - defaulting to 'none'.");
+
+                        value = "none";
+                    }
+
+                    if (this._state.billboard === value) {
+                        return;
+                    }
+
+                    this._state.billboard = value;
+
+                    this._state.hash = (this._state.active ? "a;" : ";") + (this._state.billboard ? "s;" : ";");
+
+                    this.fire("dirty", this);
+
+                    /**
+                     * Fired whenever this Entity's {{#crossLink "Entity/billboard:property"}}{{/crossLink}} property changes.
+                     * @event billboard
+                     * @param value The property's new value
+                     */
+                    this.fire('billboard', this._state.billboard);
+                },
+
+                get: function () {
+                    return this._state.billboard;
                 }
             },
             
@@ -37093,6 +37148,39 @@ TODO
             },
 
             /**
+             * World-space vertex positions of this Entity.
+             *
+             * @property worpdPositions
+             * @type Float32Array
+             * @final
+             */
+            worldPositions: {
+
+                get: function () {
+                    if (this._worldPositionsDirty) {
+                        var positions = this.geometry.positions;
+                        if (!this._worldPositions) {
+                            this._worldPositions = new Float32Array(positions.length);
+                        }
+                        if (!this._attached.transform) {
+                            this._worldPositions.set(positions);
+                        } else {
+                            xeogl.math.transformPositions3(this._attached.transform.leafMatrix, positions, this._worldPositions);
+                        }
+                        this._worldPositionsDirty = false;
+                    }
+                    return this._worldPositions;
+                },
+
+                set: function(value) {
+                    if (value = undefined || value === null) {
+                        this._worldPositions = null; // Release memory
+                        this._worldPositionsDirty = true;
+                    }
+                }
+            },
+
+            /**
              * JSON object containing the (GLSL) source code of the shaders for this Entity.
              *
              * This is sometimes useful to have as a reference
@@ -37166,6 +37254,7 @@ TODO
 
         _setWorldBoundaryDirty: function () {
             this._worldBoundaryDirty = true;
+            this._worldPositionsDirty = true;
             if (this._worldBoundary) {
                 this._worldBoundary.fire("updated", true);
             }
@@ -37238,10 +37327,11 @@ TODO
             attached.lights._compile();
             attached.material._compile();
             this._renderer.modelTransform = attached.transform._state;
-            attached.billboard._compile();
             attached.viewport._compile();
             attached.outline._compile();
             attached.xray._compile();
+
+            this._makeHash();
 
             this._renderer.modes = this._state;
 
@@ -37273,6 +37363,23 @@ TODO
             }
         },
 
+        _makeHash: function () {
+            var hash = [];
+            var state = this._state;
+            if (state.stationary) {
+                hash.push("/s");
+            }
+            if (state.billboard === "none") {
+                hash.push("/n");
+            } else if (state.billboard === "spherical") {
+                hash.push("/s");
+            } else if (state.billboard === "cylindrical") {
+                hash.push("/c");
+            }
+            hash.push(";");
+            this._state.hash = hash.join("");
+        },
+
         _getJSON: function () {
 
             var attached = this._attached;
@@ -37284,7 +37391,6 @@ TODO
                 lights: attached.lights.id,
                 material: attached.material.id,
                 transform: attached.transform.id,
-                billboard: attached.billboard.id,
                 viewport: attached.viewport.id,
                 outline: attached.outline.id,
                 xray: attached.xray.id,
@@ -37299,7 +37405,8 @@ TODO
                 outlined: this._state.outlined,
                 xrayed:  this._state.xrayed,
                 layer: this._state.layer,
-                stationary: this._state.stationary
+                stationary: this._state.stationary,
+                billboard: this._state.billboard
             };
         },
 
@@ -39187,202 +39294,6 @@ TODO
                 json.parent = this._parent.id;
             }
             return json;
-        }
-    });
-
-})();
-;/**
- A **Billboard** is a modelling {{#crossLink "Transform"}}{{/crossLink}} that causes associated {{#crossLink "Entity"}}Entities{{/crossLink}} to be always oriented towards the Camera.
-
- <a href="../../examples/#transforms_billboard_spherical"><img src="http://i.giphy.com/l3vR13LcnTuQGMInu.gif"></img></a>
-
- ## Overview
-
- * **Spherical** billboards are free to rotate their {{#crossLink "Entity"}}Entities{{/crossLink}} in any direction and always face the {{#crossLink "Camera"}}{{/crossLink}} perfectly.
- * **Cylindrical** billboards rotate their {{#crossLink "Entity"}}Entities{{/crossLink}} towards the {{#crossLink "Camera"}}{{/crossLink}}, but only about the Y-axis.
- * A Billboard will cause {{#crossLink "Scale"}}{{/crossLink}} transformations to have no effect on its {{#crossLink "Entity"}}Entities{{/crossLink}}
-
- <img src="../../../assets/images/Billboard.png"></img>
-
- ## Examples
-
- * [Spherical billboards](../../examples/#transforms_billboard_spherical)
- * [Cylindrical billboards](../../examples/#transforms_billboard_cylindrical)
- * [Clouds using billboards](../../examples/#transforms_billboard_spherical_clouds)
-
- ## Usage
-
- Let's create 1000 randomly-positioned {{#crossLink "Entity"}}Entities{{/crossLink}} that always face towards the
- viewpoint as we orbit the {{#crossLink "Camera"}}{{/crossLink}} about the X and Y axis:
-
- ```` javascript
- // Create 1000 Entities in default Scene with shared Geometry, PhongMaterial and Billboard
-
- var geometry = new xeogl.Geometry({
-     primitive: "triangles",
-     positions: [3, 3, 0, -3, 3, 0, -3, -3, 0, 3, -3, 0],
-     normals: [-1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0],
-     uv: [1, 1, 0, 1, 0, 0, 1, 0],
-     indices: [2, 1, 0, 3, 2, 0] // Ensure these will be front-faces
- });
-
- var material = new xeogl.PhongMaterial({
-     emissiveMap: new xeogl.Texture({
-         src: "textures/diffuse/teapot.jpg"
-     })
- });
-
- var billboard = new xeogl.Billboard({
-     spherical: true
- });
-
- for (var i = 0; i < 1000; i++) {
-     new xeogl.Entity({
-         geometry: geometry,
-         material: material,
-         billboard: billboard,
-         transform: new xeogl.Translate({
-             xyz: [Math.random() * 100 - 50, Math.random() * 100 - 50, Math.random() * 100 - 50]
-         })
-     });
- }
-
- // Move eye back to see everything, then orbit the Camera
-
- var scene = xeogl.scene;
-
- scene.camera.view.zoom(120);
-
- scene.on("tick", function () {
-
-          var view = scene.camera.view;
-
-          view.rotateEyeY(0.2);
-          view.rotateEyeX(0.1);
-     });
- ````
-
- @class Billboard
- @module xeogl
- @submodule transforms
- @constructor
- @param [scene] {Scene} Parent {{#crossLink "Scene"}}Scene{{/crossLink}} - creates this Billboard in the default
- {{#crossLink "Scene"}}Scene{{/crossLink}} when omitted.
- @param [cfg] {*} Configs
- @param [cfg.id] {String} Optional ID, unique among all components in the parent scene, generated automatically when omitted.
- @param [cfg.meta] {String:Object} Optional map of user-defined metadata to attach to this Billboard.
- @param [cfg.active=true] {Boolean} Indicates if this Billboard is active or not.
- @param [cfg.spherical=true] {Boolean} Indicates if this Billboard is spherical (true) or cylindrical (false).
- @extends Component
- */
-(function () {
-
-    "use strict";
-
-    xeogl.Billboard = xeogl.Component.extend({
-
-        type: "xeogl.Billboard",
-
-        _init: function (cfg) {
-
-            this._super(cfg);
-
-            this._state = new xeogl.renderer.Billboard({
-                active: true,
-                spherical: true,
-                hash: "a;s;"
-            });
-
-            this.active = cfg.active !== false;
-            this.spherical = cfg.spherical !== false;
-        },
-
-        _props: {
-
-            /**
-             * Flag which indicates whether this Billboard is active or not.
-             *
-             * Fires an {{#crossLink "Billboard/active:event"}}{{/crossLink}} event on change.
-             *
-             * @property active
-             * @type Boolean
-             */
-            active: {
-
-                set: function (value) {
-
-                    value = !!value;
-
-                    if (this._state.active === value) {
-                        return;
-                    }
-
-                    this._state.active = value;
-
-                    this._state.hash = (this._state.active ? "a;" : ";") + (this._state.spherical ? "s;" : ";");
-
-                    this.fire("dirty", true);
-
-                    /**
-                     * Fired whenever this Billboard's {{#crossLink "Billboard/active:property"}}{{/crossLink}} property changes.
-                     * @event active
-                     * @param value The property's new value
-                     */
-                    this.fire('active', this._state.active);
-                },
-
-                get: function () {
-                    return this._state.active;
-                }
-            },
-
-            /**
-             * Flag which indicates whether this Billboard is spherical (true) or cylindrical (false).
-             *
-             * Fires an {{#crossLink "Billboard/spherical:event"}}{{/crossLink}} event on change.
-             *
-             * @property spherical
-             * @type Boolean
-             */
-            spherical: {
-
-                set: function (value) {
-
-                    value = !!value;
-
-                    if (this._state.spherical === value) {
-                        return;
-                    }
-
-                    this._state.spherical = value;
-
-                    this._state.hash = (this._state.active ? "a;" : ";") + (this._state.spherical ? "s;" : ";");
-
-                    this.fire("dirty", true);
-
-                    /**
-                     * Fired whenever this Billboard's {{#crossLink "Billboard/spherical:property"}}{{/crossLink}} property changes.
-                     * @event spherical
-                     * @param value The property's new value
-                     */
-                    this.fire('spherical', this._state.spherical);
-                },
-
-                get: function () {
-                    return this._state.spherical;
-                }
-            }
-        },
-
-        _compile: function () {
-            this._renderer.billboard = this._state;
-        },
-
-
-        _getJSON: function () {
-            return {
-                active: this._state.active
-            };
         }
     });
 
