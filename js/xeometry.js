@@ -1481,22 +1481,37 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view.
+     * Moves the camera to fit the given annotation,  model(s), object(s) or boundary(s) in view.
      *
      * Preserves the direction that the camera is currently pointing in.
      *
      * A boundary is an axis-aligned World-space bounding box, given as elements ````[xmin, ymin, zmin, xmax, ymax, zmax]````.
      *
-     * @param {String|[]} target The elements to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
+     * @param {String|[]} target The elements to fit in view, given as either the ID of an annotation, model or object, a boundary, or an array containing mixture of IDs and boundaries.
      * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
      */
     this.viewFit = function (target, ok) {
-        (ok || cameraFlight.duration > 0.1) ? cameraFlight.flyTo({aabb: this.getAABB(target)}, ok) : cameraFlight.jumpTo({aabb: this.getAABB(target)});
+        if (xeogl._isString(target)) {
+            var annotation = annotations[target];
+            if (annotation) {
+                if (ok || cameraFlight.duration > 0.1) {
+                    cameraFlight.flyTo({eye: annotation.eye, look: annotation.look, up: annotation.up}, ok);
+                } else {
+                    cameraFlight.jumpTo({eye: annotation.eye, look: annotation.look, up: annotation.up});
+                }
+                return this;
+            }
+        }
+        if (ok || cameraFlight.duration > 0.1) {
+            cameraFlight.flyTo({aabb: this.getAABB(target)}, ok);
+        } else {
+            cameraFlight.jumpTo({aabb: this.getAABB(target)});
+        }
         return this;
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking dalong the +X axis.
+     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the +X axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
      * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
@@ -1825,7 +1840,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     this.getAnnotationPrimIndex = function (id) {
-        var annotation = getAnnotation(id);
+        var annotation = annotations[id];
         if (!annotation) {
             this.error("Annotation not found: \"" + id + "\"");
             return;
@@ -1991,7 +2006,7 @@ xeometry.Viewer = function (cfg) {
         return annotation.occludable;
     };
 
-    this.setPinShown = function (id, pinShown) {
+    this.setAnnotationPinShown = function (id, pinShown) {
         var annotation = annotations[id];
         if (!annotation) {
             this.error("Annotation not found: \"" + id + "\"");
