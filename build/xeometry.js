@@ -4,7 +4,7 @@
  * A WebGL-based 3D visualization engine from xeoLabs
  * http://xeolabs.com/xeometry
  *
- * Built on 2017-08-24
+ * Built on 2017-09-10
  *
  * MIT License
  * Copyright 2017, Lindsay Kay
@@ -18,7 +18,7 @@
  * A WebGL-based 3D visualization engine from xeoLabs
  * http://xeogl.org/
  *
- * Built on 2017-08-21
+ * Built on 2017-09-10
  *
  * MIT License
  * Copyright 2017, Lindsay Kay
@@ -37,6 +37,52 @@
 (function () {
 
     "use strict";
+
+    // Fast queue that avoids using potentially inefficient array .shift() calls
+    // Based on https://github.com/creationix/fastqueue
+    var Queue = function () {
+
+        var head = [];
+        var headLength = 0;
+        var tail = [];
+        var index = 0;
+        this.length = 0;
+
+        this.shift = function () {
+            if (index >= headLength) {
+                var t = head;
+                t.length = 0;
+                head = tail;
+                tail = t;
+                index = 0;
+                headLength = head.length;
+                if (!headLength) {
+                    return;
+                }
+            }
+            var value = head[index];
+            if (index < 0) {
+                delete head[index++];
+            }
+            else {
+                head[index++] = undefined;
+            }
+            this.length--;
+            return value;
+        };
+
+        this.push = function (item) {
+            this.length++;
+            tail.push(item);
+            return this;
+        };
+
+        this.unshift = function (item) {
+            head[--index] = item;
+            this.length++;
+            return this;
+        };
+    };
 
     var xeogl = function () {
 
@@ -186,7 +232,7 @@
         // Task queue, which is pumped on each frame;
         // tasks are pushed to it with calls to xeogl.schedule
 
-        this._taskQueue = [];
+        this._taskQueue = new Queue();
 
         //-----------------------------------------------------------------------
         // Game loop
@@ -427,7 +473,7 @@
          * for a certain period of time, popping tasks and running them. After each frame interval, tasks that did not
          * get a chance to run during the task are left in the queue to be run next time.
          *
-         * @method schedule
+         * @method scheduleTask
          * @param {Function} callback Callback that runs the task.
          * @param {Object} [scope] Scope for the callback.
          */
@@ -1889,7 +1935,7 @@ var Canvas2Image = (function () {
         })(),
 
         /**
-         * Converts a three-element vector to a JSON-serializable
+         * Converts an n-element vector to a JSON-serializable
          * array with values rounded to two decimal places.
          */
         vecToArray: (function () {
@@ -5265,7 +5311,6 @@ var Canvas2Image = (function () {
         this.modelTransform = null;
         this.viewTransform = null;
         this.projTransform = null;
-        this.billboard = null;
         this.clips = null;
         this.geometry = null;
         this.viewport = null;
@@ -5314,7 +5359,6 @@ var Canvas2Image = (function () {
 
         object.material = this.material;
         object.geometry = this.geometry;
-        object.billboard = this.billboard;
         object.viewport = this.viewport;
         object.lights = this.lights;
         object.outline = this.outline;
@@ -5330,7 +5374,6 @@ var Canvas2Image = (function () {
             this.clips.hash,
             this.material.hash,
             this.lights.hash,
-            this.billboard.hash,
             this.modes.hash
         ]).join(";");
 
@@ -8648,12 +8691,14 @@ var Canvas2Image = (function () {
                 add("attribute vec3 normal;");
             }
 
-            if (states.billboard.active) {
+            var billboard = states.modes.billboard;
+
+            if (billboard === "spherical" || billboard === "cylindrical") {
                 add("void billboard(inout mat4 mat) {");
                 add("   mat[0][0] = 1.0;");
                 add("   mat[0][1] = 0.0;");
                 add("   mat[0][2] = 0.0;");
-                if (states.billboard.spherical) {
+                if (billboard === "spherical") {
                     add("   mat[1][0] = 0.0;");
                     add("   mat[1][1] = 1.0;");
                     add("   mat[1][2] = 0.0;");
@@ -8673,7 +8718,7 @@ var Canvas2Image = (function () {
                 add("viewMatrix2[3][0] = viewMatrix2[3][1] = viewMatrix2[3][2] = 0.0;")
             }
 
-            if (states.billboard.active) {
+            if (billboard === "spherical" || billboard === "cylindrical") {
                 add("billboard(modelMatrix2);");
                 add("billboard(viewMatrix2);");
             }
@@ -8785,14 +8830,16 @@ var Canvas2Image = (function () {
                 add("uniform float pointSize;");
             }
 
-            if (states.billboard.active) {
+            var billboard = states.modes.billboard;
+
+            if (billboard === "spherical" || billboard === "cylindrical") {
 
                 add("void billboard(inout mat4 mat) {");
                 add("   mat[0][0] = 1.0;");
                 add("   mat[0][1] = 0.0;");
                 add("   mat[0][2] = 0.0;");
 
-                if (states.billboard.spherical) {
+                if (billboard === "spherical") {
                     add("   mat[1][0] = 0.0;");
                     add("   mat[1][1] = 1.0;");
                     add("   mat[1][2] = 0.0;");
@@ -8833,7 +8880,7 @@ var Canvas2Image = (function () {
                 add("viewMatrix2[3][0] = viewMatrix2[3][1] = viewMatrix2[3][2] = 0.0;")
             }
 
-            if (states.billboard.active) {
+            if (billboard === "spherical" || billboard === "cylindrical") {
 
                 add("mat4 modelViewMatrix = viewMatrix2 * modelMatrix2;");
 
@@ -13894,30 +13941,6 @@ var Canvas2Image = (function () {
             },
 
             /**
-             * The default {{#crossLink "Billboard"}}Billboard{{/crossLink}} provided by this Scene.
-             *
-             * This {{#crossLink "Billboard"}}Billboard{{/crossLink}} has an {{#crossLink "Component/id:property"}}id{{/crossLink}} equal to "default.billboard"
-             * and an {{#crossLink "Billboard/active:property"}}{{/crossLink}} property set to false, to disable it.
-             *
-             * {{#crossLink "Entity"}}Entities{{/crossLink}} within this Scene are attached to this
-             * {{#crossLink "Billboard"}}Billboard{{/crossLink}} by default.
-             *
-             * @property billboard
-             * @final
-             * @type Billboard
-             */
-            billboard: {
-                get: function () {
-                    return this.components["default.billboard"] ||
-                        new xeogl.Billboard(this, {
-                            id: "default.billboard",
-                            active: false,
-                            isDefault: true
-                        });
-                }
-            },
-
-            /**
              * The default {{#crossLink "Clips"}}Clips{{/crossLink}} provided by this Scene.
              *
              * This {{#crossLink "Clips"}}Clips{{/crossLink}} has an {{#crossLink "Component/id:property"}}id{{/crossLink}} equal to "default.clips",
@@ -14744,7 +14767,7 @@ var Canvas2Image = (function () {
             }
 
             // Render a frame
-            // Only renders if there was a state update
+            // Only renders if there was a state update, or forced
 
             this._renderer.render({
                 pass: pass,
@@ -16200,8 +16223,7 @@ var Canvas2Image = (function () {
                 this.contextAttr.preserveDrawingBuffer = false;
             }
 
-            this.contextAttr.alpha = true;
-
+           // this.contextAttr.alpha = true;
             this.contextAttr.stencil = true;
 
             if (!cfg.canvas) {
@@ -16535,58 +16557,81 @@ var Canvas2Image = (function () {
         /**
          Returns a snapshot of this Canvas as a Base64-encoded image.
 
+         When a callback is given, this method will capture the snapshot asynchronously, on the next animation frame
+         and return it via the callback.
+
+         When no callback is given, this method captures and returns the snapshot immediately. Note that is only
+         possible when you have configured the Canvas's {{#crossLink "Scene"}}Scene{{/crossLink}} to preserve the
+         WebGL drawing buffer, which has a performance overhead.
+
          #### Usage:
+
          ````javascript
+         // Get snapshot asynchronously
+         myScene.canvas.getSnapshot({
+             width: 500, // Defaults to size of canvas
+             height: 500,
+             format: "png" // Options are "jpeg" (default), "png" and "bmp"
+         }, function(imageDataURL) {
+             imageElement.src = imageDataURL;
+         });
+
+         // Get snapshot synchronously, requires that Scene be
+         // configured with preserveDrawingBuffer; true
          imageElement.src = myScene.canvas.getSnapshot({
              width: 500, // Defaults to size of canvas
              height: 500,
              format: "png" // Options are "jpeg" (default), "png" and "bmp"
          });
          ````
-
          @method getSnapshot
          @param {*} [params] Capture options.
          @param {Number} [params.width] Desired width of result in pixels - defaults to width of canvas.
          @param {Number} [params.height] Desired height of result in pixels - defaults to height of canvas.
          @param {String} [params.format="jpeg"] Desired format; "jpeg", "png" or "bmp".
-         @returns {String} String-encoded image data.
+         @param {Function} [ok] Callback to return the image data when taking a snapshot asynchronously.
+         @returns {String} String-encoded image data when taking the snapshot synchronously. Returns null when the ````ok```` callback is given.
          */
-        getSnapshot: function (params) {
+        getSnapshot: function (params, ok) {
 
             if (!this.canvas) {
                 this.error("Can't get snapshot - no canvas.");
+                ok(null);
                 return;
             }
 
-            // Force-render a frame
-            this.scene.render();
+            if (ok) { // Asynchronous
+                var self = this;
+                requestAnimationFrame(function () {
+                    self.scene.render(true); // Force-render a frame
+                    ok(self._getSnapshot(params));
+                });
+            } else { 
+                return this._getSnapshot(params);
+            }
+        },
 
+        _getSnapshot: function (params) {
             params = params || {};
-
             var width = params.width || this.canvas.width;
             var height = params.height || this.canvas.height;
             var format = params.format || "jpeg";
             var image;
-
             switch (format) {
                 case "jpeg":
                     image = Canvas2Image.saveAsJPEG(this.canvas, true, width, height);
                     break;
-
                 case "png":
                     image = Canvas2Image.saveAsPNG(this.canvas, true, width, height);
                     break;
-
                 case "bmp":
                     image = Canvas2Image.saveAsBMP(this.canvas, true, width, height);
                     break;
-
                 default:
                     this.error("Unsupported snapshot format: '" + format
                         + "' - supported types are 'jpeg', 'bmp' and 'png' - defaulting to 'jpeg'");
                     image = Canvas2Image.saveAsJPEG(this.canvas, true, width, height);
             }
-
             return image.src;
         },
 
@@ -30651,7 +30696,7 @@ TODO
  ## Overview
 
  * Used for rendering non-realistic objects such as "helpers", wireframe objects, labels etc.
- * Use the physically-based {{#crossLink "MetallicMaterial"}}{{/crossLink}} or {{#crossLink "SpecularMaterial"}}{{/crossLink}} realism is required.
+ * Use the physically-based {{#crossLink "MetallicMaterial"}}{{/crossLink}} or {{#crossLink "SpecularMaterial"}}{{/crossLink}} when more realism is required.
 
  <img src="../../../assets/images/PhongMaterial.png"></img>
 
@@ -30740,11 +30785,11 @@ TODO
  torus.material.alpha = 0.5;
  torus.material.alphaMode = "blend";
  ````
- <img src="../../../assets/images/screenshots/PhongMaterial/alphaBlend.png"></img>
+ *TODO: Screenshot*
 
  ### Alpha Masking
 
- Let's make holes in our torus. We'll give its PhongMaterial an {{#crossLink "PhongMaterial/alphaMap:property"}}{{/crossLink}}
+ Now let's make holes in our torus instead. We'll give its PhongMaterial an {{#crossLink "PhongMaterial/alphaMap:property"}}{{/crossLink}}
  and configure {{#crossLink "PhongMaterial/alpha:property"}}{{/crossLink}}, {{#crossLink "PhongMaterial/alphaMode:property"}}{{/crossLink}},
  and {{#crossLink "PhongMaterial/alphaCutoff:property"}}{{/crossLink}} to treat it as an alpha mask:
 
@@ -30757,8 +30802,7 @@ TODO
  torus.material.alphaMode = "mask";
  torus.material.alphaCutoff = 0.2;
  ````
-
- <img src="../../../assets/images/screenshots/PhongMaterial/alphaMask.png"></img>
+*TODO: Screenshot*
 
 
  @class PhongMaterial
@@ -30776,7 +30820,6 @@ TODO
  @param [cfg.specular=[ 1.0, 1.0, 1.0 ]] {Array of Number} PhongMaterial specular color.
  @param [cfg.emissive=[ 0.0, 0.0, 0.0 ]] {Array of Number} PhongMaterial emissive color.
  @param [cfg.alpha=1] {Number} Scalar in range 0-1 that controls alpha, where 0 is completely transparent and 1 is completely opaque.
- Only applies while {{#crossLink "Modes"}}Modes{{/crossLink}} {{#crossLink "Modes/transparent:property"}}transparent{{/crossLink}} equals ````true````.
  @param [cfg.shininess=80] {Number} Scalar in range 0-128 that determines the size and sharpness of specular highlights.
  @param [cfg.reflectivity=1] {Number} Scalar in range 0-1 that controls how much {{#crossLink "CubeMap"}}CubeMap{{/crossLink}} is reflected.
  @param [cfg.lineWidth=1] {Number} Scalar that controls the width of lines for {{#crossLink "Geometry"}}{{/crossLink}} with {{#crossLink "Geometry/primitive:property"}}{{/crossLink}} set to "lines".
@@ -30819,15 +30862,15 @@ TODO
                 specular: xeogl.math.vec3([1.0, 1.0, 1.0]),
                 emissive: xeogl.math.vec3([0.0, 0.0, 0.0]),
 
-                alpha: 1.0,
-                shininess: 80.0,
-                reflectivity: 1.0,
+                alpha: null,
+                shininess: null,
+                reflectivity: null,
 
-                alphaMode: 0, // "opaque"
-                alphaCutoff: 0.5,
+                alphaMode: null,
+                alphaCutoff: null,
 
-                lineWidth: 1.0,
-                pointSize: 1.0,
+                lineWidth: null,
+                pointSize: null,
 
                 backfaces: null,
                 frontface: null, // Boolean for speed; true == "ccw", false == "cw"
@@ -31125,10 +31168,6 @@ TODO
              Factor in the range [0..1] indicating how transparent the PhongMaterial is.
 
              A value of 0.0 indicates fully transparent, 1.0 is fully opaque.
-
-             Attached {{#crossLink "Entity"}}Entities{{/crossLink}} will appear transparent only if they are also attached
-             to {{#crossLink "Modes"}}Modes{{/crossLink}} that have {{#crossLink "Modes/transparent:property"}}transparent{{/crossLink}}
-             set to **true**.
 
              Multiplies by {{#crossLink "PhongMaterial/alphaMap:property"}}{{/crossLink}}.
 
@@ -31745,11 +31784,8 @@ TODO
              @type {String}
              */
             alphaMode: (function () {
-                var modes = {
-                    "opaque": 0,
-                    "mask": 1,
-                    "blend": 2
-                };
+                var modes = {"opaque": 0, "mask": 1, "blend": 2};
+                var modeNames = ["opaque", "mask", "blend"];
                 return {
                     set: function (alphaMode) {
 
@@ -31770,7 +31806,7 @@ TODO
                         this._renderer.imageDirty = true;
 
                         /**
-                         Fired whenever this PhongMaterial's {{#crossLink "PhongMaterial/look:property"}}{{/crossLink}} property changes.
+                         Fired whenever this PhongMaterial's {{#crossLink "PhongMaterial/alphaMode:property"}}{{/crossLink}} property changes.
 
                          @event alphaMode
                          @param value {Number} The property's new value
@@ -31778,7 +31814,7 @@ TODO
                         this.fire("alphaMode", this._state.alphaMode);
                     },
                     get: function () {
-                        return modes[this._state.alphaMode];
+                        return modeNames[this._state.alphaMode];
                     }
                 };
             })(),
@@ -32319,11 +32355,11 @@ TODO
  plasteredSphere.material.alphaMode = "blend";
  ````
 
- <img src="../../../assets/images/screenshots/SpecularMaterial/alphaBlend.png"></img>
+ *TODO: Screenshot*
 
  ### Alpha Masking
 
- Let's make holes in our plastered sphere. We'll give its SpecularMaterial an {{#crossLink "SpecularMaterial/alphaMap:property"}}{{/crossLink}}
+ Now let's make holes in our plastered sphere. We'll give its SpecularMaterial an {{#crossLink "SpecularMaterial/alphaMap:property"}}{{/crossLink}}
  and configure {{#crossLink "SpecularMaterial/alpha:property"}}{{/crossLink}}, {{#crossLink "SpecularMaterial/alphaMode:property"}}{{/crossLink}},
  and {{#crossLink "SpecularMaterial/alphaCutoff:property"}}{{/crossLink}} to treat it as an alpha mask:
 
@@ -32337,8 +32373,7 @@ TODO
  plasteredSphere.material.alphaCutoff = 0.2;
  ````
 
- <img src="../../../assets/images/screenshots/SpecularMaterial/alphaMask.png"></img>
-
+ *TODO: Screenshot*
 
  @class SpecularMaterial
  @module xeogl
@@ -32399,9 +32434,7 @@ TODO
  @param [cfg.alpha=1.0] {Number} Factor in the range 0..1 indicating how transparent this SpecularMaterial is.
  A value of 0.0 indicates fully transparent, 1.0 is fully opaque. Multiplies by the *R* component of
  {{#crossLink "SpecularMaterial/alphaMap:property"}}{{/crossLink}} and the *A* component, if present, of
- {{#crossLink "SpecularMaterial/diffuseMap:property"}}{{/crossLink}}. Attached {{#crossLink "Entity"}}Entities{{/crossLink}}
- will appear transparent only if they are also attached to {{#crossLink "Modes"}}Modes{{/crossLink}} that
- have {{#crossLink "Modes/transparent:property"}}transparent{{/crossLink}} set to **true**.
+ {{#crossLink "SpecularMaterial/diffuseMap:property"}}{{/crossLink}}.
 
  @param [cfg.alphaMap=undefined] {Texture} RGB {{#crossLink "Texture"}}{{/crossLink}} containing this SpecularMaterial's
  alpha in its *R* component. The *R* component multiplies by the {{#crossLink "SpecularMaterial/alpha:property"}}{{/crossLink}} property. Must
@@ -32433,9 +32466,9 @@ TODO
                 diffuse: xeogl.math.vec4([1.0, 1.0, 1.0]),
                 emissive: xeogl.math.vec4([0.0, 0.0, 0.0]),
                 specular: xeogl.math.vec4([1.0, 1.0, 1.0]),
-                glossiness: 1.0,
-                specularF0: 0.0,
-                alpha: 1.0,
+                glossiness: null,
+                specularF0: null,
+                alpha: null,
 
                 diffuseMap: null,
                 emissiveMap: null,
@@ -32445,8 +32478,8 @@ TODO
                 occlusionMap: null,
                 alphaMap: null,
                 normalMap: null,
-                alphaMode: 0, // "opaque"
-                alphaCutoff: 0.5,
+                alphaMode: null,
+                alphaCutoff: null,
                 hash: null
             });
 
@@ -32563,10 +32596,6 @@ TODO
 
              The *RGB* components multiply by the {{#crossLink "SpecularMaterial/diffuse:property"}}{{/crossLink}} property,
              while the *A* component, if present, multiplies by the {{#crossLink "SpecularMaterial/alpha:property"}}{{/crossLink}} property.
-
-             Attached {{#crossLink "Entity"}}Entities{{/crossLink}} will appear transparent only if they are also attached
-             to {{#crossLink "Modes"}}Modes{{/crossLink}} that have {{#crossLink "Modes/transparent:property"}}transparent{{/crossLink}}
-             set to **true**.
 
              Must be within the same {{#crossLink "Scene"}}Scene{{/crossLink}} as this SpecularMaterial.
 
@@ -32909,10 +32938,6 @@ TODO
              Multiplies by the *R* component of {{#crossLink "SpecularMaterial/alphaMap:property"}}{{/crossLink}} and
              the *A* component, if present, of {{#crossLink "SpecularMaterial/diffuseMap:property"}}{{/crossLink}}.
 
-             Attached {{#crossLink "Entity"}}Entities{{/crossLink}} will appear transparent only if they are also attached
-             to {{#crossLink "Modes"}}Modes{{/crossLink}} that have {{#crossLink "Modes/transparent:property"}}transparent{{/crossLink}}
-             set to **true**.
-
              Fires an {{#crossLink "SpecularMaterial/alpha:event"}}{{/crossLink}} event on change.
 
              @property alpha
@@ -33056,11 +33081,8 @@ TODO
              @type {String}
              */
             alphaMode: (function () {
-                var modes = {
-                    "opaque": 0,
-                    "mask": 1,
-                    "blend": 2
-                };
+                var modes = {"opaque": 0, "mask": 1, "blend": 2};
+                var modeNames = ["opaque", "mask", "blend"];
                 return {
                     set: function (alphaMode) {
 
@@ -33081,7 +33103,7 @@ TODO
                         this._renderer.imageDirty = true;
 
                         /**
-                         Fired whenever this SpecularMaterial's {{#crossLink "SpecularMaterial/look:property"}}{{/crossLink}} property changes.
+                         Fired whenever this SpecularMaterial's {{#crossLink "SpecularMaterial/alphaMode:property"}}{{/crossLink}} property changes.
 
                          @event alphaMode
                          @param value {Number} The property's new value
@@ -33089,7 +33111,7 @@ TODO
                         this.fire("alphaMode", this._state.alphaMode);
                     },
                     get: function () {
-                        return modes[this._state.alphaMode];
+                        return modeNames[this._state.alphaMode];
                     }
                 };
             })(),
@@ -33390,7 +33412,7 @@ TODO
 
  * MetallicMaterial is usually used for conductive materials, such as metal.
  * {{#crossLink "SpecularMaterial"}}{{/crossLink}} is usually used for insulators, such as wood, ceramics and plastic.
- * {{#crossLink "MetallicMaterial"}}{{/crossLink}} is usually used for non-realistic objects.
+ * {{#crossLink "PhongMaterial"}}{{/crossLink}} is usually used for non-realistic objects.
 
  <img src="../../../assets/images/MetallicMaterial.png"></img>
 
@@ -33573,7 +33595,7 @@ TODO
  Let's apply an alpha mask to our hydrant.
 
  We'll give its MetallicMaterial an {{#crossLink "MetallicMaterial/alphaMap:property"}}{{/crossLink}}
-  and configure {{#crossLink "MetallicMaterial/alpha:property"}}{{/crossLink}}, {{#crossLink "MetallicMaterial/alphaMode:property"}}{{/crossLink}},
+ and configure {{#crossLink "MetallicMaterial/alpha:property"}}{{/crossLink}}, {{#crossLink "MetallicMaterial/alphaMode:property"}}{{/crossLink}},
  and {{#crossLink "MetallicMaterial/alphaCutoff:property"}}{{/crossLink}} to treat it as an alpha mask:
 
  ````javascript
@@ -33683,10 +33705,10 @@ TODO
                 type: "MetallicMaterial",
                 baseColor: xeogl.math.vec4([1.0, 1.0, 1.0]),
                 emissive: xeogl.math.vec4([0.0, 0.0, 0.0]),
-                metallic: 1.0,
-                roughness: 1.0,
-                specularF0: 0.0,
-                alpha: 1.0,
+                metallic: null,
+                roughness: null,
+                specularF0: null,
+                alpha: null,
                 baseColorMap: null,
                 alphaMap: null,
                 metallicMap: null,
@@ -33695,8 +33717,8 @@ TODO
                 emissiveMap: null,
                 occlusionMap: null,
                 normalMap: null,
-                alphaMode: 0, // "opaque"
-                alphaCutoff: 0.5,
+                alphaMode: null, // "opaque"
+                alphaCutoff: null,
                 backfaces: null,
                 frontface: null, // Boolean for speed; true == "ccw", false == "cw"
                 hash: null
@@ -34291,11 +34313,8 @@ TODO
              @type {String}
              */
             alphaMode: (function () {
-                var modes = {
-                    "opaque": 0,
-                    "mask": 1,
-                    "blend": 2
-                };
+                var modes = {"opaque": 0, "mask": 1, "blend": 2};
+                var modeNames = ["opaque", "mask", "blend"];
                 return {
                     set: function (alphaMode) {
 
@@ -34316,7 +34335,7 @@ TODO
                         this._renderer.imageDirty = true;
 
                         /**
-                         Fired whenever this MetallicMaterial's {{#crossLink "MetallicMaterial/look:property"}}{{/crossLink}} property changes.
+                         Fired whenever this MetallicMaterial's {{#crossLink "MetallicMaterial/alphaMode:property"}}{{/crossLink}} property changes.
 
                          @event alphaMode
                          @param value {Number} The property's new value
@@ -34324,7 +34343,7 @@ TODO
                         this.fire("alphaMode", this._state.alphaMode);
                     },
                     get: function () {
-                        return modes[this._state.alphaMode];
+                        return modeNames[this._state.alphaMode];
                     }
                 };
             })(),
@@ -35118,8 +35137,8 @@ TODO
             /**
              * How this Texture is sampled when a texel covers less than one pixel.
              *
-             * Options are:
              *
+             * Options are:
              *
              *     * **"nearest"** - Uses the value of the texture element that is nearest
              *     (in Manhattan distance) to the center of the pixel being textured.
@@ -35853,6 +35872,42 @@ TODO
  });
  ````
 
+ ## Billboarding
+
+ An {{#crossLink "Entity"}}{{/crossLink}} has a {{#crossLink "Entity/billboard:property"}}{{/crossLink}} property
+ that can make it behave as a billboard.
+
+ Two billboard types are supported:
+
+ * **Spherical** billboards are free to rotate their {{#crossLink "Entity"}}Entities{{/crossLink}} in any direction and always face the {{#crossLink "Camera"}}{{/crossLink}} perfectly.
+ * **Cylindrical** billboards rotate their {{#crossLink "Entity"}}Entities{{/crossLink}} towards the {{#crossLink "Camera"}}{{/crossLink}}, but only about the Y-axis.
+
+ Note that {{#crossLink "Scale"}}{{/crossLink}} transformations to have no effect on billboarded {{#crossLink "Entity"}}Entities{{/crossLink}}.
+
+ The example below shows a box that remains rotated directly towards the viewpoint, using spherical billboarding:
+
+ ````javascript
+ new xeogl.Entity({
+
+     geometry: new xeogl.BoxGeometry(),
+
+     material: new xeogl.PhongMaterial({
+         diffuseMap: new xeogl.Texture({
+            src: "textures/diffuse/uvGrid2.jpg"
+         })
+     }),
+
+     billboard: "spherical"
+ });
+ ````
+
+ #### Examples
+
+ * [Spherical billboards](../../examples/#transforms_billboard_spherical)
+ * [Cylindrical billboards](../../examples/#transforms_billboard_cylindrical)
+ * [Clouds using billboards](../../examples/#transforms_billboard_spherical_clouds)
+
+
  @class Entity
  @module xeogl
  @submodule entities
@@ -35877,11 +35932,10 @@ TODO
  {{#crossLink "Scene/transform:property"}}transform{{/crossLink}} (which is an identity matrix which performs no transformation).
  @param [cfg.viewport] {String|Viewport} ID or instance of a {{#crossLink "Viewport"}}{{/crossLink}} attached to this Entity. Must be within the same {{#crossLink "Scene"}}Scene{{/crossLink}} as this Entity. Defaults to the parent {{#crossLink "Scene"}}Scene{{/crossLink}}'s default instance,
  {{#crossLink "Scene/viewport:property"}}{{/crossLink}}, which is automatically resizes to the canvas.
- @param [cfg.outline] {String|Outline} ID or instance of a {{#crossLink "Outline"}}{{/crossLink}} attached to this Entity. Must be within the same {{#crossLink "Scene"}}Scene{{/crossLink}} as this Entity. Defaults to the parent {{#crossLink "Scene"}}Scene{{/crossLink}}'s default instance,
+ @param [cfg.outline] {String|Outline} ID or instance of an {{#crossLink "Outline"}}{{/crossLink}} attached to this Entity. Must be within the same {{#crossLink "Scene"}}Scene{{/crossLink}} as this Entity. Defaults to the parent {{#crossLink "Scene"}}Scene{{/crossLink}}'s default instance,
  {{#crossLink "Scene/outline:property"}}{{/crossLink}}.
  @param [cfg.xray] {String|XRay} ID or instance of a {{#crossLink "XRay"}}{{/crossLink}} attached to this Entity. Must be within the same {{#crossLink "Scene"}}Scene{{/crossLink}} as this Entity. Defaults to the parent {{#crossLink "Scene"}}Scene{{/crossLink}}'s default instance,
  {{#crossLink "Scene/xray:property"}}{{/crossLink}}.
-
  @param [cfg.visible=true] {Boolean}  Indicates if this Entity is visible.
  @param [cfg.culled=true] {Boolean}  Indicates if this Entity is culled from view.
  @param [cfg.pickable=true] {Boolean}  Indicates if this Entity is pickable.
@@ -35892,8 +35946,8 @@ TODO
  @param [cfg.receiveShadow=true] {Boolean} Whether this Entity receives shadows.
  @param [cfg.outlined=false] {Boolean} Whether an outline is rendered around this entity, as configured by the Entity's {{#crossLink "Outline"}}{{/crossLink}} component
  @param [cfg.layer=0] {Number} Indicates this Entity's rendering priority, typically used for transparency sorting,
- @param [cfg.stationary=false] {Boolean} Disables the effect of {{#crossLink "Lookat"}}view transform{{/crossLink}}
- * translations for this Entity. This is useful for skybox Entities.
+ @param [cfg.stationary=false] {Boolean} Disables the effect of {{#crossLink "Lookat"}}view transform{{/crossLink}} translations for this Entity. This is useful for skybox Entities.
+ @param [cfg.billboard="none"] {String} Specifies the billboarding behaviour for this Entity. Options are "none", "spherical" and "cylindrical".
  @param [cfg.loading] {Boolean} Flag which indicates that this Entity is freshly loaded. This will increment the
  {{#crossLink "Spinner/processes:property"}}Spinner processes{{/crossLink}} count, and then when this Entity is first
  rendered, will decrement the count again.
@@ -35929,6 +35983,7 @@ TODO
                 receiveShadow: null,
                 outlined: null,
                 layer: null,
+                billboard: null,
                 hash: ""
             });
 
@@ -35945,7 +36000,6 @@ TODO
             this.material = cfg.material;
             this.morphTargets = cfg.morphTargets;
             this.transform = cfg.transform;
-            this.billboard = cfg.billboard;
             this.stationary = cfg.stationary;
             this.viewport = cfg.viewport;
             this.outline = cfg.outline;
@@ -35962,6 +36016,7 @@ TODO
             this.outlined = cfg.outlined;
             this.layer = cfg.layer;
             this.stationary = cfg.stationary;
+            this.billboard = cfg.billboard;
 
             // Cached boundary for each coordinate space
             // The Entity's Geometry component caches the Local-space boundary
@@ -35969,8 +36024,10 @@ TODO
             this._worldBoundary = null;
             this._viewBoundary = null;
             this._canvasBoundary = null;
+            this._worldPositions = null;
 
             this._worldBoundaryDirty = true;
+            this._worldPositionsDirty = true;
             this._viewBoundaryDirty = true;
             this._canvasBoundaryDirty = true;
         },
@@ -36064,7 +36121,7 @@ TODO
              * The {{#crossLink "Geometry"}}Geometry{{/crossLink}} attached to this Entity.
              *
              * Must be within the same {{#crossLink "Scene"}}Scene{{/crossLink}} as this Entity. Defaults to the parent
-             * {{#crossLink "Scene"}}Scene{{/crossLink}}'s default {{#crossLink "Scene/geometry:property"}}camera{{/crossLink}}
+             * {{#crossLink "Scene"}}Scene{{/crossLink}}'s default {{#crossLink "Scene/geometry:property"}}geometry{{/crossLink}}
              * (a simple box) when set to a null or undefined value.
              *
              * Fires an {{#crossLink "Entity/geometry:event"}}{{/crossLink}} event on change.
@@ -36282,46 +36339,7 @@ TODO
                     return this._attached.transform;
                 }
             },
-
-            /**
-             * The {{#crossLink "Billboard"}}{{/crossLink}} attached to this Entity.
-             *
-             * When {{#crossLink "Billboard/property:active"}}{{/crossLink}}, the {{#crossLink "Billboard"}}{{/crossLink}}
-             * will keep this Entity oriented towards the viewpoint.
-             *
-             * Must be within the same {{#crossLink "Scene"}}Scene{{/crossLink}} as this Entity. Defaults to the parent
-             * {{#crossLink "Scene"}}Scene{{/crossLink}}'s default {{#crossLink "Scene/billboard:property"}}billboard{{/crossLink}}
-             * (an identity matrix) when set to a null or undefined value.
-             *
-             * Fires an {{#crossLink "Entity/billboard:event"}}{{/crossLink}} event on change.
-             *
-             * @property billboard
-             * @type Billboard
-             */
-            billboard: {
-
-                set: function (value) {
-
-                    /**
-                     * Fired whenever this Entity's {{#crossLink "Entity/billboard:property"}}{{/crossLink}}
-                     * property changes.
-                     *
-                     * @event billboard
-                     * @param value The property's new value
-                     */
-                    this._attach({
-                        name: "billboard",
-                        type: "xeogl.Billboard",
-                        component: value,
-                        sceneDefault: true
-                    });
-                },
-
-                get: function () {
-                    return this._attached.billboard;
-                }
-            },
-
+            
             /**
              * The {{#crossLink "Viewport"}}{{/crossLink}} attached to this Entity.
              *
@@ -36822,6 +36840,7 @@ TODO
              * Fires an {{#crossLink "Entity/stationary:event"}}{{/crossLink}} event on change.
              *
              * @property stationary
+             * @default false
              * @type Boolean
              */
             stationary: {
@@ -36836,7 +36855,7 @@ TODO
 
                     this._state.stationary = value;
 
-                    this._state.hash = (this._state.stationary ? "a;" : ";");
+                  //  this._state.hash = (this._state.stationary ? "a;" : ";");
 
                     this.fire("dirty", this);
 
@@ -36850,6 +36869,61 @@ TODO
 
                 get: function () {
                     return this._state.stationary;
+                }
+            },
+
+            /**
+              Specifies the billboarding behaviour for this Entity.
+             
+              Options are:
+             
+               * **"none"** -  **(default)** - No billboarding.
+               * **"spherical"** - Entity is billboarded to face the viewpoint, rotating both vertically and horizontally.
+               * **"cylindrical"** - Entity is billboarded to face the viewpoint, rotating only about its vertically
+                  axis. Use this mode for things like trees on a landscape.
+             
+              Fires an {{#crossLink "Entity/billboard:event"}}{{/crossLink}} event on change.
+             
+              @property billboard
+              @default "none"
+              @type String
+             */
+            billboard: {
+
+                set: function (value) {
+
+                    value = value || "none";
+
+                    if (value !== "spherical" &&
+                        value !== "cylindrical" &&
+                        value !== "none") {
+
+                        this.error("Unsupported value for 'billboard': " + value + " - accepted values are " +
+                            "'spherical', 'cylindrical' and 'none' - defaulting to 'none'.");
+
+                        value = "none";
+                    }
+
+                    if (this._state.billboard === value) {
+                        return;
+                    }
+
+                    this._state.billboard = value;
+
+                    this._state.hash = (this._state.active ? "a;" : ";") + (this._state.billboard ? "s;" : ";");
+
+                    this.fire("dirty", this);
+
+                    /**
+                     * Fired whenever this Entity's {{#crossLink "Entity/billboard:property"}}{{/crossLink}} property changes.
+                     * @event billboard
+                     * @param value The property's new value
+                     */
+                    this.fire('billboard', this._state.billboard);
+                },
+
+                get: function () {
+                    return this._state.billboard;
                 }
             },
             
@@ -37107,6 +37181,42 @@ TODO
             },
 
             /**
+             * World-space vertex positions of this Entity.
+             *
+             * These are internally generated on-demand and cached. To free the cached
+             * vertex World positions when you're done with them, set this property to null or undefined.
+             *
+             * @property worpdPositions
+             * @type Float32Array
+             * @final
+             */
+            worldPositions: {
+
+                get: function () {
+                    if (this._worldPositionsDirty) {
+                        var positions = this.geometry.positions;
+                        if (!this._worldPositions) {
+                            this._worldPositions = new Float32Array(positions.length);
+                        }
+                        if (!this._attached.transform) {
+                            this._worldPositions.set(positions);
+                        } else {
+                            xeogl.math.transformPositions3(this._attached.transform.leafMatrix, positions, this._worldPositions);
+                        }
+                        this._worldPositionsDirty = false;
+                    }
+                    return this._worldPositions;
+                },
+
+                set: function(value) {
+                    if (value = undefined || value === null) {
+                        this._worldPositions = null; // Release memory
+                        this._worldPositionsDirty = true;
+                    }
+                }
+            },
+
+            /**
              * JSON object containing the (GLSL) source code of the shaders for this Entity.
              *
              * This is sometimes useful to have as a reference
@@ -37180,6 +37290,7 @@ TODO
 
         _setWorldBoundaryDirty: function () {
             this._worldBoundaryDirty = true;
+            this._worldPositionsDirty = true;
             if (this._worldBoundary) {
                 this._worldBoundary.fire("updated", true);
             }
@@ -37252,10 +37363,11 @@ TODO
             attached.lights._compile();
             attached.material._compile();
             this._renderer.modelTransform = attached.transform._state;
-            attached.billboard._compile();
             attached.viewport._compile();
             attached.outline._compile();
             attached.xray._compile();
+
+            this._makeHash();
 
             this._renderer.modes = this._state;
 
@@ -37287,6 +37399,23 @@ TODO
             }
         },
 
+        _makeHash: function () {
+            var hash = [];
+            var state = this._state;
+            if (state.stationary) {
+                hash.push("/s");
+            }
+            if (state.billboard === "none") {
+                hash.push("/n");
+            } else if (state.billboard === "spherical") {
+                hash.push("/s");
+            } else if (state.billboard === "cylindrical") {
+                hash.push("/c");
+            }
+            hash.push(";");
+            this._state.hash = hash.join("");
+        },
+
         _getJSON: function () {
 
             var attached = this._attached;
@@ -37298,7 +37427,6 @@ TODO
                 lights: attached.lights.id,
                 material: attached.material.id,
                 transform: attached.transform.id,
-                billboard: attached.billboard.id,
                 viewport: attached.viewport.id,
                 outline: attached.outline.id,
                 xray: attached.xray.id,
@@ -37313,7 +37441,8 @@ TODO
                 outlined: this._state.outlined,
                 xrayed:  this._state.xrayed,
                 layer: this._state.layer,
-                stationary: this._state.stationary
+                stationary: this._state.stationary,
+                billboard: this._state.billboard
             };
         },
 
@@ -39206,202 +39335,6 @@ TODO
 
 })();
 ;/**
- A **Billboard** is a modelling {{#crossLink "Transform"}}{{/crossLink}} that causes associated {{#crossLink "Entity"}}Entities{{/crossLink}} to be always oriented towards the Camera.
-
- <a href="../../examples/#transforms_billboard_spherical"><img src="http://i.giphy.com/l3vR13LcnTuQGMInu.gif"></img></a>
-
- ## Overview
-
- * **Spherical** billboards are free to rotate their {{#crossLink "Entity"}}Entities{{/crossLink}} in any direction and always face the {{#crossLink "Camera"}}{{/crossLink}} perfectly.
- * **Cylindrical** billboards rotate their {{#crossLink "Entity"}}Entities{{/crossLink}} towards the {{#crossLink "Camera"}}{{/crossLink}}, but only about the Y-axis.
- * A Billboard will cause {{#crossLink "Scale"}}{{/crossLink}} transformations to have no effect on its {{#crossLink "Entity"}}Entities{{/crossLink}}
-
- <img src="../../../assets/images/Billboard.png"></img>
-
- ## Examples
-
- * [Spherical billboards](../../examples/#transforms_billboard_spherical)
- * [Cylindrical billboards](../../examples/#transforms_billboard_cylindrical)
- * [Clouds using billboards](../../examples/#transforms_billboard_spherical_clouds)
-
- ## Usage
-
- Let's create 1000 randomly-positioned {{#crossLink "Entity"}}Entities{{/crossLink}} that always face towards the
- viewpoint as we orbit the {{#crossLink "Camera"}}{{/crossLink}} about the X and Y axis:
-
- ```` javascript
- // Create 1000 Entities in default Scene with shared Geometry, PhongMaterial and Billboard
-
- var geometry = new xeogl.Geometry({
-     primitive: "triangles",
-     positions: [3, 3, 0, -3, 3, 0, -3, -3, 0, 3, -3, 0],
-     normals: [-1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0],
-     uv: [1, 1, 0, 1, 0, 0, 1, 0],
-     indices: [2, 1, 0, 3, 2, 0] // Ensure these will be front-faces
- });
-
- var material = new xeogl.PhongMaterial({
-     emissiveMap: new xeogl.Texture({
-         src: "textures/diffuse/teapot.jpg"
-     })
- });
-
- var billboard = new xeogl.Billboard({
-     spherical: true
- });
-
- for (var i = 0; i < 1000; i++) {
-     new xeogl.Entity({
-         geometry: geometry,
-         material: material,
-         billboard: billboard,
-         transform: new xeogl.Translate({
-             xyz: [Math.random() * 100 - 50, Math.random() * 100 - 50, Math.random() * 100 - 50]
-         })
-     });
- }
-
- // Move eye back to see everything, then orbit the Camera
-
- var scene = xeogl.scene;
-
- scene.camera.view.zoom(120);
-
- scene.on("tick", function () {
-
-          var view = scene.camera.view;
-
-          view.rotateEyeY(0.2);
-          view.rotateEyeX(0.1);
-     });
- ````
-
- @class Billboard
- @module xeogl
- @submodule transforms
- @constructor
- @param [scene] {Scene} Parent {{#crossLink "Scene"}}Scene{{/crossLink}} - creates this Billboard in the default
- {{#crossLink "Scene"}}Scene{{/crossLink}} when omitted.
- @param [cfg] {*} Configs
- @param [cfg.id] {String} Optional ID, unique among all components in the parent scene, generated automatically when omitted.
- @param [cfg.meta] {String:Object} Optional map of user-defined metadata to attach to this Billboard.
- @param [cfg.active=true] {Boolean} Indicates if this Billboard is active or not.
- @param [cfg.spherical=true] {Boolean} Indicates if this Billboard is spherical (true) or cylindrical (false).
- @extends Component
- */
-(function () {
-
-    "use strict";
-
-    xeogl.Billboard = xeogl.Component.extend({
-
-        type: "xeogl.Billboard",
-
-        _init: function (cfg) {
-
-            this._super(cfg);
-
-            this._state = new xeogl.renderer.Billboard({
-                active: true,
-                spherical: true,
-                hash: "a;s;"
-            });
-
-            this.active = cfg.active !== false;
-            this.spherical = cfg.spherical !== false;
-        },
-
-        _props: {
-
-            /**
-             * Flag which indicates whether this Billboard is active or not.
-             *
-             * Fires an {{#crossLink "Billboard/active:event"}}{{/crossLink}} event on change.
-             *
-             * @property active
-             * @type Boolean
-             */
-            active: {
-
-                set: function (value) {
-
-                    value = !!value;
-
-                    if (this._state.active === value) {
-                        return;
-                    }
-
-                    this._state.active = value;
-
-                    this._state.hash = (this._state.active ? "a;" : ";") + (this._state.spherical ? "s;" : ";");
-
-                    this.fire("dirty", true);
-
-                    /**
-                     * Fired whenever this Billboard's {{#crossLink "Billboard/active:property"}}{{/crossLink}} property changes.
-                     * @event active
-                     * @param value The property's new value
-                     */
-                    this.fire('active', this._state.active);
-                },
-
-                get: function () {
-                    return this._state.active;
-                }
-            },
-
-            /**
-             * Flag which indicates whether this Billboard is spherical (true) or cylindrical (false).
-             *
-             * Fires an {{#crossLink "Billboard/spherical:event"}}{{/crossLink}} event on change.
-             *
-             * @property spherical
-             * @type Boolean
-             */
-            spherical: {
-
-                set: function (value) {
-
-                    value = !!value;
-
-                    if (this._state.spherical === value) {
-                        return;
-                    }
-
-                    this._state.spherical = value;
-
-                    this._state.hash = (this._state.active ? "a;" : ";") + (this._state.spherical ? "s;" : ";");
-
-                    this.fire("dirty", true);
-
-                    /**
-                     * Fired whenever this Billboard's {{#crossLink "Billboard/spherical:property"}}{{/crossLink}} property changes.
-                     * @event spherical
-                     * @param value The property's new value
-                     */
-                    this.fire('spherical', this._state.spherical);
-                },
-
-                get: function () {
-                    return this._state.spherical;
-                }
-            }
-        },
-
-        _compile: function () {
-            this._renderer.billboard = this._state;
-        },
-
-
-        _getJSON: function () {
-            return {
-                active: this._state.active
-            };
-        }
-    });
-
-})();
-;/**
  A **Frustum** is a {{#crossLink "Transform"}}{{/crossLink}} that defines a perspective projection as a frustum-shaped view volume.
 
  ## Overview
@@ -40766,7 +40699,7 @@ xeogl.version="1.0.0";;/**
                 pointSize: 5
             }),
             transform: {type: "xeogl.Translate"},
-            visibility: {type: "xeogl.Visibility"}
+            visible: true
         });
         this._testablePins[pinId] = pin;
     };
@@ -40775,7 +40708,7 @@ xeogl.version="1.0.0";;/**
     VisibilityTester.prototype.setPinTestable = function (pinId, testable) {
         var pin = this._pins[pinId];
         if (pin) {
-            this._markers[pinId].visibility.visible = testable;
+            this._markers[pinId].visible = testable;
             testable ? this._testablePins[pinId] = pin : delete this._testablePins[pinId];
         }
     };
@@ -41128,7 +41061,7 @@ xeogl.version="1.0.0";;/**
         _entityAttached: function (entity) {
             this._onEntityLocalBoundary = entity.localBoundary.on("updated", this._setLocalPosDirty, this);
             this._onEntityWorldBoundary = entity.worldBoundary.on("updated", this._setWorldPosDirty, this);
-            this._onEntityVisible = entity.visibility.on("visible", this._entityVisible, this);
+            this._onEntityVisible = entity.on("visible", this._entityVisible, this);
             this._setLocalPosDirty();
         },
 
@@ -41156,7 +41089,7 @@ xeogl.version="1.0.0";;/**
         _entityDetached: function (entity) {
             entity.localBoundary.off(this._onEntityLocalBoundary);
             entity.worldBoundary.off(this._onEntityWorldBoundary);
-            entity.visibility.off(this._onEntityVisible);
+            entity.off(this._onEntityVisible);
             this._entityVisible(false);
         },
 
@@ -43002,16 +42935,45 @@ xeogl.Annotation = xeogl.Pin.extend({
     })();
 
 })();
-;/**
- * A convenient API for visualizing glTF models on WebGL using xeogl.
- *
- * Find usage instructions at http://xeolabs.com-xeometry
- *
- * @param {Object} cfg
- * @param {Function(src, ok, error)} cfg.load
- */
-var xeometry = {};
+;var xeometry = {};
 
+/**
+ * A convenient API for visualizing glTF models on WebGL.
+ * @class Viewer
+ * @param {Object} [cfg] Configs
+ * @param {Function} [cfg.loadModel] Callback fired to load model
+ * @param {Function} [cfg.loadedModel] Callback fired when model loaded
+ * @param {Function} [cfg.unloadedModel] Callback fired when model unloaded
+ * @param {Function} [cfg.contextAttr] WebGL context attributes
+ * @example
+ *
+ * // Create viewer with defaults
+ * var viewer = new xeometry.Viewer();
+ *
+ * // Create viewer that loads via custom loader callback
+ * viewer2 = new xeometry.Viewer({
+ *     loadModel: function (modelId, src, ok, error) {
+ *          var request = new XMLHttpRequest();
+ *          request.overrideMimeType("application/json");
+ *          request.open('GET', src2, true);
+ *          request.onreadystatechange = function () {
+ *             if (request.readyState == 4 && // Request finished, response ready
+ *                     request.status == "200") { // Status OK
+ *                 var json = JSON.parse(request.responseText);
+ *                 ok(json, this);
+ *             }
+ *         };
+ *         request.send(null);
+ *     },
+ *     loadedModel: function(modelId, src, ok) {
+ *         console.log("Loaded modelId=" + modelId);
+ *         ok(); // Unblock the viewer
+ *     },
+ *     unloadedModel: function(modelId, src) {
+ *         console.log("Unloaded modelId=" + modelId);
+ *     }
+ * });
+ */
 xeometry.Viewer = function (cfg) {
 
     var self = this;
@@ -43025,9 +42987,7 @@ xeometry.Viewer = function (cfg) {
     var scene = new xeogl.Scene({
         canvas: cfg.canvas,
         webgl2: false,
-        contextAttr: {
-            preserveDrawingBuffer: false
-        }
+        contextAttr: cfg.contextAttr || {}
         //,
         //transparent: true
     });
@@ -43080,11 +43040,40 @@ xeometry.Viewer = function (cfg) {
     //var cameraControl = new xeogl.CameraControl(scene);
 
     //----------------------------------------------------------------------------------------------------
-    // Models
+    // Task management
     //----------------------------------------------------------------------------------------------------
 
     /**
-     * Gets the WebGL canvas.
+     * Schedules an asynchronous task for the viewer to run at the next opportunity.
+     *
+     * Internally, this pushes the task to a FIFO queue. Within each frame interval, the viewer processes the queue
+     * for a certain period of time, popping tasks and running them. After each frame interval, tasks that did not
+     * get a chance to run during the task are left in the queue to be run next time.
+     *
+     * @param {Function} callback Callback that runs the task.
+     * @param {Object} [scope] Scope for the callback.
+     * @returns {Viewer} this
+     * @example
+     * viewer.scheduleTask(function() { ... });
+     * viewer.scheduleTask(function() { this.log("foo"); }, console); // Set a scope for the task
+     */
+    this.scheduleTask = function (callback, scope) {
+        if (!callback) {
+            error("scheduleTask() - Missing callback");
+            return;
+        }
+        xeogl.scheduleTask(callback, scope);
+        return this;
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    // Models
+    //----------------------------------------------------------------------------------------------------
+
+    /** @module models */
+
+    /**
+     * Gets the viewer's WebGL canvas.
      *
      * @returns {HTMLCanvasElement}
      */
@@ -43093,10 +43082,9 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Returns the viewer's HTML overlay element, which overlays the canvas.
+     * Returns the HTML DIV element that overlays the WebGL canvas.
      *
-     * This element exists to catch input events over the canvas, while allowing
-     * the HTML elements for annotations (etc) to avoid getting those events.
+     * This overlay is for catching mouse navigation events.
      *
      * @returns {HTMLDivElement}
      */
@@ -43104,24 +43092,23 @@ xeometry.Viewer = function (cfg) {
         return scene.canvas.overlay;
     };
 
+
     /**
      * Loads a model into the viewer.
      *
-     * Also assigns the model an ID, which gets prefixed to the IDs of the model's objects.
+     * Also assigns the model an ID, which gets prefixed to the IDs of its objects.
      *
      * @param {String} id ID to assign to the model.
-     * @param {String|Object} src If the viewer was configured with a loadModel callback, then this should be
-     * ID with which to get an embedded glTF JSON file through the loader, otherwise it should be a path a glTF file.
+     * @param {String} src Locates the model. This could be a path to a file or an ID within a database.
      * @param {Function} [ok] Callback fired when model loaded.
-     */
-    /**
-     * Loads a model into the viewer.
-     *
-     * Also assigns the model an ID, which gets prefixed to the IDs of the model's objects.
-     *
-     * @param {String} id ID to assign to the model.
-     * @param {String || Object} src Locates the model.
-     * @param {Function} [ok] Callback fired when model loaded.
+     * @return {Viewer} this
+     * @example
+     * // Load saw model, fit in view, show only two of its objects
+     * viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF/ReciprocatingSaw.gltf", function () {
+     *    viewer.viewFit("saw");
+     *    viewer.hide();
+     *    viewer.show(["saw#0.1", "saw#0.2"]);
+     * });
      */
     this.loadModel = function (id, src, ok) {
         var isFilePath = xeogl._isString(src);
@@ -43201,8 +43188,10 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the IDs of the models in the viewer.
+     * Gets the IDs of the models currently in the viewer.
      *
+     * @see loadModel
+     * @module models
      * @return {String[]} IDs of the models.
      */
     this.getModels = function () {
@@ -43212,7 +43201,9 @@ xeometry.Viewer = function (cfg) {
     /**
      * Gets the source of a model.
      *
-     * @param {String|String[]} id ID of a model or a type.
+     * This is the ````src```` parameter that was given to {@link #loadModel}.
+     *
+     * @param {String} id ID of the model.
      * @return {String} Model source.
      */
     this.getModelSrc = function (id) {
@@ -43227,7 +43218,7 @@ xeometry.Viewer = function (cfg) {
     /**
      * Gets the ID of an object's model
      *
-     * @param {String} id ID of an object.
+     * @param {String} id ID of the object.
      * @return {String} ID of the object's model.
      */
     this.getModel = function (id) {
@@ -43240,15 +43231,35 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the IDs of the objects within a model or a type.
+     * Gets the IDs of objects belonging to the given models and/or types.
      *
      * Returns the IDs of all objects in the viewer when no arguments are given.
      *
-     * @param {String|String[]} id ID of a model or a type.
+     * @param {String|String[]} [id] ID(s) of model(s) and/or a type(s).
      * @return {String[]} IDs of the objects.
+     * @example
+     *
+     * // Get all objects currently in the viewer
+     * var allObjects = viewer.getObjects();
+     *
+     * // Get IDs of all the objects in the gearbox model
+     * var gearboxObjects = viewer.getObjects("gearbox");
+     *
+     * // Get IDs of objects in two models
+     * var sawAndgearboxObjects = viewer.getObjects(["saw", "gearbox"]);
+     *
+     * // Get IDs of objects in the gearbox model and all objects in viewer that are IFC cable fitting and carriers
+     * var gearboxCableFittings = viewer.getObjects("gearbox", "IfcCableFitting", "IfcCableCarrierFitting"]);
      */
     this.getObjects = function (id) {
-        if (id !== undefined || id === null) {
+        if (id === undefined || id === null) {
+            return Object.keys(objects);
+        }
+        if (xeogl._isString(id)) {
+            var object = objects[id];
+            if (object) {
+                return [id];
+            }
             var objectsOfType = types[id];
             if (objectsOfType) {
                 return Object.keys(objectsOfType);
@@ -43264,13 +43275,31 @@ xeometry.Viewer = function (cfg) {
             }
             return Object.keys(entities);
         }
-        return Object.keys(objects);
+        if (xeogl._isArray(id)) {
+            var result = [];
+            var got = {};
+            for (var i = 0; i < id.length; i++) {
+                var buf = this.getObjects(id[i]);
+                for (var j = 0; j < buf.length; j++) {
+                    var id2 = buf[j];
+                    if (!got[id2]) {
+                        got[id2] = true;
+                        result.push(id2);
+                    }
+                }
+            }
+            return result;
+        }
+        return [];
     };
 
     /**
      * Unloads a model.
      *
+     * @see {@link #loadModel}
      * @param {String} id ID of the model.
+     * @return {Viewer} this
+     * @example viewer.unloadModel("saw");
      */
     this.unloadModel = function (id) {
         var model = models[id];
@@ -43311,7 +43340,8 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Unloads all models, objects, annotations and clipping planes.
+     * Unloads all models, annotations and clipping planes.
+     * @return {Viewer} this
      */
     this.clear = function () {
         for (var id in models) {
@@ -43323,10 +43353,15 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Assigns a type to the given object(s).
+     * Assigns a type to the given object.
      *
-     * @param {String} id ID of an object or model. When a model ID is given, the type will be assigned to all the model's objects.
+     * A type can be anything, but when using xeometry as an IFC viewer, it's typically going to be an IFC type.
+     *
+     * @param {String} id ID of an object.
      * @param {String} type The type.
+     * @returns {Viewer} this
+     * @example
+     * viewer.setType("saw#1.1", "cover");
      */
     this.setType = function (id, type) {
         type = type || "DEFAULT";
@@ -43360,6 +43395,8 @@ xeometry.Viewer = function (cfg) {
      *
      * @param {String} id ID of the object.
      * @returns {String} The type of the object.
+     * @example
+     * var type = viewer.getType("saw#1.1");
      */
     this.getType = function (id) {
         var object = objects[id];
@@ -43373,10 +43410,65 @@ xeometry.Viewer = function (cfg) {
     /**
      * Gets all types currently in the viewer.
      *
-     * @returns {String} The types in the viewer.
+     * @return {String[]} The types in the viewer.
      */
     this.getTypes = function () {
         return Object.keys(types);
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    // Geometry
+    //----------------------------------------------------------------------------------------------------
+
+    /**
+     * Gets the geometry primitive type of an object.
+     *
+     * This determines the layout of the indices array of the object's geometry.
+     *
+     * @param {String} id ID of the object.
+     * @returns {String} The primitive type. Possible values are 'points', 'lines', 'line-loop',
+     * 'line-strip', 'triangles', 'triangle-strip' and 'triangle-fan'.
+     * @example
+     * var prim = viewer.getPrimitive("saw#1.1");
+     */
+    this.getPrimitive = function (id) {
+        var object = objects[id];
+        if (object) {
+            return object.geometry.primitive;
+        }
+        error("Object not found: " + id);
+    };
+
+    /**
+     * Gets the World-space geometry vertex positions of an object.
+     *
+     * @param {String} id ID of the object.
+     * @returns {Float32Array} The vertex positions.
+     * @example
+     * var positions = viewer.getPositions("saw#1.1");
+     */
+    this.getPositions = function (id) {
+        var object = objects[id];
+        if (object) {
+            return object.positions;
+        }
+        error("Object not found: " + id);
+    };
+
+    /**
+     * Gets the geometry primitive indices of an object.
+     *
+     * @param {String} id ID of the object.
+     * @returns {Int32Array} The indices.
+     * @example
+     * var indices = viewer.getIndices("saw#1.1");
+     */
+    this.getIndices = function (id) {
+        var object = objects[id];
+        if (object) {
+            return object.geometry.indices;
+        }
+        error("Object not found: " + id);
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -43386,10 +43478,14 @@ xeometry.Viewer = function (cfg) {
     /**
      * Sets the scale of a model or object.
      *
-     * An object's scale is applied relative to its model's scale.
+     * An object's scale is relative to its model's scale.
      *
      * @param {String} id ID of a model or object.
      * @param {[Number, Number, Number]} xyz Scale factors for the X, Y and Z axis.
+     * @returns {Viewer} this
+     * @example
+     * viewer.setScale("saw", [1.5, 1.5, 1.5]);
+     * viewer.setScale("saw#1.1", [0.5, 0.5, 0.5]);
      */
     this.setScale = function (id, xyz) {
         var scale = scales[id];
@@ -43408,10 +43504,15 @@ xeometry.Viewer = function (cfg) {
     /**
      * Gets the scale of a model or object.
      *
-     * An object's scale is applied relative to its model's scale.
+     * An object's scale is relative to its model's scale.
+     *
+     * Unless previously set with {@link #setScale}, this will be ````[1.0, 1.0, 1.0]```` by default.
      *
      * @param {String} id ID of a model or object.
      * @return {[Number, Number, Number]} scale Scale factors for the X, Y and Z axis.
+     * @example
+     * var sawScale = viewer.getScale("saw");
+     * var sawCoverScale = viewer.getScale("saw#1.1");
      */
     this.getScale = function (id) {
         var scale = scales[id];
@@ -43429,10 +43530,14 @@ xeometry.Viewer = function (cfg) {
     /**
      * Sets the rotation of a model or object.
      *
-     * An object's rotation is applied relative to its model's scale.
+     * An object's rotation is relative to its model's rotation.
      *
      * @param {String} id ID of a model or object.
-     * @param {[Number, Number, Number]} xyz Rotation angles for the X, Y and Z axis.
+     * @param {[Number, Number, Number]} xyz Rotation angles, in degrees, for the X, Y and Z axis.
+     * @returns {Viewer} this
+     * @example
+     * viewer.setRotate("saw", [90, 0, 0]);
+     * viewer.setRotate("saw#1.1", [0, 35, 0]);
      */
     this.setRotate = (function () {
         var quat = math.vec4();
@@ -43457,10 +43562,14 @@ xeometry.Viewer = function (cfg) {
     /**
      * Gets the rotation of a model or object.
      *
-     * An object's rotation is applied relative to its model's scale.
+     * An object's rotation is relative to its model's rotation.
+     *
+     * Unless previously set with {@link #setRotate}, this will be ````[0.0, 0.0, 0.0]```` by default.
      *
      * @param {String} id ID of a model or object.
-     * @return {[Number, Number, Number]} Rotation angles for the X, Y and Z axis.
+     * @return {[Number, Number, Number]} Rotation angles, in degrees, for the X, Y and Z axis.
+     * var sawRotate = viewer.getRotate("saw");
+     * var sawCoverRotate = viewer.getRotate("saw#1.1");
      */
     this.getRotate = function (id) {
         var component = getTransformableComponent(id);
@@ -43475,10 +43584,14 @@ xeometry.Viewer = function (cfg) {
     /**
      * Sets the translation of a model or object.
      *
-     * An object's translation is applied relative to its model's scale.
+     * An object's translation is relative to its model's translation.
      *
      * @param {String} id ID of a model or object.
      * @param {[Number, Number, Number]} xyz World-space translation vector.
+     * @returns {Viewer} this
+     * @example
+     * viewer.setTranslate("saw", [100, 30, 0]);
+     * viewer.setTranslate("saw#1.1", [50, 30, 0]);
      */
     this.setTranslate = function (id, xyz) {
         var translation = translations[id];
@@ -43497,10 +43610,14 @@ xeometry.Viewer = function (cfg) {
     /**
      * Increments the translation of a model or object.
      *
-     * An object's translation is applied relative to its model's translation.
+     * An object's translation is relative to its model's translation.
      *
      * @param {String} id ID of a model or object.
      * @param {[Number, Number, Number]} xyz World-space translation vector.
+     * @returns {Viewer} this
+     * @example
+     * viewer.addTranslate("saw", [10,0,0]);
+     * viewer.addTranslate("saw#1.1", [10,0,0]);
      */
     this.addTranslate = function (id, xyz) {
         var translation = translations[id];
@@ -43520,10 +43637,12 @@ xeometry.Viewer = function (cfg) {
     /**
      * Gets the translation of a model or object.
      *
-     * An object's translation is applied relative to its model's translation.
+     * An object's translation is relative to its model's translation.
      *
      * @param {String} id ID of a model or object.
      * @return {[Number, Number, Number]} World-space translation vector.
+     * var sawTranslate = viewer.getTranslate("saw");
+     * var sawCoverTranslate = viewer.getTranslate("saw#1.1");
      */
     this.getTranslate = function (id) {
         var translation = translations[id];
@@ -43632,7 +43751,12 @@ xeometry.Viewer = function (cfg) {
      *
      * Shows all objects in the viewer when no arguments are given.
      *
-     * @param {String|String[]} ids IDs of model(s) and/or object(s). Shows all objects by default.
+     * @example viewer.show(); // Show all objects in the viewer
+     * @param {String|String[]} [ids] IDs of model(s) and/or object(s).
+     * @returns {Viewer} this
+     * @example
+     * viewer.show(["saw", "gearbox"]); // Show all objects in models "saw" and "gearbox"
+     * viewer.show(["saw#0.1", "saw#0.2", "gearbox"]); // Show two objects in model "saw", plus all objects in model "gearbox"
      */
     this.show = function (ids) {
         setVisible(ids, true);
@@ -43645,6 +43769,10 @@ xeometry.Viewer = function (cfg) {
      * Hides all objects in the viewer when no arguments are given.
      *
      * @param {String|String[]} ids IDs of model(s) and/or object(s).
+     * @returns {Viewer} this
+     * @example
+     * viewer.hide(["saw", "gearbox"]); // Hide all objects in models "saw" and "gearbox"
+     * viewer.hide(["saw#0.1", "saw#0.2", "gearbox"]); // Hide two objects in model "saw", plus all objects in model "gearbox"
      */
     this.hide = function (ids) {
         setVisible(ids, false);
@@ -43694,6 +43822,11 @@ xeometry.Viewer = function (cfg) {
      *
      * @param {String|String[]} ids IDs of models, objects or types. Shows all objects by default.
      * @param {Number} opacity Degree of opacity in range [0..1].
+     * @returns {Viewer} this
+     * @example
+     * // Create an X-ray view of two objects in the "saw" model
+     * viewer.setOpacity("saw", 0.4);
+     * viewer.setOpacity(["saw#0.1", "saw#0.2"], 1.0);
      */
     this.setOpacity = function (ids, opacity) {
         if (opacity === null || opacity === undefined) {
@@ -43739,6 +43872,8 @@ xeometry.Viewer = function (cfg) {
      *
      * @param {String|String} id ID of an object.
      * @return {Number} Degree of opacity in range [0..1].
+     * @example
+     * var sawObjectOpacity = viewer.getOpacity("saw#0.1");
      */
     this.getOpacity = function (id) {
         var object = objects[id];
@@ -43758,6 +43893,10 @@ xeometry.Viewer = function (cfg) {
      *
      * @param {String|String[]} ids IDs of models, objects or types. Applies to all objects by default.
      * @param {[Number, Number, Number]} color The RGB color, with each element in range [0..1].
+     * @returns {Viewer} this
+     * @example
+     * viewer.setColor("saw", [1,0,0]); // Set all objects in saw model red
+     * viewer.setColor(["saw#0.1", "saw#0.2"], [0,1,0]); // Set two objects in saw model green
      */
     this.setColor = function (ids, color) {
         if (color === null || color === undefined) {
@@ -43803,10 +43942,12 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the albedo color of an object.
+     * Gets the color of an object.
      *
      * @param {String|String} id ID of an object.
      * @return {[Number, Number, Number]} color The RGB color of the object, with each element in range [0..1].
+     * @example
+     * var objectColor = viewer.getColor("saw#1.1");
      */
     this.getColor = function (id) {
         var object = objects[id];
@@ -43824,8 +43965,11 @@ xeometry.Viewer = function (cfg) {
     //----------------------------------------------------------------------------------------------------
 
     /**
-     * Sets the thickness of outlines around objects.
+     * Sets the current outline thickness.
      * @param {Number} thickness Thickness in pixels.
+     * @returns {Viewer} this
+     * @example
+     * viewer.setOutlineThickness(3);
      */
     this.setOutlineThickness = function (thickness) {
         scene.outline.thickness = thickness;
@@ -43833,7 +43977,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the thickness of outlines around objects.
+     * Gets the current outline thickness.
      * @return {Number} Thickness in pixels.
      */
     this.getOutlineThickness = function () {
@@ -43841,8 +43985,11 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Sets the color of outlines around objects.
+     * Sets the current outline color.
      * @param {[Number, Number, Number]} color RGB color as a value per channel, in range [0..1].
+     * @returns {Viewer} this
+     * @example
+     * viewer.setOutlineColor([1,0,0]);
      */
     this.setOutlineColor = function (color) {
         scene.outline.color = color;
@@ -43850,7 +43997,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Returns the color of outlines around objects.
+     * Returns the current outline color.
      * @return {[Number, Number, Number]} RGB color as a value per channel, in range [0..1].
      */
     this.getOutlineColor = function () {
@@ -43858,11 +44005,16 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Shows outline around model(s) and/or object(s).
+     * Shows outline around model(s), object(s) or type(s).
      *
      * Outlines all objects in the viewer when no arguments are given.
      *
      * @param {String|String[]} ids IDs of model(s) and/or object(s). Outlines all objects by default.
+     * @returns {Viewer} this
+     * @example
+     * viewer.showOutline(); // Show outline around all objects in viewer
+     * viewer.showOutline("saw"); // Show outline around all objects in saw model
+     * viewer.showOutline(["saw#0.1", "saw#0.2"]); // Show outline around two objects in saw model
      */
     this.showOutline = function (ids) {
         setOutline(ids, true);
@@ -43870,11 +44022,16 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Shows outline around model(s) and/or object(s).
+     * Hides outline around model(s), object(s) or type(s).
      *
      * Hides all outlines in the viewer when no arguments are given.
      *
      * @param {String|String[]} ids IDs of model(s) and/or object(s).
+     * @returns {Viewer} this
+     * @example
+     * viewer.hideOutline(); // Hide outline around all objects in viewer
+     * viewer.hideOutline("saw"); // Hide outline around all objects in saw model
+     * viewer.hideOutline(["saw#0.1", "saw#0.2"]); // Hide outline around two objects in saw model
      */
     this.hideOutline = function (ids) {
         setOutline(ids, false);
@@ -43921,12 +44078,18 @@ xeometry.Viewer = function (cfg) {
     //----------------------------------------------------------------------------------------------------
 
     /**
-     * Gets the center point of the given models and/or objects.
+     * Gets the World-space center point of the given model(s), object(s) or type(s).
      *
      * When no arguments are given, returns the collective center of all objects in the viewer.
      *
      * @param {String|String[]} target IDs of models and/or objects.
      * @returns {[Number, Number, Number]} The World-space center point.
+     * @example
+     * viewer.getCenter(); // Gets collective center of all objects in the viewer
+     * viewer.getCenter("saw"); // Gets collective center of all objects in saw model
+     * viewer.getCenter(["saw", "gearbox"]); // Gets collective center of all objects in saw and gearbox models
+     * viewer.getCenter("saw#0.1"); // Get center of an object in the saw model
+     * viewer.getCenter(["saw#0.1", "saw#0.2"]); // Get collective center of two objects in saw model
      */
     this.getCenter = function (target) {
         var aabb = this.getAABB(target);
@@ -43938,14 +44101,18 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the boundary of the given models and/or objects.
+     * Gets the axis-aligned World-space boundary of the given model(s), object(s) or type(s).
      *
      * When no arguments are given, returns the collective boundary of all objects in the viewer.
      *
-     * When you specify IDs of annotations, then the boundaries of the annotations' objects are considered.
-     *
      * @param {String|String[]} target IDs of models, objects and/or annotations
      * @returns {[Number, Number, Number, Number, Number, Number]} An axis-aligned World-space bounding box, given as elements ````[xmin, ymin, zmin, xmax, ymax, zmax]````.
+     * @example
+     * viewer.getAABB(); // Gets collective boundary of all objects in the viewer
+     * viewer.getAABB("saw"); // Gets collective boundary of all objects in saw model
+     * viewer.getAABB(["saw", "gearbox"]); // Gets collective boundary of all objects in saw and gearbox models
+     * viewer.getAABB("saw#0.1"); // Get boundary of an object in the saw model
+     * viewer.getAABB(["saw#0.1", "saw#0.2"]); // Get collective boundary of two objects in saw model
      */
     this.getAABB = function (target) {
         if (arguments.length === 0 || target === undefined) {
@@ -44056,9 +44223,9 @@ xeometry.Viewer = function (cfg) {
     //----------------------------------------------------------------------------------------------------
 
     /**
-     * Sets the Field-of-view angle for perspective projection.
-     *
+     * Sets the field-of-view (FOV) angle for perspective projection.
      * @param {Number} fov Field-of-view angle, in degrees, on Y-axis.
+     * @returns {Viewer} this
      */
     this.setPerspectiveFOV = function (fov) {
         projections.perspective.fovy = fov;
@@ -44066,8 +44233,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the Field-of-view angle for perspective projection.
-     *
+     * Gets the field-of-view (FOV) angle for perspective projection.
      * @return  {Number} Field-of-view angle, in degrees, on Y-axis.
      */
     this.getPerspectiveFOV = function () {
@@ -44076,8 +44242,8 @@ xeometry.Viewer = function (cfg) {
 
     /**
      * Sets the position of the near plane on the View-space Z-axis for perspective projection.
-     *
      * @param {Number} near Position of the near plane on the View-space Z-axis.
+     * @returns {Viewer} this
      */
     this.setPerspectiveNear = function (near) {
         projections.perspective.near = near;
@@ -44085,8 +44251,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * gets the position of the near plane on the View-space Z-axis for perspective projection.
-     *
+     * Gets the position of the near plane on the View-space Z-axis for perspective projection.
      * @return  {Number} Position of the near clipping plane on the View-space Z-axis.
      */
     this.getPerspectiveNear = function () {
@@ -44095,8 +44260,8 @@ xeometry.Viewer = function (cfg) {
 
     /**
      * Sets the position of the far clipping plane on the View-space Z-axis for perspective projection.
-     *
      * @param {Number} far Position of the far clipping plane on the View-space Z-axis.
+     * @returns {Viewer} this
      */
     this.setPerspectiveFar = function (far) {
         projections.perspective.far = far;
@@ -44105,7 +44270,6 @@ xeometry.Viewer = function (cfg) {
 
     /**
      * Gets the position of the far clipping plane on the View-space Z-axis for perspective projection.
-     *
      * @return  {Number} Position of the far clipping plane on the View-space Z-axis.
      */
     this.getPerspectiveFar = function () {
@@ -44115,7 +44279,10 @@ xeometry.Viewer = function (cfg) {
     /**
      * Sets the orthographic projection boundary scale on X and Y axis.
      *
+     * This specifies how many units fit within the current orthographic boundary extents.
+     *
      * @param {Number} scale The scale factor.
+     * @returns {Viewer} this
      */
     this.setOrthoScale = function (scale) {
         projections.orthographic.scale = scale;
@@ -44123,7 +44290,9 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Sets the orthographic projection boundary scale.
+     * Gets the orthographic projection boundary scale.
+     *
+     * This specifies how many units fit within the current orthographic boundary extents.
      *
      * @return  {Number} The scale factor.
      */
@@ -44132,9 +44301,10 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Sets the position of the near plane on the View-space Z-axis for ortho projection.
+     * Sets the position of the near plane on the View-space Z-axis for orthographic projection.
      *
      * @param {Number} near Position of the near plane on the View-space Z-axis.
+     * @returns {Viewer} this
      */
     this.setOrthoNear = function (near) {
         projections.orthographic.near = near;
@@ -44142,7 +44312,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * gets the position of the near plane on the View-space Z-axis for ortho projection.
+     * Gets the position of the near plane on the View-space Z-axis for orthographic projection.
      *
      * @return  {Number} Position of the near clipping plane on the View-space Z-axis.
      */
@@ -44151,16 +44321,17 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Sets the position of the far clipping plane on the View-space Z-axis for ortho projection.
+     * Sets the position of the far clipping plane on the View-space Z-axis for orthographic projection.
      *
      * @param {Number} far Position of the far clipping plane on the View-space Z-axis.
+     * @returns {Viewer} this
      */
     this.setOrthoFar = function (far) {
         projections.orthographic.far = far;
     };
 
     /**
-     * Gets the position of the far clipping plane on the View-space Z-axis for ortho projection.
+     * Gets the position of the far clipping plane on the View-space Z-axis for orthographic projection.
      *
      * @return  {Number} Position of the far clipping plane on the View-space Z-axis.
      */
@@ -44172,6 +44343,7 @@ xeometry.Viewer = function (cfg) {
      * Sets the camera's current projection type.
      *
      * @param {String} type Either "perspective" or "ortho".
+     * @returns {Viewer} this
      */
     this.setProjection = function (type) {
         if (projectionType === type) {
@@ -44200,6 +44372,7 @@ xeometry.Viewer = function (cfg) {
      * Sets the camera viewpoint.
      *
      * @param {[Number, Number, Number]} eye The new viewpoint.
+     * @returns {Viewer} this
      */
     this.setEye = function (eye) {
         view.eye = eye;
@@ -44219,6 +44392,7 @@ xeometry.Viewer = function (cfg) {
      * Sets the camera's point-of-interest.
      *
      * @param {[Number, Number, Number]} look The new point-of-interest.
+     * @returns {Viewer} this
      */
     this.setLook = function (look) {
         view.look = look;
@@ -44238,6 +44412,7 @@ xeometry.Viewer = function (cfg) {
      * Sets the camera's "up" direction.
      *
      * @param {[Number, Number, Number]} up The new up direction.
+     * @returns {Viewer} this
      */
     this.setUp = function (up) {
         view.up = up;
@@ -44259,6 +44434,7 @@ xeometry.Viewer = function (cfg) {
      * @param {[Number, Number, Number]} eye Camera's new viewpoint.
      * @param {[Number, Number, Number]} look Camera's new point-of-interest.
      * @param {[Number, Number, Number]} up Camera's new up direction.
+     * @returns {Viewer} this
      */
     this.setEyeLookUp = function (eye, look, up) {
         view.eye = eye;
@@ -44270,6 +44446,7 @@ xeometry.Viewer = function (cfg) {
 
     /**
      * Locks the camera's vertical rotation axis to the World-space Y axis.
+     * @returns {Viewer} this
      */
     this.lockGimbalY = function () {
         view.gimbalLockY = true;
@@ -44278,6 +44455,7 @@ xeometry.Viewer = function (cfg) {
 
     /**
      * Allows camera yaw rotation around the "up" vector.
+     * @returns {Viewer} this
      */
     this.unlockGimbalY = function () {
         view.gimbalLockY = false;
@@ -44288,6 +44466,7 @@ xeometry.Viewer = function (cfg) {
      * Rotates the camera's 'eye' position about its 'look' position, around the 'up' vector.
      *
      * @param {Number} angle Angle of rotation in degrees
+     * @returns {Viewer} this
      */
     this.rotateEyeY = function (angle) {
         view.rotateEyeY(angle);
@@ -44298,6 +44477,7 @@ xeometry.Viewer = function (cfg) {
      * Rotates the camera's 'eye' position about its 'look' position, pivoting around the X-axis.
      *
      * @param {Number} angle Angle of rotation in degrees
+     * @returns {Viewer} this
      */
     this.rotateEyeX = function (angle) {
         view.rotateEyeX(angle);
@@ -44310,6 +44490,7 @@ xeometry.Viewer = function (cfg) {
      * <p>Applies constraints added with {@link #addConstraint}.</p>
      *
      * @param {Number} angle Angle of rotation in degrees
+     * @returns {Viewer} this
      */
     this.rotateLookY = function (angle) {
         view.rotateLookY(angle);
@@ -44320,6 +44501,7 @@ xeometry.Viewer = function (cfg) {
      * Rotates the camera's 'eye' position about its 'look' position, pivoting around the X-axis.
      *
      * @param {Number} angle Angle of rotation in degrees
+     * @returns {Viewer} this
      */
     this.rotateLookX = function (angle) {
         view.rotateLookX(angle);
@@ -44328,7 +44510,8 @@ xeometry.Viewer = function (cfg) {
 
     /**
      * Pans the camera along its local X, Y or Z axis.
-     * @param pan The pan vector
+     * @param {[Number, Number, Number]} pan The pan vector
+     * @returns {Viewer} this
      */
     this.pan = function (pan) {
         view.pan(pan);
@@ -44337,7 +44520,8 @@ xeometry.Viewer = function (cfg) {
 
     /**
      * Increments/decrements the camera's zoom distance, ie. distance between eye and look.
-     * @param delta
+     * @param {Number} delta The zoom increment.
+     * @returns {Viewer} this
      */
     this.zoom = function (delta) {
         view.zoom(delta);
@@ -44350,6 +44534,7 @@ xeometry.Viewer = function (cfg) {
      * A value of zero (default) will cause the camera to instantly jump to each new target .
      *
      * @param {Number} value The new flight duration, in seconds.
+     * @returns {Viewer} this
      */
     this.setViewFitDuration = function (value) {
         cameraFlight.duration = value;
@@ -44375,6 +44560,7 @@ xeometry.Viewer = function (cfg) {
      * Default value is 45.
      *
      * @param {Number} value The new view-fit FOV angle, in degrees.
+     * @returns {Viewer} this
      */
     this.setViewFitFOV = function (value) {
         cameraFlight.fitFOV = value;
@@ -44391,25 +44577,42 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view.
+     * Moves the camera to fit the given annotation,  model(s), object(s) or boundary(s) in view.
      *
      * Preserves the direction that the camera is currently pointing in.
      *
      * A boundary is an axis-aligned World-space bounding box, given as elements ````[xmin, ymin, zmin, xmax, ymax, zmax]````.
      *
-     * @param {String|[]} target The elements to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
-     * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
+     * @param {String|[]} target The elements to fit in view, given as either the ID of an annotation, model or object, a boundary, or an array containing mixture of IDs and boundaries.
+     * @param {Function} [ok] Callback fired when camera has arrived at its target position.
+     * @returns {Viewer} this
      */
     this.viewFit = function (target, ok) {
-        (ok || cameraFlight.duration > 0.1) ? cameraFlight.flyTo({aabb: this.getAABB(target)}, ok) : cameraFlight.jumpTo({aabb: this.getAABB(target)});
+        if (xeogl._isString(target)) {
+            var annotation = annotations[target];
+            if (annotation) {
+                if (ok || cameraFlight.duration > 0.1) {
+                    cameraFlight.flyTo({eye: annotation.eye, look: annotation.look, up: annotation.up}, ok);
+                } else {
+                    cameraFlight.jumpTo({eye: annotation.eye, look: annotation.look, up: annotation.up});
+                }
+                return this;
+            }
+        }
+        if (ok || cameraFlight.duration > 0.1) {
+            cameraFlight.flyTo({aabb: this.getAABB(target)}, ok);
+        } else {
+            cameraFlight.jumpTo({aabb: this.getAABB(target)});
+        }
         return this;
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking dalong the +X axis.
+     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the +X axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
-     * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
+     * @param {Function} [ok] Callback fired when camera has arrived at its target position.
+     * @returns {Viewer} this
      */
     this.viewFitRight = function (target, ok) {
         viewFitAxis(target, 0, ok);
@@ -44420,7 +44623,8 @@ xeometry.Viewer = function (cfg) {
      * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the +Z axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
-     * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
+     * @param {Function} [ok] Callback fired when camera has arrived at its target position.
+     * @returns {Viewer} this
      */
     this.viewFitBack = function (target, ok) {
         viewFitAxis(target, 1, ok);
@@ -44431,7 +44635,8 @@ xeometry.Viewer = function (cfg) {
      * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the -X axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
-     * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
+     * @param {Function} [ok] Callback fired when camera has arrived at its target position.
+     * @returns {Viewer} this
      */
     this.viewFitLeft = function (target, ok) {
         viewFitAxis(target, 2, ok);
@@ -44442,7 +44647,8 @@ xeometry.Viewer = function (cfg) {
      * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the +X axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
-     * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
+     * @param {Function} [ok] Callback fired when camera has arrived at its target position.
+     * @returns {Viewer} this
      */
     this.viewFitFront = function (target, ok) {
         viewFitAxis(target, 3, ok);
@@ -44453,7 +44659,8 @@ xeometry.Viewer = function (cfg) {
      * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the -Y axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
-     * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
+     * @param {Function} [ok] Callback fired when camera has arrived at its target position.
+     * @returns {Viewer} this
      */
     this.viewFitTop = function (target, ok) {
         viewFitAxis(target, 4, ok);
@@ -44464,7 +44671,8 @@ xeometry.Viewer = function (cfg) {
      * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the +X axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
-     * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
+     * @param {Function} [ok] Callback fired when camera has arrived at its target position.
+     * @returns {Viewer} this
      */
     this.viewFitBottom = function (target, ok) {
         viewFitAxis(target, 5, ok);
@@ -44534,11 +44742,6 @@ xeometry.Viewer = function (cfg) {
         };
     })();
 
-    this.zoom = function (zoom) {
-        view.zoom(zoom);
-        return this;
-    };
-
     /**
      * Rotates the camera's 'eye' position about its 'look' position, pivoting
      * about the camera's local horizontal axis, by the given increment on each frame.
@@ -44572,7 +44775,12 @@ xeometry.Viewer = function (cfg) {
      *
      * @param {[Number, Number, Number]} origin World-space ray origin.
      * @param {[Number, Number, Number]} dir World-space ray direction vector.
-     * @returns {{id: *}} If object found, the ID of the object.
+     * @returns {{id: String}} If object found, a hit record containing the ID of the object.
+     * @example
+     * var hit = viewer.rayCastObject([0,0,-5], [0,0,1]);
+     * if (hit) {
+     *      var objectId = hit.id;
+     * }
      */
     this.rayCastObject = function (origin, dir) {
         var hit = scene.pick({origin: origin, direction: dir, pickSurface: false});
@@ -44582,13 +44790,20 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the first object that intersects the given ray, along with the
-     * coordinates of the ray-surface intersection.
+     * Gets the first object that intersects the given ray, along with geometric information about
+     * the ray-object intersection.
      *
      * @param {[Number, Number, Number]} origin World-space ray origin.
      * @param {[Number, Number, Number]} dir World-space ray direction vector.
-     * @returns {{id: *, worldPos: *, primIndex: (*|number), bary: *}} If object found, the ID of object, World-space
-     * surface intersection, primitive index and barycentric coordinates.
+     * @returns {{id: String, worldPos: [number,number,number], primIndex:number, bary: [number,number,number]}} If object found, a hit record containing the ID of object, World-space 3D surface intersection, primitive index and barycentric coordinates.
+     * @example
+     * var hit = viewer.rayCastSurface([0,0,-5], [0,0,1]);
+     * if (hit) {
+     *      var objectId = hit.id;
+     *      var primitive = hit.primitive;
+     *      var primIndex = hit.primIndex;
+     *      var bary = hit.bary;
+     * }
      */
     this.rayCastSurface = function (origin, dir) {
         var hit = scene.pick({origin: origin, direction: dir, pickSurface: true});
@@ -44603,10 +44818,17 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Finds the closest object at the given canvas position.
+     * Finds the closest object behind the given canvas coordinates.
+     *
+     * This is equivalent to firing a ray through the canvas, down the negative Z-axis, to find the first entity it hits.
      *
      * @param {[Number, Number]} canvasPos Canvas position.
-     * @returns {{id: *}}
+     * @returns {{id: String}} If object found, a hit record containing the ID of the object.
+     * @example
+     * var hit = viewer.pickObject([234, 567]);
+     * if (hit) {
+     *      var objectId = hit.id;
+     * }
      */
     this.pickObject = function (canvasPos) {
         var hit = scene.pick({canvasPos: canvasPos, pickSurface: false});
@@ -44616,11 +44838,19 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Finds the closest object at the given canvas position, plus the
-     * object's surface coordinates at that position.
+     * Gets the closest object behind the given canvas coordinates, along with geometric information about
+     * the point on the object's surface that lies right behind those canvas coordinates.
      *
      * @param {[Number, Number]} canvasPos Canvas position.
-     * @returns {{id: *, worldPos: *, primIndex: (*|number), bary: *}} If object found, the ID of object, World-space surface intersection, primitive index and barycentric coordinates.
+     * @returns {{id: String, worldPos: [number,number,number], primIndex:number, bary: [number,number,number]}} If object found, a hit record containing the ID of object, World-space 3D surface intersection, primitive index and barycentric coordinates.
+     * @example
+     * var hit = viewer.pickSurface([234, 567]);
+     * if (hit) {
+     *      var objectId = hit.id;
+     *      var primitive = hit.primitive;
+     *      var primIndex = hit.primIndex;
+     *      var bary = hit.bary;
+     * }
      */
     this.pickSurface = function (canvasPos) {
         var hit = scene.pick({canvasPos: canvasPos, pickSurface: true});
@@ -44735,7 +44965,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     this.getAnnotationPrimIndex = function (id) {
-        var annotation = getAnnotation(id);
+        var annotation = annotations[id];
         if (!annotation) {
             this.error("Annotation not found: \"" + id + "\"");
             return;
@@ -44901,7 +45131,7 @@ xeometry.Viewer = function (cfg) {
         return annotation.occludable;
     };
 
-    this.setPinShown = function (id, pinShown) {
+    this.setAnnotationPinShown = function (id, pinShown) {
         var annotation = annotations[id];
         if (!annotation) {
             this.error("Annotation not found: \"" + id + "\"");
@@ -45073,16 +45303,7 @@ xeometry.Viewer = function (cfg) {
     /**
      * Gets a JSON bookmark of the viewer's current state.
      *
-     * The bookmark will be a complete snapshot of the viewer's state, including:
-     *
-     * <ul>
-     * <li>which models are currently loaded,</li>
-     * <li>transformations of the models,</li>
-     * <li>transformations and visibilities of their objects, and</li>
-     * <li>the current camera position.</li>
-     * <ul>
-     *
-     * The viewer can then be restored to the bookmark at any time using #setBookmark().
+     * The viewer can then be restored to the bookmark at any time using {@link #setBookmark}.
      *
      * @return {Object} A JSON bookmark.
      */
@@ -45242,9 +45463,10 @@ xeometry.Viewer = function (cfg) {
      * Sets viewer state to the snapshot contained in given JSON bookmark.
      *
      * A bookmark is a complete snapshot of the viewer's state, which was
-     * captured earlier with #getBookmark().
+     * captured earlier with {@link #getBookmark}.
      *
      * @param {Object} bookmark JSON bookmark.
+     * @returns {Viewer} this
      */
     this.setBookmark = (function () {
 
@@ -45321,20 +45543,52 @@ xeometry.Viewer = function (cfg) {
     })();
 
     /**
-     * Gets a screenshot as a data URL.
-     * @return {String} An image in the data URI format.
+     * Captures a snapshot image of the viewer's canvas.
+     *
+     * When a callback is given, this method will capture the snapshot asynchronously, on the next animation frame
+     * and return it via the callback.
+     *
+     * When no callback is given, this method captures and returns the snapshot immediately. Note that is only
+     * possible when you have configured the viewer to preserve the WebGL drawing buffer (which incurs a
+     * performance overhead).
+     *
+     * @param {*} [params] Capture options.
+     * @param {Number} [params.width] Desired width of result in pixels - defaults to width of canvas.
+     * @param {Number} [params.height] Desired height of result in pixels - defaults to height of canvas.
+     * @param {String} [params.format="jpeg"] Desired format; "jpeg", "png" or "bmp".
+     * @param {Function} [ok] Callback to return the image data when taking a snapshot asynchronously.
+     * @returns {String} String-encoded image data when taking the snapshot synchronously. Returns null when the ````ok```` callback is given.
+     * @example
+     * // Get snapshot asynchronously
+     * viewer.getSnapshot({
+     *     width: 500, // Defaults to size of canvas
+     *     height: 500,
+     *     format: "png" // Options are "jpeg" (default), "png" and "bmp"
+     * }, function(imageDataURL) {
+     *     imageElement.src = imageDataURL;
+     * });
+*
+     * // Get snapshot synchronously, requires that viewer be
+     * // configured with preserveDrawingBuffer; true
+     * imageElement.src = viewer.getSnapshot({
+     *     width: 500, // Defaults to size of canvas
+     *     height: 500,
+     *     format: "png" // Options are "jpeg" (default), "png" and "bmp"
+     * });
      */
-    this.getScreenshot = function (params) {
+    this.getSnapshot = function (params, ok) {
         params = params || {};
-        return scene.canvas.getSnapshot({
+        var src = scene.canvas.getSnapshot({
             width: params.width, // Defaults to size of canvas
             height: params.height,
             format: params.format || "png" // Options are "jpeg" (default), "png" and "bmp"
-        });
+        }, ok);
+        return ok ? null : src;
     };
 
     /**
      * Clears and destroys this viewer.
+     * @returns {Viewer} this
      */
     this.destroy = function () {
         scene.off(onTick);
@@ -45349,6 +45603,7 @@ xeometry.Viewer = function (cfg) {
         scales = {};
         annotations = {};
         objectAnnotations = {};
+        return this;
     };
 
     function error(msg) {

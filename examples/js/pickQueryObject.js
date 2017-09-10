@@ -37,14 +37,5 @@ xeometry.PickQueryObject = function (viewer) {
     }
 };
 
-var str = [
-    "{",
-    "   eye:" + JSON.stringify(viewer.getEye(), null, "\t") + ",",
-    "   look:" + JSON.stringify(viewer.getLook(), null, "\t") + ",",
-    "   up:" + JSON.stringify(viewer.getUp(), null, "\t"),
-    "};"
-];
-
-console.log(str.join(","));
 
 

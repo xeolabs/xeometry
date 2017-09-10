@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <script src="../build/xeometry.js"></script>
+    <script src="js/cameraControl.js"></script>
+    <link href="css/styles.css" rel="stylesheet"/>
+
+    <style>
+        body {
+            background-color: #000000;
+            padding: 5px;
+            margin: 0;
+        }
+
+        canvas {
+            display: inline-block;
+            margin: 5px;
+            margin-top: 70px;
+            border: white 1px solid;
+        }
+
+        #snapshotImage {
+            display: inline-block;
+            margin: 5px;
+            border: white 1px solid;
+        }
+    </style>
+
+</head>
+<body>
+
+<div id="info">
+    <h1>taking a snapshot of a viewer canvas once per second, asynchronously</h1>
+</div>
+
+<!-- Viewer canvas -->
+<canvas id="myCanvas" width="500px" height="500px"></canvas>
+
+<!-- Snapshot image -->
+<img id="snapshotImage" src="" width="500px" height="500px"/>
+
+<!-- Arrow image -->
+<img src="images/arrow.png" style="position:absolute; left: 490px; top: 200px; background: rgba(0,0,0,0);"/>
+
+<script>
+
+    var viewer = new xeometry.Viewer({
+        canvas: "myCanvas"
+    });
+
+    viewer.setViewFitDuration(0);
+
+    viewer.loadModel("house", "models/gltf/vianney_house_2/scene.gltf", function () {
+        viewer.viewFitRight("house");
+        viewer.yspin(0.3);
+        viewer.setViewFitFOV(70);
+    });
+
+    new xeometry.CameraControl(viewer);
+
+    // Every second, grab a snapshot of the canvas on the right
+    // and show it in the image element on the left
+
+    var snapshotImage = document.getElementById("snapshotImage");
+
+    window.setInterval(function () {
+
+        // Get a snapshot asynchronously, within the next RAF.
+        // Note that a synchronous snapshot is not possible here,
+        // because we didn't configure the Scene to preserve the
+        // drawing buffer.
+
+        viewer.getSnapshot({
+            width: 500, // Defaults to size of canvas
+            height: 500,
+            format: "png" // Options are "jpeg" (default), "png" and "bmp"
+        }, function (src) {
+
+            snapshotImage.src = src;
+        });
+
+    }, 1000);
+
+</script>
+</body>
+</html>

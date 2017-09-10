@@ -4,7 +4,7 @@
  * A WebGL-based 3D visualization engine from xeoLabs
  * http://xeogl.org/
  *
- * Built on 2017-09-06
+ * Built on 2017-09-10
  *
  * MIT License
  * Copyright 2017, Lindsay Kay
@@ -219,7 +219,6 @@
         // tasks are pushed to it with calls to xeogl.schedule
 
         this._taskQueue = new Queue();
-      //  this._taskQueue = [];
 
         //-----------------------------------------------------------------------
         // Game loop
@@ -14754,7 +14753,7 @@ var Canvas2Image = (function () {
             }
 
             // Render a frame
-            // Only renders if there was a state update
+            // Only renders if there was a state update, or forced
 
             this._renderer.render({
                 pass: pass,
@@ -16210,8 +16209,7 @@ var Canvas2Image = (function () {
                 this.contextAttr.preserveDrawingBuffer = false;
             }
 
-            this.contextAttr.alpha = true;
-
+           // this.contextAttr.alpha = true;
             this.contextAttr.stencil = true;
 
             if (!cfg.canvas) {
@@ -16545,58 +16543,81 @@ var Canvas2Image = (function () {
         /**
          Returns a snapshot of this Canvas as a Base64-encoded image.
 
+         When a callback is given, this method will capture the snapshot asynchronously, on the next animation frame
+         and return it via the callback.
+
+         When no callback is given, this method captures and returns the snapshot immediately. Note that is only
+         possible when you have configured the Canvas's {{#crossLink "Scene"}}Scene{{/crossLink}} to preserve the
+         WebGL drawing buffer, which has a performance overhead.
+
          #### Usage:
+
          ````javascript
+         // Get snapshot asynchronously
+         myScene.canvas.getSnapshot({
+             width: 500, // Defaults to size of canvas
+             height: 500,
+             format: "png" // Options are "jpeg" (default), "png" and "bmp"
+         }, function(imageDataURL) {
+             imageElement.src = imageDataURL;
+         });
+
+         // Get snapshot synchronously, requires that Scene be
+         // configured with preserveDrawingBuffer; true
          imageElement.src = myScene.canvas.getSnapshot({
              width: 500, // Defaults to size of canvas
              height: 500,
              format: "png" // Options are "jpeg" (default), "png" and "bmp"
          });
          ````
-
          @method getSnapshot
          @param {*} [params] Capture options.
          @param {Number} [params.width] Desired width of result in pixels - defaults to width of canvas.
          @param {Number} [params.height] Desired height of result in pixels - defaults to height of canvas.
          @param {String} [params.format="jpeg"] Desired format; "jpeg", "png" or "bmp".
-         @returns {String} String-encoded image data.
+         @param {Function} [ok] Callback to return the image data when taking a snapshot asynchronously.
+         @returns {String} String-encoded image data when taking the snapshot synchronously. Returns null when the ````ok```` callback is given.
          */
-        getSnapshot: function (params) {
+        getSnapshot: function (params, ok) {
 
             if (!this.canvas) {
                 this.error("Can't get snapshot - no canvas.");
+                ok(null);
                 return;
             }
 
-            // Force-render a frame
-            this.scene.render();
+            if (ok) { // Asynchronous
+                var self = this;
+                requestAnimationFrame(function () {
+                    self.scene.render(true); // Force-render a frame
+                    ok(self._getSnapshot(params));
+                });
+            } else { 
+                return this._getSnapshot(params);
+            }
+        },
 
+        _getSnapshot: function (params) {
             params = params || {};
-
             var width = params.width || this.canvas.width;
             var height = params.height || this.canvas.height;
             var format = params.format || "jpeg";
             var image;
-
             switch (format) {
                 case "jpeg":
                     image = Canvas2Image.saveAsJPEG(this.canvas, true, width, height);
                     break;
-
                 case "png":
                     image = Canvas2Image.saveAsPNG(this.canvas, true, width, height);
                     break;
-
                 case "bmp":
                     image = Canvas2Image.saveAsBMP(this.canvas, true, width, height);
                     break;
-
                 default:
                     this.error("Unsupported snapshot format: '" + format
                         + "' - supported types are 'jpeg', 'bmp' and 'png' - defaulting to 'jpeg'");
                     image = Canvas2Image.saveAsJPEG(this.canvas, true, width, height);
             }
-
             return image.src;
         },
 
@@ -30661,7 +30682,7 @@ TODO
  ## Overview
 
  * Used for rendering non-realistic objects such as "helpers", wireframe objects, labels etc.
- * Use the physically-based {{#crossLink "MetallicMaterial"}}{{/crossLink}} or {{#crossLink "SpecularMaterial"}}{{/crossLink}} realism is required.
+ * Use the physically-based {{#crossLink "MetallicMaterial"}}{{/crossLink}} or {{#crossLink "SpecularMaterial"}}{{/crossLink}} when more realism is required.
 
  <img src="../../../assets/images/PhongMaterial.png"></img>
 
@@ -30750,7 +30771,7 @@ TODO
  torus.material.alpha = 0.5;
  torus.material.alphaMode = "blend";
  ````
- <img src="../../../assets/images/screenshots/PhongMaterial/alphaBlend.png"></img>
+ *TODO: Screenshot*
 
  ### Alpha Masking
 
@@ -30767,8 +30788,7 @@ TODO
  torus.material.alphaMode = "mask";
  torus.material.alphaCutoff = 0.2;
  ````
-
- <img src="../../../assets/images/screenshots/PhongMaterial/alphaMask.png"></img>
+*TODO: Screenshot*
 
 
  @class PhongMaterial
@@ -32321,7 +32341,7 @@ TODO
  plasteredSphere.material.alphaMode = "blend";
  ````
 
- <img src="../../../assets/images/screenshots/SpecularMaterial/alphaBlend.png"></img>
+ *TODO: Screenshot*
 
  ### Alpha Masking
 
@@ -32339,8 +32359,7 @@ TODO
  plasteredSphere.material.alphaCutoff = 0.2;
  ````
 
- <img src="../../../assets/images/screenshots/SpecularMaterial/alphaMask.png"></img>
-
+ *TODO: Screenshot*
 
  @class SpecularMaterial
  @module xeogl
@@ -33379,7 +33398,7 @@ TODO
 
  * MetallicMaterial is usually used for conductive materials, such as metal.
  * {{#crossLink "SpecularMaterial"}}{{/crossLink}} is usually used for insulators, such as wood, ceramics and plastic.
- * {{#crossLink "MetallicMaterial"}}{{/crossLink}} is usually used for non-realistic objects.
+ * {{#crossLink "PhongMaterial"}}{{/crossLink}} is usually used for non-realistic objects.
 
  <img src="../../../assets/images/MetallicMaterial.png"></img>
 
@@ -35899,7 +35918,7 @@ TODO
  {{#crossLink "Scene/transform:property"}}transform{{/crossLink}} (which is an identity matrix which performs no transformation).
  @param [cfg.viewport] {String|Viewport} ID or instance of a {{#crossLink "Viewport"}}{{/crossLink}} attached to this Entity. Must be within the same {{#crossLink "Scene"}}Scene{{/crossLink}} as this Entity. Defaults to the parent {{#crossLink "Scene"}}Scene{{/crossLink}}'s default instance,
  {{#crossLink "Scene/viewport:property"}}{{/crossLink}}, which is automatically resizes to the canvas.
- @param [cfg.outline] {String|Outline} ID or instance of a {{#crossLink "Outline"}}{{/crossLink}} attached to this Entity. Must be within the same {{#crossLink "Scene"}}Scene{{/crossLink}} as this Entity. Defaults to the parent {{#crossLink "Scene"}}Scene{{/crossLink}}'s default instance,
+ @param [cfg.outline] {String|Outline} ID or instance of an {{#crossLink "Outline"}}{{/crossLink}} attached to this Entity. Must be within the same {{#crossLink "Scene"}}Scene{{/crossLink}} as this Entity. Defaults to the parent {{#crossLink "Scene"}}Scene{{/crossLink}}'s default instance,
  {{#crossLink "Scene/outline:property"}}{{/crossLink}}.
  @param [cfg.xray] {String|XRay} ID or instance of a {{#crossLink "XRay"}}{{/crossLink}} attached to this Entity. Must be within the same {{#crossLink "Scene"}}Scene{{/crossLink}} as this Entity. Defaults to the parent {{#crossLink "Scene"}}Scene{{/crossLink}}'s default instance,
  {{#crossLink "Scene/xray:property"}}{{/crossLink}}.
@@ -36088,7 +36107,7 @@ TODO
              * The {{#crossLink "Geometry"}}Geometry{{/crossLink}} attached to this Entity.
              *
              * Must be within the same {{#crossLink "Scene"}}Scene{{/crossLink}} as this Entity. Defaults to the parent
-             * {{#crossLink "Scene"}}Scene{{/crossLink}}'s default {{#crossLink "Scene/geometry:property"}}camera{{/crossLink}}
+             * {{#crossLink "Scene"}}Scene{{/crossLink}}'s default {{#crossLink "Scene/geometry:property"}}geometry{{/crossLink}}
              * (a simple box) when set to a null or undefined value.
              *
              * Fires an {{#crossLink "Entity/geometry:event"}}{{/crossLink}} event on change.
@@ -36840,20 +36859,20 @@ TODO
             },
 
             /**
-             * Specifies the billboarding behaviour for this Entity.
-             *
-             * Options are:
-             *
-             *     * **"none"** -  **(default)** - No billboarding.
-             *     * **"spherical"** - Entity is billboarded to face the viewpoint, rotating both vertically and horizontally.
-             *     * **"cylindrical"** - Entity is billboarded to face the viewpoint, rotating only about its vertically
-             *     axis. Use this mode for things like trees on a landscape.
-             *
-             * Fires an {{#crossLink "Entity/billboard:event"}}{{/crossLink}} event on change.
-             *
-             * @property billboard
-             * @default "none"
-             * @type String
+              Specifies the billboarding behaviour for this Entity.
+             
+              Options are:
+             
+               * **"none"** -  **(default)** - No billboarding.
+               * **"spherical"** - Entity is billboarded to face the viewpoint, rotating both vertically and horizontally.
+               * **"cylindrical"** - Entity is billboarded to face the viewpoint, rotating only about its vertically
+                  axis. Use this mode for things like trees on a landscape.
+             
+              Fires an {{#crossLink "Entity/billboard:event"}}{{/crossLink}} event on change.
+             
+              @property billboard
+              @default "none"
+              @type String
              */
             billboard: {
 
@@ -37149,6 +37168,9 @@ TODO
 
             /**
              * World-space vertex positions of this Entity.
+             *
+             * These are internally generated on-demand and cached. To free the cached
+             * vertex World positions when you're done with them, set this property to null or undefined.
              *
              * @property worpdPositions
              * @type Float32Array

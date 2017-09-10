@@ -12,9 +12,7 @@
 
     var viewer = new xeometry.Viewer();
 
-    viewer.setEyeLookUp([0, 10, 35], [0, 10, 0], [0, 1, 0]);
-
-    viewer.yspin(0.1);
+    viewer.setEyeLookUp([0, 10, 40], [0, 10, 0], [0, 1, 0]);
 
     viewer.loadModel("gearbox", "models/gltf/GearboxAssy/glTF/GearboxAssy.gltf", function () {
         viewer.setTranslate("gearbox", [-159.20, -17.02, -3.21]);

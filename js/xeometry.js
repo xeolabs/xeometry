@@ -4,9 +4,38 @@ var xeometry = {};
  * A convenient API for visualizing glTF models on WebGL.
  * @class Viewer
  * @param {Object} [cfg] Configs
- * @param {Function} [cfg.load] Loader callback
+ * @param {Function} [cfg.loadModel] Callback fired to load model
+ * @param {Function} [cfg.loadedModel] Callback fired when model loaded
+ * @param {Function} [cfg.unloadedModel] Callback fired when model unloaded
+ * @param {Function} [cfg.contextAttr] WebGL context attributes
  * @example
+ *
+ * // Create viewer with defaults
  * var viewer = new xeometry.Viewer();
+ *
+ * // Create viewer that loads via custom loader callback
+ * viewer2 = new xeometry.Viewer({
+ *     loadModel: function (modelId, src, ok, error) {
+ *          var request = new XMLHttpRequest();
+ *          request.overrideMimeType("application/json");
+ *          request.open('GET', src2, true);
+ *          request.onreadystatechange = function () {
+ *             if (request.readyState == 4 && // Request finished, response ready
+ *                     request.status == "200") { // Status OK
+ *                 var json = JSON.parse(request.responseText);
+ *                 ok(json, this);
+ *             }
+ *         };
+ *         request.send(null);
+ *     },
+ *     loadedModel: function(modelId, src, ok) {
+ *         console.log("Loaded modelId=" + modelId);
+ *         ok(); // Unblock the viewer
+ *     },
+ *     unloadedModel: function(modelId, src) {
+ *         console.log("Unloaded modelId=" + modelId);
+ *     }
+ * });
  */
 xeometry.Viewer = function (cfg) {
 
@@ -21,9 +50,7 @@ xeometry.Viewer = function (cfg) {
     var scene = new xeogl.Scene({
         canvas: cfg.canvas,
         webgl2: false,
-        contextAttr: {
-            preserveDrawingBuffer: false
-        }
+        contextAttr: cfg.contextAttr || {}
         //,
         //transparent: true
     });
@@ -130,16 +157,21 @@ xeometry.Viewer = function (cfg) {
 
 
     /**
-     Loads a model into the viewer.
-
-     Also assigns the model an ID, which gets prefixed to the IDs of its objects.
-
-     @param {String} id ID to assign to the model.
-     @param {String} src Locates the model. This could be a path to a file or an ID within a database.
-     @param {Function} [ok] Callback fired when model loaded.
-     @return {Viewer} this
-     @example
-     viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF/ReciprocatingSaw.gltf", function () {..});
+     * Loads a model into the viewer.
+     *
+     * Also assigns the model an ID, which gets prefixed to the IDs of its objects.
+     *
+     * @param {String} id ID to assign to the model.
+     * @param {String} src Locates the model. This could be a path to a file or an ID within a database.
+     * @param {Function} [ok] Callback fired when model loaded.
+     * @return {Viewer} this
+     * @example
+     * // Load saw model, fit in view, show only two of its objects
+     * viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF/ReciprocatingSaw.gltf", function () {
+     *    viewer.viewFit("saw");
+     *    viewer.hide();
+     *    viewer.show(["saw#0.1", "saw#0.2"]);
+     * });
      */
     this.loadModel = function (id, src, ok) {
         var isFilePath = xeogl._isString(src);
@@ -2574,16 +2606,47 @@ xeometry.Viewer = function (cfg) {
     })();
 
     /**
-     * Gets a screenshot of the viewer canvas.
-     * @return {String} An image in data URI format.
+     * Captures a snapshot image of the viewer's canvas.
+     *
+     * When a callback is given, this method will capture the snapshot asynchronously, on the next animation frame,
+     * and return it via the callback.
+     *
+     * When no callback is given, this method captures and returns the snapshot immediately. Note that is only
+     * possible when you have configured the viewer to preserve the WebGL drawing buffer (which incurs a
+     * performance overhead).
+     *
+     * @param {*} [params] Capture options.
+     * @param {Number} [params.width] Desired width of result in pixels - defaults to width of canvas.
+     * @param {Number} [params.height] Desired height of result in pixels - defaults to height of canvas.
+     * @param {String} [params.format="jpeg"] Desired format; "jpeg", "png" or "bmp".
+     * @param {Function} [ok] Callback to return the image data when taking a snapshot asynchronously.
+     * @returns {String} String-encoded image data when taking the snapshot synchronously. Returns null when the ````ok```` callback is given.
+     * @example
+     * // Get snapshot asynchronously
+     * viewer.getSnapshot({
+     *     width: 500,
+     *     height: 500,
+     *     format: "png"
+     * }, function(imageDataURL) {
+     *     imageElement.src = imageDataURL;
+     * });
+*
+     * // Get snapshot synchronously, requires that viewer be
+     * // configured with preserveDrawingBuffer; true
+     * imageElement.src = viewer.getSnapshot({
+     *     width: 500,
+     *     height: 500,
+     *     format: "png"
+     * });
      */
-    this.getScreenshot = function (params) {
+    this.getSnapshot = function (params, ok) {
         params = params || {};
-        return scene.canvas.getSnapshot({
+        var src = scene.canvas.getSnapshot({
             width: params.width, // Defaults to size of canvas
             height: params.height,
             format: params.format || "png" // Options are "jpeg" (default), "png" and "bmp"
-        });
+        }, ok);
+        return ok ? null : src;
     };
 
     /**
