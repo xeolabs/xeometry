@@ -1,13 +1,13 @@
-/**
- * A convenient API for visualizing glTF models on WebGL using xeogl.
- *
- * Find usage instructions at http://xeolabs.com-xeometry
- *
- * @param {Object} cfg
- * @param {Function(src, ok, error)} cfg.load
- */
 var xeometry = {};
 
+/**
+ * A convenient API for visualizing glTF models on WebGL.
+ * @class Viewer
+ * @param {Object} [cfg] Configs
+ * @param {Function} [cfg.load] Loader callback
+ * @example
+ * var viewer = new xeometry.Viewer();
+ */
 xeometry.Viewer = function (cfg) {
 
     var self = this;
@@ -86,9 +86,12 @@ xeometry.Viewer = function (cfg) {
      * for a certain period of time, popping tasks and running them. After each frame interval, tasks that did not
      * get a chance to run during the task are left in the queue to be run next time.
      *
-     * @method scheduleTask
      * @param {Function} callback Callback that runs the task.
      * @param {Object} [scope] Scope for the callback.
+     * @returns {Viewer} this
+     * @example
+     * viewer.scheduleTask(function() { ... });
+     * viewer.scheduleTask(function() { this.log("foo"); }, console); // Set a scope for the task
      */
     this.scheduleTask = function (callback, scope) {
         if (!callback) {
@@ -96,6 +99,7 @@ xeometry.Viewer = function (cfg) {
             return;
         }
         xeogl.scheduleTask(callback, scope);
+        return this;
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -103,7 +107,7 @@ xeometry.Viewer = function (cfg) {
     //----------------------------------------------------------------------------------------------------
 
     /**
-     * Gets the WebGL canvas.
+     * Gets the viewer's WebGL canvas.
      *
      * @returns {HTMLCanvasElement}
      */
@@ -112,10 +116,9 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Returns the viewer's HTML overlay element, which overlays the canvas.
+     * Returns the HTML DIV element that overlays the WebGL canvas.
      *
-     * This element exists to catch input events over the canvas, while allowing
-     * the HTML elements for annotations (etc) to avoid getting those events.
+     * This overlay is for catching mouse navigation events.
      *
      * @returns {HTMLDivElement}
      */
@@ -123,24 +126,17 @@ xeometry.Viewer = function (cfg) {
         return scene.canvas.overlay;
     };
 
+
     /**
-     * Loads a model into the viewer.
-     *
-     * Also assigns the model an ID, which gets prefixed to the IDs of the model's objects.
-     *
-     * @param {String} id ID to assign to the model.
-     * @param {String|Object} src If the viewer was configured with a loadModel callback, then this should be
-     * ID with which to get an embedded glTF JSON file through the loader, otherwise it should be a path a glTF file.
-     * @param {Function} [ok] Callback fired when model loaded.
-     */
-    /**
-     * Loads a model into the viewer.
-     *
-     * Also assigns the model an ID, which gets prefixed to the IDs of the model's objects.
-     *
-     * @param {String} id ID to assign to the model.
-     * @param {String || Object} src Locates the model.
-     * @param {Function} [ok] Callback fired when model loaded.
+     Loads a model into the viewer.
+
+     Also assigns the model an ID, which gets prefixed to the IDs of its objects.
+
+     @param {String} id ID to assign to the model.
+     @param {String} src Locates the model. This could be a path to a file or an ID within a database.
+     @param {Function} [ok] Callback fired when model loaded.
+     @example
+     viewer.loadModel("house", "models/gltf/vianney_house_2/scene.gltf", function () {..});
      */
     this.loadModel = function (id, src, ok) {
         var isFilePath = xeogl._isString(src);
@@ -220,8 +216,9 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the IDs of the models in the viewer.
+     * Gets the IDs of the models currently in the viewer.
      *
+     * @see loadModel
      * @return {String[]} IDs of the models.
      */
     this.getModels = function () {
@@ -231,7 +228,9 @@ xeometry.Viewer = function (cfg) {
     /**
      * Gets the source of a model.
      *
-     * @param {String|String[]} id ID of a model or a type.
+     * This is the ````src```` parameter that was given to {@link #loadModel}.
+     *
+     * @param {String} id ID of the model.
      * @return {String} Model source.
      */
     this.getModelSrc = function (id) {
@@ -246,7 +245,7 @@ xeometry.Viewer = function (cfg) {
     /**
      * Gets the ID of an object's model
      *
-     * @param {String} id ID of an object.
+     * @param {String} id ID of the object.
      * @return {String} ID of the object's model.
      */
     this.getModel = function (id) {
@@ -259,12 +258,25 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the IDs of the objects within a model or a type.
+     * Gets the IDs of objects belonging to the given models and/or types.
      *
      * Returns the IDs of all objects in the viewer when no arguments are given.
      *
-     * @param {String|String[]} id ID of a model or a type.
+     * @param {String|String[]} [id] ID(s) of model(s) and/or a type(s).
      * @return {String[]} IDs of the objects.
+     * @example
+     *
+     * // Get all objects currently in the viewer
+     * var allObjects = viewer.getObjects();
+     *
+     * // Get IDs of all the objects in the house model
+     * var houseObjects = viewer.getObjects("house");
+     *
+     * // Get IDs of objects in two models
+     * var sawAndHouseObjects = viewer.getObjects(["saw", "house"]);
+     *
+     * // Get IDs of objects in the house model and all objects in viewer that are IFC cable fitting and carriers
+     * var houseCableFittings = viewer.getObjects("house", "IfcCableFitting", "IfcCableCarrierFitting"]);
      */
     this.getObjects = function (id) {
         if (id === undefined || id === null) {
@@ -311,7 +323,9 @@ xeometry.Viewer = function (cfg) {
     /**
      * Unloads a model.
      *
+     * @see {@link #loadModel}
      * @param {String} id ID of the model.
+     * @example viewer.unloadModel("house");
      */
     this.unloadModel = function (id) {
         var model = models[id];
@@ -352,7 +366,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Unloads all models, objects, annotations and clipping planes.
+     * Unloads all models, annotations and clipping planes.
      */
     this.clear = function () {
         for (var id in models) {
@@ -364,10 +378,13 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Assigns a type to the given object(s).
-     *
-     * @param {String} id ID of an object or model. When a model ID is given, the type will be assigned to all the model's objects.
-     * @param {String} type The type.
+     Assigns a type to the given object.
+
+     @param {String} id ID of an object.
+     @param {String} type The type.
+     @returns {Viewer} this
+     @example
+     viewer.setType("saw#1.1", "cover");
      */
     this.setType = function (id, type) {
         type = type || "DEFAULT";
@@ -401,6 +418,8 @@ xeometry.Viewer = function (cfg) {
      *
      * @param {String} id ID of the object.
      * @returns {String} The type of the object.
+     * @example
+     * var type = viewer.getType("saw#1.1");
      */
     this.getType = function (id) {
         var object = objects[id];
@@ -414,7 +433,7 @@ xeometry.Viewer = function (cfg) {
     /**
      * Gets all types currently in the viewer.
      *
-     * @returns {String} The types in the viewer.
+     * @return {String[]} The types in the viewer.
      */
     this.getTypes = function () {
         return Object.keys(types);
@@ -432,6 +451,8 @@ xeometry.Viewer = function (cfg) {
      * @param {String} id ID of the object.
      * @returns {String} The primitive type. Possible values are 'points', 'lines', 'line-loop',
      * 'line-strip', 'triangles', 'triangle-strip' and 'triangle-fan'.
+     * @example
+     * var prim = viewer.getPrimitive("saw#1.1");
      */
     this.getPrimitive = function (id) {
         var object = objects[id];
@@ -442,15 +463,17 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the geometry vertex positions of an object.
+     * Gets the World-space geometry vertex positions of an object.
      *
      * @param {String} id ID of the object.
      * @returns {Float32Array} The vertex positions.
+     * @example
+     * var positions = viewer.getPositions("saw#1.1");
      */
-    this.getPositions = function (id) { // TODO: Transform to World-space
+    this.getPositions = function (id) {
         var object = objects[id];
         if (object) {
-            return object.geometry.positions;
+            return object.positions;
         }
         error("Object not found: " + id);
     };
@@ -460,6 +483,7 @@ xeometry.Viewer = function (cfg) {
      *
      * @param {String} id ID of the object.
      * @returns {Int32Array} The indices.
+     * var indices = viewer.getIndices("saw#1.1");
      */
     this.getIndices = function (id) {
         var object = objects[id];
@@ -480,6 +504,9 @@ xeometry.Viewer = function (cfg) {
      *
      * @param {String} id ID of a model or object.
      * @param {[Number, Number, Number]} xyz Scale factors for the X, Y and Z axis.
+     * @example
+     * viewer.setScale("saw", [1.5, 1.5, 1.5]);
+     * viewer.setScale("saw#1.1", [0.5, 0.5, 0.5]);
      */
     this.setScale = function (id, xyz) {
         var scale = scales[id];
@@ -722,7 +749,10 @@ xeometry.Viewer = function (cfg) {
      *
      * Shows all objects in the viewer when no arguments are given.
      *
-     * @param {String|String[]} ids IDs of model(s) and/or object(s). Shows all objects by default.
+     * @example viewer.show(); // Show all objects in the viewer
+     * @param {String|String[]} [ids] IDs of model(s) and/or object(s).
+     * @example viewer.show(["saw", "house"]); // Show all objects in models "saw" and "house"
+     * @example viewer.show(["saw#0.1", "saw#0.2", "house"]); // Show two objects in model "saw", plus all objects in model "house"
      */
     this.show = function (ids) {
         setVisible(ids, true);
@@ -1692,8 +1722,7 @@ xeometry.Viewer = function (cfg) {
      *
      * @param {[Number, Number, Number]} origin World-space ray origin.
      * @param {[Number, Number, Number]} dir World-space ray direction vector.
-     * @returns {{id: *, worldPos: *, primIndex: (*|number), bary: *}} If object found, the ID of object, World-space
-     * surface intersection, primitive index and barycentric coordinates.
+     * @returns {{id: String, worldPos: [number,number,number], primIndex:number, bary: [number,number,number]}} If object found, the ID of object, World-space 3D surface intersection, primitive index and barycentric coordinates.
      */
     this.rayCastSurface = function (origin, dir) {
         var hit = scene.pick({origin: origin, direction: dir, pickSurface: true});
@@ -1711,7 +1740,7 @@ xeometry.Viewer = function (cfg) {
      * Finds the closest object at the given canvas position.
      *
      * @param {[Number, Number]} canvasPos Canvas position.
-     * @returns {{id: *}}
+     * @returns {{id: String}}
      */
     this.pickObject = function (canvasPos) {
         var hit = scene.pick({canvasPos: canvasPos, pickSurface: false});
@@ -1725,7 +1754,7 @@ xeometry.Viewer = function (cfg) {
      * object's surface coordinates at that position.
      *
      * @param {[Number, Number]} canvasPos Canvas position.
-     * @returns {{id: *, worldPos: *, primIndex: (*|number), bary: *}} If object found, the ID of object, World-space surface intersection, primitive index and barycentric coordinates.
+     * @returns {{id: String, worldPos: [number,number,number] primIndex:number, bary: [number,number,number]}} If object found, the ID of object, World-space surface 3D intersection, primitive index and barycentric coordinates.
      */
     this.pickSurface = function (canvasPos) {
         var hit = scene.pick({canvasPos: canvasPos, pickSurface: true});
@@ -2185,7 +2214,7 @@ xeometry.Viewer = function (cfg) {
      * <li>transformations of the models,</li>
      * <li>transformations and visibilities of their objects, and</li>
      * <li>the current camera position.</li>
-     * <ul>
+     * </ul>
      *
      * The viewer can then be restored to the bookmark at any time using #setBookmark().
      *
