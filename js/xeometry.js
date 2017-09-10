@@ -80,7 +80,7 @@ xeometry.Viewer = function (cfg) {
     //----------------------------------------------------------------------------------------------------
 
     /**
-     * Schedules a task for the viewer to run at the next frame.
+     * Schedules an asynchronous task for the viewer to run at the next opportunity.
      *
      * Internally, this pushes the task to a FIFO queue. Within each frame interval, the viewer processes the queue
      * for a certain period of time, popping tasks and running them. After each frame interval, tasks that did not
@@ -105,6 +105,8 @@ xeometry.Viewer = function (cfg) {
     //----------------------------------------------------------------------------------------------------
     // Models
     //----------------------------------------------------------------------------------------------------
+
+    /** @module models */
 
     /**
      * Gets the viewer's WebGL canvas.
@@ -135,8 +137,9 @@ xeometry.Viewer = function (cfg) {
      @param {String} id ID to assign to the model.
      @param {String} src Locates the model. This could be a path to a file or an ID within a database.
      @param {Function} [ok] Callback fired when model loaded.
+     @return {Viewer} this
      @example
-     viewer.loadModel("house", "models/gltf/vianney_house_2/scene.gltf", function () {..});
+     viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF/ReciprocatingSaw.gltf", function () {..});
      */
     this.loadModel = function (id, src, ok) {
         var isFilePath = xeogl._isString(src);
@@ -219,6 +222,7 @@ xeometry.Viewer = function (cfg) {
      * Gets the IDs of the models currently in the viewer.
      *
      * @see loadModel
+     * @module models
      * @return {String[]} IDs of the models.
      */
     this.getModels = function () {
@@ -269,14 +273,14 @@ xeometry.Viewer = function (cfg) {
      * // Get all objects currently in the viewer
      * var allObjects = viewer.getObjects();
      *
-     * // Get IDs of all the objects in the house model
-     * var houseObjects = viewer.getObjects("house");
+     * // Get IDs of all the objects in the gearbox model
+     * var gearboxObjects = viewer.getObjects("gearbox");
      *
      * // Get IDs of objects in two models
-     * var sawAndHouseObjects = viewer.getObjects(["saw", "house"]);
+     * var sawAndgearboxObjects = viewer.getObjects(["saw", "gearbox"]);
      *
-     * // Get IDs of objects in the house model and all objects in viewer that are IFC cable fitting and carriers
-     * var houseCableFittings = viewer.getObjects("house", "IfcCableFitting", "IfcCableCarrierFitting"]);
+     * // Get IDs of objects in the gearbox model and all objects in viewer that are IFC cable fitting and carriers
+     * var gearboxCableFittings = viewer.getObjects("gearbox", "IfcCableFitting", "IfcCableCarrierFitting"]);
      */
     this.getObjects = function (id) {
         if (id === undefined || id === null) {
@@ -325,7 +329,8 @@ xeometry.Viewer = function (cfg) {
      *
      * @see {@link #loadModel}
      * @param {String} id ID of the model.
-     * @example viewer.unloadModel("house");
+     * @return {Viewer} this
+     * @example viewer.unloadModel("saw");
      */
     this.unloadModel = function (id) {
         var model = models[id];
@@ -367,6 +372,7 @@ xeometry.Viewer = function (cfg) {
 
     /**
      * Unloads all models, annotations and clipping planes.
+     * @return {Viewer} this
      */
     this.clear = function () {
         for (var id in models) {
@@ -379,6 +385,8 @@ xeometry.Viewer = function (cfg) {
 
     /**
      Assigns a type to the given object.
+
+     When using xeometry as an IFC viewer, this would be an IFC type.
 
      @param {String} id ID of an object.
      @param {String} type The type.
@@ -483,6 +491,7 @@ xeometry.Viewer = function (cfg) {
      *
      * @param {String} id ID of the object.
      * @returns {Int32Array} The indices.
+     * @example
      * var indices = viewer.getIndices("saw#1.1");
      */
     this.getIndices = function (id) {
@@ -500,10 +509,11 @@ xeometry.Viewer = function (cfg) {
     /**
      * Sets the scale of a model or object.
      *
-     * An object's scale is applied relative to its model's scale.
+     * An object's scale is relative to its model's scale.
      *
      * @param {String} id ID of a model or object.
      * @param {[Number, Number, Number]} xyz Scale factors for the X, Y and Z axis.
+     * @returns {Viewer} this
      * @example
      * viewer.setScale("saw", [1.5, 1.5, 1.5]);
      * viewer.setScale("saw#1.1", [0.5, 0.5, 0.5]);
@@ -525,10 +535,15 @@ xeometry.Viewer = function (cfg) {
     /**
      * Gets the scale of a model or object.
      *
-     * An object's scale is applied relative to its model's scale.
+     * An object's scale is relative to its model's scale.
+     *
+     * Unless previously set with {@link #setScale}, this will be ````[1.0, 1.0, 1.0]```` by default.
      *
      * @param {String} id ID of a model or object.
      * @return {[Number, Number, Number]} scale Scale factors for the X, Y and Z axis.
+     * @example
+     * var sawScale = viewer.getScale("saw");
+     * var sawCoverScale = viewer.getScale("saw#1.1");
      */
     this.getScale = function (id) {
         var scale = scales[id];
@@ -546,10 +561,14 @@ xeometry.Viewer = function (cfg) {
     /**
      * Sets the rotation of a model or object.
      *
-     * An object's rotation is applied relative to its model's scale.
+     * An object's rotation is relative to its model's rotation.
      *
      * @param {String} id ID of a model or object.
      * @param {[Number, Number, Number]} xyz Rotation angles for the X, Y and Z axis.
+     * @returns {Viewer} this
+     * @example
+     * viewer.setRotate("saw", [90, 0, 0]);
+     * viewer.setRotate("saw#1.1", [0, 35, 0]);
      */
     this.setRotate = (function () {
         var quat = math.vec4();
@@ -574,10 +593,14 @@ xeometry.Viewer = function (cfg) {
     /**
      * Gets the rotation of a model or object.
      *
-     * An object's rotation is applied relative to its model's scale.
+     * An object's rotation is relative to its model's rotation.
+     *
+     * Unless previously set with {@link #setRotate}, this will be ````[0.0, 0.0, 0.0]```` by default.
      *
      * @param {String} id ID of a model or object.
      * @return {[Number, Number, Number]} Rotation angles for the X, Y and Z axis.
+     * var sawRotate = viewer.getRotate("saw");
+     * var sawCoverRotate = viewer.getRotate("saw#1.1");
      */
     this.getRotate = function (id) {
         var component = getTransformableComponent(id);
@@ -592,10 +615,14 @@ xeometry.Viewer = function (cfg) {
     /**
      * Sets the translation of a model or object.
      *
-     * An object's translation is applied relative to its model's scale.
+     * An object's translation is relative to its model's translation.
      *
      * @param {String} id ID of a model or object.
      * @param {[Number, Number, Number]} xyz World-space translation vector.
+     * @returns {Viewer} this
+     * @example
+     * viewer.setTranslate("saw", [100, 30, 0]);
+     * viewer.setTranslate("saw#1.1", [50, 30, 0]);
      */
     this.setTranslate = function (id, xyz) {
         var translation = translations[id];
@@ -614,10 +641,14 @@ xeometry.Viewer = function (cfg) {
     /**
      * Increments the translation of a model or object.
      *
-     * An object's translation is applied relative to its model's translation.
+     * An object's translation is relative to its model's translation.
      *
      * @param {String} id ID of a model or object.
      * @param {[Number, Number, Number]} xyz World-space translation vector.
+     * @returns {Viewer} this
+     * @example
+     * viewer.addTranslate("saw", [10,0,0]);
+     * viewer.addTranslate("saw#1.1", [10,0,0]);
      */
     this.addTranslate = function (id, xyz) {
         var translation = translations[id];
@@ -637,10 +668,12 @@ xeometry.Viewer = function (cfg) {
     /**
      * Gets the translation of a model or object.
      *
-     * An object's translation is applied relative to its model's translation.
+     * An object's translation is relative to its model's translation.
      *
      * @param {String} id ID of a model or object.
      * @return {[Number, Number, Number]} World-space translation vector.
+     * var sawTranslate = viewer.getTranslate("saw");
+     * var sawCoverTranslate = viewer.getTranslate("saw#1.1");
      */
     this.getTranslate = function (id) {
         var translation = translations[id];
@@ -751,8 +784,8 @@ xeometry.Viewer = function (cfg) {
      *
      * @example viewer.show(); // Show all objects in the viewer
      * @param {String|String[]} [ids] IDs of model(s) and/or object(s).
-     * @example viewer.show(["saw", "house"]); // Show all objects in models "saw" and "house"
-     * @example viewer.show(["saw#0.1", "saw#0.2", "house"]); // Show two objects in model "saw", plus all objects in model "house"
+     * @example viewer.show(["saw", "gearbox"]); // Show all objects in models "saw" and "gearbox"
+     * @example viewer.show(["saw#0.1", "saw#0.2", "gearbox"]); // Show two objects in model "saw", plus all objects in model "gearbox"
      */
     this.show = function (ids) {
         setVisible(ids, true);
