@@ -384,15 +384,15 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     Assigns a type to the given object.
-
-     When using xeometry as an IFC viewer, this would be an IFC type.
-
-     @param {String} id ID of an object.
-     @param {String} type The type.
-     @returns {Viewer} this
-     @example
-     viewer.setType("saw#1.1", "cover");
+     * Assigns a type to the given object.
+     *
+     * A type can be anything, but when using xeometry as an IFC viewer, it's typically going to be an IFC type.
+     *
+     * @param {String} id ID of an object.
+     * @param {String} type The type.
+     * @returns {Viewer} this
+     * @example
+     * viewer.setType("saw#1.1", "cover");
      */
     this.setType = function (id, type) {
         type = type || "DEFAULT";
@@ -564,7 +564,7 @@ xeometry.Viewer = function (cfg) {
      * An object's rotation is relative to its model's rotation.
      *
      * @param {String} id ID of a model or object.
-     * @param {[Number, Number, Number]} xyz Rotation angles for the X, Y and Z axis.
+     * @param {[Number, Number, Number]} xyz Rotation angles, in degrees, for the X, Y and Z axis.
      * @returns {Viewer} this
      * @example
      * viewer.setRotate("saw", [90, 0, 0]);
@@ -598,7 +598,7 @@ xeometry.Viewer = function (cfg) {
      * Unless previously set with {@link #setRotate}, this will be ````[0.0, 0.0, 0.0]```` by default.
      *
      * @param {String} id ID of a model or object.
-     * @return {[Number, Number, Number]} Rotation angles for the X, Y and Z axis.
+     * @return {[Number, Number, Number]} Rotation angles, in degrees, for the X, Y and Z axis.
      * var sawRotate = viewer.getRotate("saw");
      * var sawCoverRotate = viewer.getRotate("saw#1.1");
      */
@@ -784,8 +784,10 @@ xeometry.Viewer = function (cfg) {
      *
      * @example viewer.show(); // Show all objects in the viewer
      * @param {String|String[]} [ids] IDs of model(s) and/or object(s).
-     * @example viewer.show(["saw", "gearbox"]); // Show all objects in models "saw" and "gearbox"
-     * @example viewer.show(["saw#0.1", "saw#0.2", "gearbox"]); // Show two objects in model "saw", plus all objects in model "gearbox"
+     * @returns {Viewer} this
+     * @example
+     * viewer.show(["saw", "gearbox"]); // Show all objects in models "saw" and "gearbox"
+     * viewer.show(["saw#0.1", "saw#0.2", "gearbox"]); // Show two objects in model "saw", plus all objects in model "gearbox"
      */
     this.show = function (ids) {
         setVisible(ids, true);
@@ -798,6 +800,10 @@ xeometry.Viewer = function (cfg) {
      * Hides all objects in the viewer when no arguments are given.
      *
      * @param {String|String[]} ids IDs of model(s) and/or object(s).
+     * @returns {Viewer} this
+     * @example
+     * viewer.hide(["saw", "gearbox"]); // Hide all objects in models "saw" and "gearbox"
+     * viewer.hide(["saw#0.1", "saw#0.2", "gearbox"]); // Hide two objects in model "saw", plus all objects in model "gearbox"
      */
     this.hide = function (ids) {
         setVisible(ids, false);
@@ -847,6 +853,11 @@ xeometry.Viewer = function (cfg) {
      *
      * @param {String|String[]} ids IDs of models, objects or types. Shows all objects by default.
      * @param {Number} opacity Degree of opacity in range [0..1].
+     * @returns {Viewer} this
+     * @example
+     * // Create an X-ray view of two objects in the "saw" model
+     * viewer.setOpacity("saw", 0.4);
+     * viewer.setOpacity(["saw#0.1", "saw#0.2"], 1.0);
      */
     this.setOpacity = function (ids, opacity) {
         if (opacity === null || opacity === undefined) {
@@ -892,6 +903,8 @@ xeometry.Viewer = function (cfg) {
      *
      * @param {String|String} id ID of an object.
      * @return {Number} Degree of opacity in range [0..1].
+     * @example
+     * var sawObjectOpacity = viewer.getOpacity("saw#0.1");
      */
     this.getOpacity = function (id) {
         var object = objects[id];
@@ -911,6 +924,10 @@ xeometry.Viewer = function (cfg) {
      *
      * @param {String|String[]} ids IDs of models, objects or types. Applies to all objects by default.
      * @param {[Number, Number, Number]} color The RGB color, with each element in range [0..1].
+     * @returns {Viewer} this
+     * @example
+     * viewer.setColor("saw", [1,0,0]); // Set all objects in saw model red
+     * viewer.setColor(["saw#0.1", "saw#0.2"], [0,1,0]); // Set two objects in saw model green
      */
     this.setColor = function (ids, color) {
         if (color === null || color === undefined) {
@@ -956,10 +973,12 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the albedo color of an object.
+     * Gets the color of an object.
      *
      * @param {String|String} id ID of an object.
      * @return {[Number, Number, Number]} color The RGB color of the object, with each element in range [0..1].
+     * @example
+     * var objectColor = viewer.getColor("saw#1.1");
      */
     this.getColor = function (id) {
         var object = objects[id];
@@ -977,8 +996,11 @@ xeometry.Viewer = function (cfg) {
     //----------------------------------------------------------------------------------------------------
 
     /**
-     * Sets the thickness of outlines around objects.
+     * Sets the current outline thickness.
      * @param {Number} thickness Thickness in pixels.
+     * @returns {Viewer} this
+     * @example
+     * viewer.setOutlineThickness(3);
      */
     this.setOutlineThickness = function (thickness) {
         scene.outline.thickness = thickness;
@@ -986,7 +1008,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the thickness of outlines around objects.
+     * Gets the current outline thickness.
      * @return {Number} Thickness in pixels.
      */
     this.getOutlineThickness = function () {
@@ -994,8 +1016,11 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Sets the color of outlines around objects.
+     * Sets the current outline color.
      * @param {[Number, Number, Number]} color RGB color as a value per channel, in range [0..1].
+     * @returns {Viewer} this
+     * @example
+     * viewer.setOutlineColor([1,0,0]);
      */
     this.setOutlineColor = function (color) {
         scene.outline.color = color;
@@ -1003,7 +1028,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Returns the color of outlines around objects.
+     * Returns the current outline color.
      * @return {[Number, Number, Number]} RGB color as a value per channel, in range [0..1].
      */
     this.getOutlineColor = function () {
@@ -1011,11 +1036,16 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Shows outline around model(s) and/or object(s).
+     * Shows outline around model(s), object(s) or type(s).
      *
      * Outlines all objects in the viewer when no arguments are given.
      *
      * @param {String|String[]} ids IDs of model(s) and/or object(s). Outlines all objects by default.
+     * @returns {Viewer} this
+     * @example
+     * viewer.showOutline(); // Show outline around all objects in viewer
+     * viewer.showOutline("saw"); // Show outline around all objects in saw model
+     * viewer.showOutline(["saw#0.1", "saw#0.2"]); // Show outline around two objects in saw model
      */
     this.showOutline = function (ids) {
         setOutline(ids, true);
@@ -1023,11 +1053,16 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Shows outline around model(s) and/or object(s).
+     * Hides outline around model(s), object(s) or type(s).
      *
      * Hides all outlines in the viewer when no arguments are given.
      *
      * @param {String|String[]} ids IDs of model(s) and/or object(s).
+     * @returns {Viewer} this
+     * @example
+     * viewer.hideOutline(); // Hide outline around all objects in viewer
+     * viewer.hideOutline("saw"); // Hide outline around all objects in saw model
+     * viewer.hideOutline(["saw#0.1", "saw#0.2"]); // Hide outline around two objects in saw model
      */
     this.hideOutline = function (ids) {
         setOutline(ids, false);
@@ -1074,12 +1109,18 @@ xeometry.Viewer = function (cfg) {
     //----------------------------------------------------------------------------------------------------
 
     /**
-     * Gets the center point of the given models and/or objects.
+     * Gets the World-space center point of the given model(s), object(s) or type(s).
      *
      * When no arguments are given, returns the collective center of all objects in the viewer.
      *
      * @param {String|String[]} target IDs of models and/or objects.
      * @returns {[Number, Number, Number]} The World-space center point.
+     * @example
+     * viewer.getCenter(); // Gets collective center of all objects in the viewer
+     * viewer.getCenter("saw"); // Gets collective center of all objects in saw model
+     * viewer.getCenter(["saw", "gearbox"]); // Gets collective center of all objects in saw and gearbox models
+     * viewer.getCenter("saw#0.1"); // Get center of an object in the saw model
+     * viewer.getCenter(["saw#0.1", "saw#0.2"]); // Get collective center of two objects in saw model
      */
     this.getCenter = function (target) {
         var aabb = this.getAABB(target);
@@ -1091,14 +1132,18 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the boundary of the given models and/or objects.
+     * Gets the axis-aligned World-space boundary of the given model(s), object(s) or type(s).
      *
      * When no arguments are given, returns the collective boundary of all objects in the viewer.
      *
-     * When you specify IDs of annotations, then the boundaries of the annotations' objects are considered.
-     *
      * @param {String|String[]} target IDs of models, objects and/or annotations
      * @returns {[Number, Number, Number, Number, Number, Number]} An axis-aligned World-space bounding box, given as elements ````[xmin, ymin, zmin, xmax, ymax, zmax]````.
+     * @example
+     * viewer.getAABB(); // Gets collective boundary of all objects in the viewer
+     * viewer.getAABB("saw"); // Gets collective boundary of all objects in saw model
+     * viewer.getAABB(["saw", "gearbox"]); // Gets collective boundary of all objects in saw and gearbox models
+     * viewer.getAABB("saw#0.1"); // Get boundary of an object in the saw model
+     * viewer.getAABB(["saw#0.1", "saw#0.2"]); // Get collective boundary of two objects in saw model
      */
     this.getAABB = function (target) {
         if (arguments.length === 0 || target === undefined) {
@@ -1209,9 +1254,9 @@ xeometry.Viewer = function (cfg) {
     //----------------------------------------------------------------------------------------------------
 
     /**
-     * Sets the Field-of-view angle for perspective projection.
-     *
+     * Sets the field-of-view (FOV) angle for perspective projection.
      * @param {Number} fov Field-of-view angle, in degrees, on Y-axis.
+     * @returns {Viewer} this
      */
     this.setPerspectiveFOV = function (fov) {
         projections.perspective.fovy = fov;
@@ -1219,8 +1264,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the Field-of-view angle for perspective projection.
-     *
+     * Gets the field-of-view (FOV) angle for perspective projection.
      * @return  {Number} Field-of-view angle, in degrees, on Y-axis.
      */
     this.getPerspectiveFOV = function () {
@@ -1229,8 +1273,8 @@ xeometry.Viewer = function (cfg) {
 
     /**
      * Sets the position of the near plane on the View-space Z-axis for perspective projection.
-     *
      * @param {Number} near Position of the near plane on the View-space Z-axis.
+     * @returns {Viewer} this
      */
     this.setPerspectiveNear = function (near) {
         projections.perspective.near = near;
@@ -1238,8 +1282,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * gets the position of the near plane on the View-space Z-axis for perspective projection.
-     *
+     * Gets the position of the near plane on the View-space Z-axis for perspective projection.
      * @return  {Number} Position of the near clipping plane on the View-space Z-axis.
      */
     this.getPerspectiveNear = function () {
@@ -1248,8 +1291,8 @@ xeometry.Viewer = function (cfg) {
 
     /**
      * Sets the position of the far clipping plane on the View-space Z-axis for perspective projection.
-     *
      * @param {Number} far Position of the far clipping plane on the View-space Z-axis.
+     * @returns {Viewer} this
      */
     this.setPerspectiveFar = function (far) {
         projections.perspective.far = far;
@@ -1258,7 +1301,6 @@ xeometry.Viewer = function (cfg) {
 
     /**
      * Gets the position of the far clipping plane on the View-space Z-axis for perspective projection.
-     *
      * @return  {Number} Position of the far clipping plane on the View-space Z-axis.
      */
     this.getPerspectiveFar = function () {
@@ -1268,7 +1310,10 @@ xeometry.Viewer = function (cfg) {
     /**
      * Sets the orthographic projection boundary scale on X and Y axis.
      *
+     * This specifies how many units fit within the current orthographic boundary extents.
+     *
      * @param {Number} scale The scale factor.
+     * @returns {Viewer} this
      */
     this.setOrthoScale = function (scale) {
         projections.orthographic.scale = scale;
@@ -1276,7 +1321,9 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Sets the orthographic projection boundary scale.
+     * Gets the orthographic projection boundary scale.
+     *
+     * This specifies how many units fit within the current orthographic boundary extents.
      *
      * @return  {Number} The scale factor.
      */
@@ -1285,9 +1332,10 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Sets the position of the near plane on the View-space Z-axis for ortho projection.
+     * Sets the position of the near plane on the View-space Z-axis for orthographic projection.
      *
      * @param {Number} near Position of the near plane on the View-space Z-axis.
+     * @returns {Viewer} this
      */
     this.setOrthoNear = function (near) {
         projections.orthographic.near = near;
@@ -1295,7 +1343,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * gets the position of the near plane on the View-space Z-axis for ortho projection.
+     * Gets the position of the near plane on the View-space Z-axis for orthographic projection.
      *
      * @return  {Number} Position of the near clipping plane on the View-space Z-axis.
      */
@@ -1304,16 +1352,17 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Sets the position of the far clipping plane on the View-space Z-axis for ortho projection.
+     * Sets the position of the far clipping plane on the View-space Z-axis for orthographic projection.
      *
      * @param {Number} far Position of the far clipping plane on the View-space Z-axis.
+     * @returns {Viewer} this
      */
     this.setOrthoFar = function (far) {
         projections.orthographic.far = far;
     };
 
     /**
-     * Gets the position of the far clipping plane on the View-space Z-axis for ortho projection.
+     * Gets the position of the far clipping plane on the View-space Z-axis for orthographic projection.
      *
      * @return  {Number} Position of the far clipping plane on the View-space Z-axis.
      */
@@ -1325,6 +1374,7 @@ xeometry.Viewer = function (cfg) {
      * Sets the camera's current projection type.
      *
      * @param {String} type Either "perspective" or "ortho".
+     * @returns {Viewer} this
      */
     this.setProjection = function (type) {
         if (projectionType === type) {
@@ -1353,6 +1403,7 @@ xeometry.Viewer = function (cfg) {
      * Sets the camera viewpoint.
      *
      * @param {[Number, Number, Number]} eye The new viewpoint.
+     * @returns {Viewer} this
      */
     this.setEye = function (eye) {
         view.eye = eye;
@@ -1372,6 +1423,7 @@ xeometry.Viewer = function (cfg) {
      * Sets the camera's point-of-interest.
      *
      * @param {[Number, Number, Number]} look The new point-of-interest.
+     * @returns {Viewer} this
      */
     this.setLook = function (look) {
         view.look = look;
@@ -1391,6 +1443,7 @@ xeometry.Viewer = function (cfg) {
      * Sets the camera's "up" direction.
      *
      * @param {[Number, Number, Number]} up The new up direction.
+     * @returns {Viewer} this
      */
     this.setUp = function (up) {
         view.up = up;
@@ -1412,6 +1465,7 @@ xeometry.Viewer = function (cfg) {
      * @param {[Number, Number, Number]} eye Camera's new viewpoint.
      * @param {[Number, Number, Number]} look Camera's new point-of-interest.
      * @param {[Number, Number, Number]} up Camera's new up direction.
+     * @returns {Viewer} this
      */
     this.setEyeLookUp = function (eye, look, up) {
         view.eye = eye;
@@ -1423,6 +1477,7 @@ xeometry.Viewer = function (cfg) {
 
     /**
      * Locks the camera's vertical rotation axis to the World-space Y axis.
+     * @returns {Viewer} this
      */
     this.lockGimbalY = function () {
         view.gimbalLockY = true;
@@ -1431,6 +1486,7 @@ xeometry.Viewer = function (cfg) {
 
     /**
      * Allows camera yaw rotation around the "up" vector.
+     * @returns {Viewer} this
      */
     this.unlockGimbalY = function () {
         view.gimbalLockY = false;
@@ -1441,6 +1497,7 @@ xeometry.Viewer = function (cfg) {
      * Rotates the camera's 'eye' position about its 'look' position, around the 'up' vector.
      *
      * @param {Number} angle Angle of rotation in degrees
+     * @returns {Viewer} this
      */
     this.rotateEyeY = function (angle) {
         view.rotateEyeY(angle);
@@ -1451,6 +1508,7 @@ xeometry.Viewer = function (cfg) {
      * Rotates the camera's 'eye' position about its 'look' position, pivoting around the X-axis.
      *
      * @param {Number} angle Angle of rotation in degrees
+     * @returns {Viewer} this
      */
     this.rotateEyeX = function (angle) {
         view.rotateEyeX(angle);
@@ -1463,6 +1521,7 @@ xeometry.Viewer = function (cfg) {
      * <p>Applies constraints added with {@link #addConstraint}.</p>
      *
      * @param {Number} angle Angle of rotation in degrees
+     * @returns {Viewer} this
      */
     this.rotateLookY = function (angle) {
         view.rotateLookY(angle);
@@ -1473,6 +1532,7 @@ xeometry.Viewer = function (cfg) {
      * Rotates the camera's 'eye' position about its 'look' position, pivoting around the X-axis.
      *
      * @param {Number} angle Angle of rotation in degrees
+     * @returns {Viewer} this
      */
     this.rotateLookX = function (angle) {
         view.rotateLookX(angle);
@@ -1481,7 +1541,8 @@ xeometry.Viewer = function (cfg) {
 
     /**
      * Pans the camera along its local X, Y or Z axis.
-     * @param pan The pan vector
+     * @param {[Number, Number, Number]} pan The pan vector
+     * @returns {Viewer} this
      */
     this.pan = function (pan) {
         view.pan(pan);
@@ -1490,7 +1551,8 @@ xeometry.Viewer = function (cfg) {
 
     /**
      * Increments/decrements the camera's zoom distance, ie. distance between eye and look.
-     * @param delta
+     * @param {Number} delta The zoom increment.
+     * @returns {Viewer} this
      */
     this.zoom = function (delta) {
         view.zoom(delta);
@@ -1503,6 +1565,7 @@ xeometry.Viewer = function (cfg) {
      * A value of zero (default) will cause the camera to instantly jump to each new target .
      *
      * @param {Number} value The new flight duration, in seconds.
+     * @returns {Viewer} this
      */
     this.setViewFitDuration = function (value) {
         cameraFlight.duration = value;
@@ -1528,6 +1591,7 @@ xeometry.Viewer = function (cfg) {
      * Default value is 45.
      *
      * @param {Number} value The new view-fit FOV angle, in degrees.
+     * @returns {Viewer} this
      */
     this.setViewFitFOV = function (value) {
         cameraFlight.fitFOV = value;
@@ -1551,7 +1615,8 @@ xeometry.Viewer = function (cfg) {
      * A boundary is an axis-aligned World-space bounding box, given as elements ````[xmin, ymin, zmin, xmax, ymax, zmax]````.
      *
      * @param {String|[]} target The elements to fit in view, given as either the ID of an annotation, model or object, a boundary, or an array containing mixture of IDs and boundaries.
-     * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
+     * @param {Function} [ok] Callback fired when camera has arrived at its target position.
+     * @returns {Viewer} this
      */
     this.viewFit = function (target, ok) {
         if (xeogl._isString(target)) {
@@ -1577,7 +1642,8 @@ xeometry.Viewer = function (cfg) {
      * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the +X axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
-     * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
+     * @param {Function} [ok] Callback fired when camera has arrived at its target position.
+     * @returns {Viewer} this
      */
     this.viewFitRight = function (target, ok) {
         viewFitAxis(target, 0, ok);
@@ -1588,7 +1654,8 @@ xeometry.Viewer = function (cfg) {
      * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the +Z axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
-     * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
+     * @param {Function} [ok] Callback fired when camera has arrived at its target position.
+     * @returns {Viewer} this
      */
     this.viewFitBack = function (target, ok) {
         viewFitAxis(target, 1, ok);
@@ -1599,7 +1666,8 @@ xeometry.Viewer = function (cfg) {
      * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the -X axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
-     * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
+     * @param {Function} [ok] Callback fired when camera has arrived at its target position.
+     * @returns {Viewer} this
      */
     this.viewFitLeft = function (target, ok) {
         viewFitAxis(target, 2, ok);
@@ -1610,7 +1678,8 @@ xeometry.Viewer = function (cfg) {
      * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the +X axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
-     * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
+     * @param {Function} [ok] Callback fired when camera has arrived at its target position.
+     * @returns {Viewer} this
      */
     this.viewFitFront = function (target, ok) {
         viewFitAxis(target, 3, ok);
@@ -1621,7 +1690,8 @@ xeometry.Viewer = function (cfg) {
      * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the -Y axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
-     * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
+     * @param {Function} [ok] Callback fired when camera has arrived at its target position.
+     * @returns {Viewer} this
      */
     this.viewFitTop = function (target, ok) {
         viewFitAxis(target, 4, ok);
@@ -1632,7 +1702,8 @@ xeometry.Viewer = function (cfg) {
      * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the +X axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
-     * @param {Function()} [ok] Callback fired when camera has arrived at its target position.
+     * @param {Function} [ok] Callback fired when camera has arrived at its target position.
+     * @returns {Viewer} this
      */
     this.viewFitBottom = function (target, ok) {
         viewFitAxis(target, 5, ok);
@@ -1702,11 +1773,6 @@ xeometry.Viewer = function (cfg) {
         };
     })();
 
-    this.zoom = function (zoom) {
-        view.zoom(zoom);
-        return this;
-    };
-
     /**
      * Rotates the camera's 'eye' position about its 'look' position, pivoting
      * about the camera's local horizontal axis, by the given increment on each frame.
@@ -1740,7 +1806,12 @@ xeometry.Viewer = function (cfg) {
      *
      * @param {[Number, Number, Number]} origin World-space ray origin.
      * @param {[Number, Number, Number]} dir World-space ray direction vector.
-     * @returns {{id: *}} If object found, the ID of the object.
+     * @returns {{id: String}} If object found, a hit record containing the ID of the object.
+     * @example
+     * var hit = viewer.rayCastObject([0,0,-5], [0,0,1]);
+     * if (hit) {
+     *      var objectId = hit.id;
+     * }
      */
     this.rayCastObject = function (origin, dir) {
         var hit = scene.pick({origin: origin, direction: dir, pickSurface: false});
@@ -1750,12 +1821,20 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the first object that intersects the given ray, along with the
-     * coordinates of the ray-surface intersection.
+     * Gets the first object that intersects the given ray, along with geometric information about
+     * the ray-object intersection.
      *
      * @param {[Number, Number, Number]} origin World-space ray origin.
      * @param {[Number, Number, Number]} dir World-space ray direction vector.
-     * @returns {{id: String, worldPos: [number,number,number], primIndex:number, bary: [number,number,number]}} If object found, the ID of object, World-space 3D surface intersection, primitive index and barycentric coordinates.
+     * @returns {{id: String, worldPos: [number,number,number], primIndex:number, bary: [number,number,number]}} If object found, a hit record containing the ID of object, World-space 3D surface intersection, primitive index and barycentric coordinates.
+     * @example
+     * var hit = viewer.rayCastSurface([0,0,-5], [0,0,1]);
+     * if (hit) {
+     *      var objectId = hit.id;
+     *      var primitive = hit.primitive;
+     *      var primIndex = hit.primIndex;
+     *      var bary = hit.bary;
+     * }
      */
     this.rayCastSurface = function (origin, dir) {
         var hit = scene.pick({origin: origin, direction: dir, pickSurface: true});
@@ -1770,10 +1849,17 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Finds the closest object at the given canvas position.
+     * Finds the closest object behind the given canvas coordinates.
+     *
+     * This is equivalent to firing a ray through the canvas, down the negative Z-axis, to find the first entity it hits.
      *
      * @param {[Number, Number]} canvasPos Canvas position.
-     * @returns {{id: String}}
+     * @returns {{id: String}} If object found, a hit record containing the ID of the object.
+     * @example
+     * var hit = viewer.pickObject([234, 567]);
+     * if (hit) {
+     *      var objectId = hit.id;
+     * }
      */
     this.pickObject = function (canvasPos) {
         var hit = scene.pick({canvasPos: canvasPos, pickSurface: false});
@@ -1783,11 +1869,19 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Finds the closest object at the given canvas position, plus the
-     * object's surface coordinates at that position.
+     * Gets the closest object behind the given canvas coordinates, along with geometric information about
+     * the point on the object's surface that lies right behind those canvas coordinates.
      *
      * @param {[Number, Number]} canvasPos Canvas position.
-     * @returns {{id: String, worldPos: [number,number,number] primIndex:number, bary: [number,number,number]}} If object found, the ID of object, World-space surface 3D intersection, primitive index and barycentric coordinates.
+     * @returns {{id: String, worldPos: [number,number,number], primIndex:number, bary: [number,number,number]}} If object found, a hit record containing the ID of object, World-space 3D surface intersection, primitive index and barycentric coordinates.
+     * @example
+     * var hit = viewer.pickSurface([234, 567]);
+     * if (hit) {
+     *      var objectId = hit.id;
+     *      var primitive = hit.primitive;
+     *      var primIndex = hit.primIndex;
+     *      var bary = hit.bary;
+     * }
      */
     this.pickSurface = function (canvasPos) {
         var hit = scene.pick({canvasPos: canvasPos, pickSurface: true});
@@ -2240,16 +2334,7 @@ xeometry.Viewer = function (cfg) {
     /**
      * Gets a JSON bookmark of the viewer's current state.
      *
-     * The bookmark will be a complete snapshot of the viewer's state, including:
-     *
-     * <ul>
-     * <li>which models are currently loaded,</li>
-     * <li>transformations of the models,</li>
-     * <li>transformations and visibilities of their objects, and</li>
-     * <li>the current camera position.</li>
-     * </ul>
-     *
-     * The viewer can then be restored to the bookmark at any time using #setBookmark().
+     * The viewer can then be restored to the bookmark at any time using {@link #setBookmark}.
      *
      * @return {Object} A JSON bookmark.
      */
@@ -2409,9 +2494,10 @@ xeometry.Viewer = function (cfg) {
      * Sets viewer state to the snapshot contained in given JSON bookmark.
      *
      * A bookmark is a complete snapshot of the viewer's state, which was
-     * captured earlier with #getBookmark().
+     * captured earlier with {@link #getBookmark}.
      *
      * @param {Object} bookmark JSON bookmark.
+     * @returns {Viewer} this
      */
     this.setBookmark = (function () {
 
@@ -2488,8 +2574,8 @@ xeometry.Viewer = function (cfg) {
     })();
 
     /**
-     * Gets a screenshot as a data URL.
-     * @return {String} An image in the data URI format.
+     * Gets a screenshot of the viewer canvas.
+     * @return {String} An image in data URI format.
      */
     this.getScreenshot = function (params) {
         params = params || {};
@@ -2502,6 +2588,7 @@ xeometry.Viewer = function (cfg) {
 
     /**
      * Clears and destroys this viewer.
+     * @returns {Viewer} this
      */
     this.destroy = function () {
         scene.off(onTick);
@@ -2516,6 +2603,7 @@ xeometry.Viewer = function (cfg) {
         scales = {};
         annotations = {};
         objectAnnotations = {};
+        return this;
     };
 
     function error(msg) {
