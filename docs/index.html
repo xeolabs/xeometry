@@ -936,7 +936,7 @@
   </div>
   
 
-  <p>A convenient API for visualizing glTF models on WebGL.</p>
+  <p>A convenient API for navigating, animating and querying 3D glTF models on WebGL.</p>
 
 
   <div class='pre p1 fill-light mt0'>new Viewer(cfg: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>?)</div>
@@ -996,7 +996,7 @@
                 </tr>
               
                 <tr>
-                  <td class='break-word'><span class='code bold'>cfg.contextAttr</span> <code class='quiet'><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">Function</a>?</code>
+                  <td class='break-word'><span class='code bold'>cfg.contextAttr</span> <code class='quiet'><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>?</code>
                   </td>
                   <td class='break-word'><span>WebGL context attributes
 </span></td>
@@ -6594,7 +6594,7 @@ about the camera's horizontal axis, by the given  increment on each frame.</p>
   </div>
   
 
-  <p>Gets the first object that intersects the given ray.</p>
+  <p>Gets the first object that intersects a World-space ray.</p>
 
 
   <div class='pre p1 fill-light mt0'>rayCastObject(origin: [<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>], dir: [<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>]): {id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>}</div>
@@ -6624,7 +6624,7 @@ about the camera's horizontal axis, by the given  increment on each frame.</p>
         <div class='space-bottom0'>
           <div>
             <span class='code bold'>dir</span> <code class='quiet'>([<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>])</code>
-	    World-space ray direction vector.
+	    World-space ray direction.
 
           </div>
           
@@ -6681,7 +6681,7 @@ about the camera's horizontal axis, by the given  increment on each frame.</p>
   </div>
   
 
-  <p>Gets the first object that intersects the given ray, along with geometric information about
+  <p>Gets the first object that intersects a World-space ray, along with geometric information about
 the ray-object intersection.</p>
 
 
@@ -6712,7 +6712,7 @@ the ray-object intersection.</p>
         <div class='space-bottom0'>
           <div>
             <span class='code bold'>dir</span> <code class='quiet'>([<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>])</code>
-	    World-space ray direction vector.
+	    World-space ray direction.
 
           </div>
           
@@ -7171,9 +7171,9 @@ viewer.getSnapshot({
 }, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">imageDataURL</span>) </span>{
     imageElement.src = imageDataURL;
 });
-
+   *
 <span class="hljs-comment">// Get snapshot synchronously, requires that viewer be</span>
-<span class="hljs-comment">// configured with preserveDrawingBuffer; true</span>
+<span class="hljs-comment">// configured with preserveDrawingBuffer: true</span>
 imageElement.src = viewer.getSnapshot({
     <span class="hljs-attr">width</span>: <span class="hljs-number">500</span>,
     <span class="hljs-attr">height</span>: <span class="hljs-number">500</span>,
