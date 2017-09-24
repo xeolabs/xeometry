@@ -4,6 +4,8 @@ module.exports = function (grunt) {
 
     var devScripts = [
         "libs/xeogl/xeogl.js",
+        "libs/xeogl/geometry/vectorTextGeometry.js",
+        "libs/xeogl/helpers/clipHelper.js",
         "libs/xeogl/annotations/pin.js",
         "libs/xeogl/annotations/annotation.js",
         "libs/xeogl/annotations/annotation-style.js",
@@ -49,39 +51,18 @@ module.exports = function (grunt) {
             docs: ["docs/*"]
         },
 
-        //yuidoc: {
-        //    all: {
-        //        name: '<%= pkg.name %>',
-        //        description: '<%= pkg.description %>',
-        //        version: '<%= pkg.version %>',
-        //        url: '<%= pkg.homepage %>',
-        //        options: {
-        //            themedir: "yuiDocThemes/xeometry",
-        //
-        //            // Add paths here as we include more non-core components in API docs
-        //            paths: [
-        //                'src',
-        //                'examples/js/animation',
-        //                'examples/js/annotations',
-        //                'examples/js/controls',
-        //                'examples/js/effects',
-        //                'examples/js/curves',
-        //                'examples/js/generation',
-        //                'examples/js/skyboxes',
-        //                'examples/js/stories',
-        //                'examples/js/geometry',
-        //                'examples/js/marking',
-        //                'examples/js/models',
-        //                'examples/js/zspace',
-        //                'examples/js/helpers'
-        //            ],
-        //
-        //            outdir: './docs/',
-        //            exclude: "renderer, utils, webgl"
-        //        },
-        //        logo: '../assets/images/logo.png'
-        //    }
-        //},
+        documentation: {
+            default: {
+                files: [{
+                    "expand": true,
+                    "cwd": "js",
+                    "src": ["**/*.js"]
+                }],
+                options: {
+                    destination: "docs"
+                }
+            }
+        },
 
         copy: {
             minified: {
@@ -99,7 +80,7 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks("grunt-contrib-concat");
     grunt.loadNpmTasks("grunt-contrib-clean");
     grunt.loadNpmTasks('grunt-contrib-copy');
-    //grunt.loadNpmTasks("grunt-contrib-yuidoc");
+    grunt.loadNpmTasks('grunt-documentation');
 
     // Builds snapshot libs within build/latest
     // Run this when testing examples locally against your changes before committing them
