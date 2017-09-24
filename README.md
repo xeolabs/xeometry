@@ -1,7 +1,10 @@
 # xeometry
 
 An open-source WebGL-based glTF viewing toolkit built on [xeogl](http://xeogl.org).
- 
+
+ * [Examples](examples/index.html)
+ * [Docs](docs)
+
 A **xeometry** viewer is a single facade class that wraps xeogl, with methods to
 load models from  [glTF](https://github.com/KhronosGroup/glTF),
 query, animate and navigate their objects and create sharable custom views.
@@ -34,7 +37,6 @@ viewer.loadModel("saw", "models/Reciprocating_Saw.gltf", function () {
 
 # Contents
 
-- [Examples](#examples)
 - [Features](#features)
 - [Usage](#usage)
     + [Loading the libs](#loading-the-libs)
