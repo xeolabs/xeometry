@@ -65,7 +65,6 @@ xeometry.Viewer = function (cfg) {
     var objects = {}; // Objects mapped to their IDs
     var annotations = {}; // Annotations mapped to their IDs
     var objectAnnotations = {}; // Annotations for each object
-    //var typeAnnotations = {}; // Annotations for each type
     var eulerAngles = {}; // Euler rotation angles for each model and object
     var rotations = {}; // xeogl.Rotate for each model and object
     var translations = {}; // xeogl.Translate for each model and object
@@ -74,13 +73,32 @@ xeometry.Viewer = function (cfg) {
     var transformable = {}; // True for each model and object that has transforms
     var yspin = 0;
     var xspin = 0;
+    var clips = {};
+    var clipHelpers = {};
+    var clipsDirty = true;
 
     var onTick = scene.on("tick", function () {
+
+        // Orbit animation
         if (yspin > 0) {
             view.rotateEyeY(yspin);
         }
         if (xspin > 0) {
             view.rotateEyeX(xspin);
+        }
+
+        // Rebuild user clip planes
+        if (clipsDirty) {
+            var clip;
+            var clipArray = [];
+            for (var id in clips) {
+                if (clips.hasOwnProperty(id)) {
+                    clip = clips[id];
+                    clipArray.push(clip);
+                }
+            }
+            scene.clips.clips = clipArray;
+            clipsDirty = false;
         }
     });
 
@@ -107,9 +125,9 @@ xeometry.Viewer = function (cfg) {
     //----------------------------------------------------------------------------------------------------
 
     /**
-     * Schedules an asynchronous task for the viewer to run at the next opportunity.
+     * Schedules a task for the viewer to run asynchronously at the next opportunity.
      *
-     * Internally, this pushes the task to a FIFO queue. Within each frame interval, the viewer processes the queue
+     * Internally, this pushes the task to a FIFO queue. Within each frame interval, the viewer pumps the queue
      * for a certain period of time, popping tasks and running them. After each frame interval, tasks that did not
      * get a chance to run during the task are left in the queue to be run next time.
      *
@@ -128,12 +146,6 @@ xeometry.Viewer = function (cfg) {
         xeogl.scheduleTask(callback, scope);
         return this;
     };
-
-    //----------------------------------------------------------------------------------------------------
-    // Models
-    //----------------------------------------------------------------------------------------------------
-
-    /** @module models */
 
     /**
      * Gets the viewer's WebGL canvas.
@@ -155,18 +167,21 @@ xeometry.Viewer = function (cfg) {
         return scene.canvas.overlay;
     };
 
+    //==================================================================================================================
+    // Models
+    //==================================================================================================================
 
     /**
      * Loads a model into the viewer.
      *
-     * Also assigns the model an ID, which gets prefixed to the IDs of its objects.
+     * Assigns the model an ID, which gets prefixed to the IDs of its objects.
      *
-     * @param {String} id ID to assign to the model.
+     * @param {String} id ID to assign to the model. This gets prefixed to the IDs of the model's objects.
      * @param {String} src Locates the model. This could be a path to a file or an ID within a database.
      * @param {Function} [ok] Callback fired when model loaded.
      * @return {Viewer} this
      * @example
-     * // Load saw model, fit in view, show only two of its objects
+     * // Load saw model, fit in view, show two of its objects
      * viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF/ReciprocatingSaw.gltf", function () {
      *    viewer.viewFit("saw");
      *    viewer.hide();
@@ -279,7 +294,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the ID of an object's model
+     * Gets the ID of an object's model.
      *
      * @param {String} id ID of the object.
      * @return {String} ID of the object's model.
@@ -294,7 +309,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the IDs of objects belonging to the given models and/or types.
+     * Gets the IDs of the objects belonging to the given models and/or types.
      *
      * Returns the IDs of all objects in the viewer when no arguments are given.
      *
@@ -308,10 +323,10 @@ xeometry.Viewer = function (cfg) {
      * // Get IDs of all the objects in the gearbox model
      * var gearboxObjects = viewer.getObjects("gearbox");
      *
-     * // Get IDs of objects in two models
-     * var sawAndgearboxObjects = viewer.getObjects(["saw", "gearbox"]);
+     * // Get IDs of the objects in two models
+     * var sawAndGearboxObjects = viewer.getObjects(["saw", "gearbox"]);
      *
-     * // Get IDs of objects in the gearbox model and all objects in viewer that are IFC cable fitting and carriers
+     * // Get IDs of objects in the gearbox model, plus all objects in viewer that are IFC cable fittings and carriers
      * var gearboxCableFittings = viewer.getObjects("gearbox", "IfcCableFitting", "IfcCableCarrierFitting"]);
      */
     this.getObjects = function (id) {
@@ -404,6 +419,9 @@ xeometry.Viewer = function (cfg) {
 
     /**
      * Unloads all models, annotations and clipping planes.
+     *
+     * Preserves the current camera state.
+     *
      * @return {Viewer} this
      */
     this.clear = function () {
@@ -416,9 +434,9 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Assigns a type to the given object.
+     * Assigns a type to an object.
      *
-     * A type can be anything, but when using xeometry as an IFC viewer, it's typically going to be an IFC type.
+     * A type can be anything, but when using xeometry as an IFC viewer, it's typically an IFC type.
      *
      * @param {String} id ID of an object.
      * @param {String} type The type.
@@ -471,7 +489,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets all types currently in the viewer.
+     * Gets all the types currently in the viewer.
      *
      * @return {String[]} The types in the viewer.
      */
@@ -479,9 +497,9 @@ xeometry.Viewer = function (cfg) {
         return Object.keys(types);
     };
 
-    //----------------------------------------------------------------------------------------------------
+    //==================================================================================================================
     // Geometry
-    //----------------------------------------------------------------------------------------------------
+    //==================================================================================================================
 
     /**
      * Gets the geometry primitive type of an object.
@@ -534,14 +552,18 @@ xeometry.Viewer = function (cfg) {
         error("Object not found: " + id);
     };
 
-    //----------------------------------------------------------------------------------------------------
+    //==================================================================================================================
     // Transformation
-    //----------------------------------------------------------------------------------------------------
+    //==================================================================================================================
 
     /**
-     * Sets the scale of a model or object.
+     * Sets the scale of a model or an object.
      *
-     * An object's scale is relative to its model's scale.
+     * An object's scale is relative to its model's scale. For example, if an object has a scale
+     * of ````[0.5, 0.5, 0.5]```` and its model also has scale ````[0.5, 0.5, 0.5]````, then the object's
+     * effective scale is ````[0.25, 0.25, 0.25]````.
+     *
+     * A model or object's scale is ````[1.0, 1.0, 1.0]```` by default.
      *
      * @param {String} id ID of a model or object.
      * @param {[Number, Number, Number]} xyz Scale factors for the X, Y and Z axis.
@@ -565,14 +587,16 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the scale of a model or object.
+     * Gets the scale of a model or an object.
      *
-     * An object's scale is relative to its model's scale.
+     * An object's scale is relative to its model's scale. For example, if an object has a scale
+     * of ````[0.5, 0.5, 0.5]```` and its model also has scale ````[0.5, 0.5, 0.5]````, then the object's
+     * effective scale is ````[0.25, 0.25, 0.25]````.
      *
-     * Unless previously set with {@link #setScale}, this will be ````[1.0, 1.0, 1.0]```` by default.
+     * A model or object's scale is ````[1.0, 1.0, 1.0]```` by default.
      *
      * @param {String} id ID of a model or object.
-     * @return {[Number, Number, Number]} scale Scale factors for the X, Y and Z axis.
+     * @return {[Number, Number, Number]} Scale factors for the X, Y and Z axis.
      * @example
      * var sawScale = viewer.getScale("saw");
      * var sawCoverScale = viewer.getScale("saw#1.1");
@@ -591,9 +615,15 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Sets the rotation of a model or object.
+     * Sets the rotation of a model or an object.
      *
-     * An object's rotation is relative to its model's rotation.
+     * An object's rotation is relative to its model's rotation. For example, if an object has a rotation
+     * of ````45```` degrees about the Y axis, and its model also has a rotation of ````45```` degrees about
+     * Y, then the object's effective rotation is ````90```` degrees about Y.
+     *
+     * Rotations are in order of X, Y then Z.
+     *
+     * The rotation angles of each model or object are ````[0, 0, 0]```` by default.
      *
      * @param {String} id ID of a model or object.
      * @param {[Number, Number, Number]} xyz Rotation angles, in degrees, for the X, Y and Z axis.
@@ -623,14 +653,19 @@ xeometry.Viewer = function (cfg) {
     })();
 
     /**
-     * Gets the rotation of a model or object.
+     * Gets the rotation of a model or an object.
      *
-     * An object's rotation is relative to its model's rotation.
+     * An object's rotation is relative to its model's rotation. For example, if an object has a rotation
+     * of ````45```` degrees about the Y axis, and its model also has a rotation of ````45```` degrees about
+     * Y, then the object's effective rotation is ````90```` degrees about Y.
      *
-     * Unless previously set with {@link #setRotate}, this will be ````[0.0, 0.0, 0.0]```` by default.
+     * The rotation angles of each model or object are ````[0, 0, 0]```` by default.
+     *
+     * Rotations are in order of X, Y then Z.
      *
      * @param {String} id ID of a model or object.
      * @return {[Number, Number, Number]} Rotation angles, in degrees, for the X, Y and Z axis.
+     * @example
      * var sawRotate = viewer.getRotate("saw");
      * var sawCoverRotate = viewer.getRotate("saw#1.1");
      */
@@ -645,9 +680,13 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Sets the translation of a model or object.
+     * Sets the translation of a model or an object.
      *
-     * An object's translation is relative to its model's translation.
+     * An object's translation is relative to that of its model. For example, if an object has a translation
+     * of ````[100, 0, 0]```` and its model has a translation of ````[50, 50, 50]```` , then the object's effective
+     * translation is ````[150, 50, 50]````.
+     *
+     * The translation of each model or object is ````[0, 0, 0]```` by default.
      *
      * @param {String} id ID of a model or object.
      * @param {[Number, Number, Number]} xyz World-space translation vector.
@@ -671,9 +710,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Increments the translation of a model or object.
-     *
-     * An object's translation is relative to its model's translation.
+     * Increments or decrements the translation of a model or an object.
      *
      * @param {String} id ID of a model or object.
      * @param {[Number, Number, Number]} xyz World-space translation vector.
@@ -693,17 +730,22 @@ xeometry.Viewer = function (cfg) {
             translation = translations[id];
         }
         var xyzOld = translation.xyz;
-        translation.xyz = [xyzOld[0] + xyz[0], xyzOld[1] + xyz[1], xyzOld[2] + xyz[2]]
+        translation.xyz = [xyzOld[0] + xyz[0], xyzOld[1] + xyz[1], xyzOld[2] + xyz[2]];
         return this;
     };
 
     /**
-     * Gets the translation of a model or object.
+     * Gets the translation of a model or an object.
      *
-     * An object's translation is relative to its model's translation.
+     * An object's translation is relative to that of its model. For example, if an object has a translation
+     * of ````[100, 0, 0]```` and its model has a translation of ````[50, 50, 50]```` , then the object's effective
+     * translation is ````[150, 50, 50]````.
      *
-     * @param {String} id ID of a model or object.
+     * The translation of each model or object is ````[0, 0, 0]```` by default.
+     *
+     * @param {String} id ID of a model or an object.
      * @return {[Number, Number, Number]} World-space translation vector.
+     * @example
      * var sawTranslate = viewer.getTranslate("saw");
      * var sawCoverTranslate = viewer.getTranslate("saw#1.1");
      */
@@ -805,21 +847,33 @@ xeometry.Viewer = function (cfg) {
         };
     })();
 
-    //----------------------------------------------------------------------------------------------------
+    //==================================================================================================================
     // Visibility
-    //----------------------------------------------------------------------------------------------------
+    //==================================================================================================================
 
     /**
      * Shows model(s) and/or object(s).
      *
      * Shows all objects in the viewer when no arguments are given.
      *
+     * Objects are visible by default.
+     *
      * @example viewer.show(); // Show all objects in the viewer
      * @param {String|String[]} [ids] IDs of model(s) and/or object(s).
      * @returns {Viewer} this
      * @example
-     * viewer.show(["saw", "gearbox"]); // Show all objects in models "saw" and "gearbox"
-     * viewer.show(["saw#0.1", "saw#0.2", "gearbox"]); // Show two objects in model "saw", plus all objects in model "gearbox"
+     *
+     * // Show all objects in the viewer
+     * viewer.show();
+     *
+     * // Show all objects in models "saw" and "gearbox"
+     * viewer.show(["saw", "gearbox"]);
+     *
+     * // Show two objects in model "saw", plus all objects in model "gearbox"
+     * viewer.show(["saw#0.1", "saw#0.2", "gearbox"]);
+     *
+     * // Show objects in the model "gearbox", plus all objects in viewer that are IFC cable fittings and carriers
+     * viewer.show("gearbox", "IfcCableFitting", "IfcCableCarrierFitting"]);
      */
     this.show = function (ids) {
         setVisible(ids, true);
@@ -831,11 +885,23 @@ xeometry.Viewer = function (cfg) {
      *
      * Hides all objects in the viewer when no arguments are given.
      *
+     * Objects are visible by default.
+     *
      * @param {String|String[]} ids IDs of model(s) and/or object(s).
      * @returns {Viewer} this
      * @example
-     * viewer.hide(["saw", "gearbox"]); // Hide all objects in models "saw" and "gearbox"
-     * viewer.hide(["saw#0.1", "saw#0.2", "gearbox"]); // Hide two objects in model "saw", plus all objects in model "gearbox"
+     *
+     * // Hide all objects in the viewer
+     * viewer.hide();
+     *
+     * // Hide all objects in models "saw" and "gearbox"
+     * viewer.hide(["saw", "gearbox"]);
+     *
+     * // Hide two objects in model "saw", plus all objects in model "gearbox"
+     * viewer.hide(["saw#0.1", "saw#0.2", "gearbox"]);
+     *
+     * // Hide objects in the model "gearbox", plus all objects in viewer that are IFC cable fittings and carriers
+     * viewer.hide("gearbox", "IfcCableFitting", "IfcCableCarrierFitting"]);
      */
     this.hide = function (ids) {
         setVisible(ids, false);
@@ -876,15 +942,15 @@ xeometry.Viewer = function (cfg) {
         }
     }
 
-    //----------------------------------------------------------------------------------------------------
+    //==================================================================================================================
     // Opacity
-    //----------------------------------------------------------------------------------------------------
+    //==================================================================================================================
 
     /**
-     * Sets opacity of model(s), object(s) or type(s).
+     * Sets the opacity of model(s), object(s) and/or type(s).
      *
-     * @param {String|String[]} ids IDs of models, objects or types. Shows all objects by default.
-     * @param {Number} opacity Degree of opacity in range [0..1].
+     * @param {String|String[]} ids IDs of models, objects or types. Sets opacity of all objects when this is null or undefined.
+     * @param {Number} opacity Degree of opacity in range ````[0..1]````.
      * @returns {Viewer} this
      * @example
      * // Create an X-ray view of two objects in the "saw" model
@@ -947,14 +1013,14 @@ xeometry.Viewer = function (cfg) {
         return object.material.alpha;
     };
 
-    //----------------------------------------------------------------------------------------------------
+    //==================================================================================================================
     // Color
-    //----------------------------------------------------------------------------------------------------
+    //==================================================================================================================
 
     /**
-     * Sets the color of model(s), object(s) or type(s).
+     * Sets the albedo color of model(s) and/or object(s).
      *
-     * @param {String|String[]} ids IDs of models, objects or types. Applies to all objects by default.
+     * @param {String|String[]} ids IDs of models, objects or types. Applies to all objects when this is null or undefined.
      * @param {[Number, Number, Number]} color The RGB color, with each element in range [0..1].
      * @returns {Viewer} this
      * @example
@@ -1022,6 +1088,102 @@ xeometry.Viewer = function (cfg) {
         var color = material.diffuse || material.baseColor || [1, 1, 1]; // PhongMaterial || SpecularMaterial || MetallicMaterial
         return color.slice();
     };
+
+    //==================================================================================================================
+    // Clippability
+    //==================================================================================================================
+
+    /**
+     * Makes model(s) and/or object(s) clippable.
+     *
+     * Makes all objects in the viewer clippable when no arguments are given.
+     *
+     * Objects are clippable by default.
+     *
+     * @param {String|String[]} [ids] IDs of model(s) and/or object(s).
+     * @returns {Viewer} this
+     * @example
+     *
+     * // Make all objects in the viewer clippable
+     * viewer.setClippable();
+     *
+     * // Make all objects in models "saw" and "gearbox" clippable
+     * viewer.setClippable(["saw", "gearbox"]);
+     *
+     * // Make two objects in model "saw" clippable, plus all objects in model "gearbox"
+     * viewer.setClippable(["saw#0.1", "saw#0.2", "gearbox"]);
+     *
+     * // Make objects in the model "gearbox" clippable, plus all objects in viewer that are IFC cable fittings and carriers
+     * viewer.setClippable("gearbox", "IfcCableFitting", "IfcCableCarrierFitting"]);
+     */
+    this.setClippable = function (ids) {
+        setClippable(ids, true);
+        return this;
+    };
+
+    /**
+     * Makes model(s) and/or object(s) unclippable.
+     *
+     * These objects will then remain fully visible when they would otherwise be clipped by clipping planes.
+     *
+     * Makes all objects in the viewer unclippable when no arguments are given.
+     *
+     * Objects are clippable by default.
+     *
+     * @param {String|String[]} ids IDs of model(s) and/or object(s).
+     * @returns {Viewer} this
+     * @example
+     *
+     * // Make all objects in the viewer unclippable
+     * viewer.setUnclippable();
+     *
+     * // Make all objects in models "saw" and "gearbox" unclippable
+     * viewer.setUnclippable(["saw", "gearbox"]);
+     *
+     * // Make two objects in model "saw" unclippable, plus all objects in model "gearbox"
+     * viewer.setUnclippable(["saw#0.1", "saw#0.2", "gearbox"]);
+     *
+     * // Make all objects in the model "gearbox" unclippable, plus all objects in viewer that are IFC cable fittings and carriers
+     * viewer.setUnclippable("gearbox", "IfcCableFitting", "IfcCableCarrierFitting"]);
+     */
+    this.setUnclippable = function (ids) {
+        setClippable(ids, false);
+        return this;
+    };
+
+    function setClippable(ids, clippable) {
+        if (ids === undefined || ids === null) {
+            setClippable(self.getObjects(), clippable);
+            return;
+        }
+        if (xeogl._isString(ids)) {
+            var id = ids;
+            var object = objects[id];
+            if (object) {
+                object.clippable = clippable;
+                return;
+            }
+            var model = models[id];
+            if (!model) {
+                var objectsOfType = types[id];
+                if (objectsOfType) {
+                    var typeIds = Object.keys(objectsOfType);
+                    if (typeIds.length === 0) {
+                        return;
+                    }
+                    setClippable(typeIds, clippable);
+                    return
+                }
+                error("Model, object or type not found: " + id);
+                return;
+            }
+            setClippable(self.getObjects(id), clippable);
+            return;
+        }
+        for (var i = 0, len = ids.length; i < len; i++) {
+            setClippable(ids[i], clippable);
+        }
+    }
 
     //----------------------------------------------------------------------------------------------------
     // Outlines
@@ -1405,6 +1567,9 @@ xeometry.Viewer = function (cfg) {
     /**
      * Sets the camera's current projection type.
      *
+     * Options are "perspective" and "ortho". You can set properties for either of these, regardless
+     * of whether they are currently active or not.
+     *
      * @param {String} type Either "perspective" or "ortho".
      * @returns {Viewer} this
      */
@@ -1414,7 +1579,7 @@ xeometry.Viewer = function (cfg) {
         }
         var projection = projections[type];
         if (!projection) {
-            this.error("Unsupported camera projection type: " + type);
+            error("Unsupported camera projection type: " + type);
         } else {
             camera.project = projection;
             projectionType = type;
@@ -1492,7 +1657,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Sets the camera's pose, consisting of position, target and "up" vector.
+     * Sets the camera's pose, which consists of eye position, point-of-interest and "up" vector.
      *
      * @param {[Number, Number, Number]} eye Camera's new viewpoint.
      * @param {[Number, Number, Number]} look Camera's new point-of-interest.
@@ -1506,7 +1671,6 @@ xeometry.Viewer = function (cfg) {
         return this;
     };
 
-
     /**
      * Locks the camera's vertical rotation axis to the World-space Y axis.
      * @returns {Viewer} this
@@ -1517,7 +1681,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Allows camera yaw rotation around the "up" vector.
+     * Allows camera yaw rotation around the camera's "up" vector.
      * @returns {Viewer} this
      */
     this.unlockGimbalY = function () {
@@ -1527,7 +1691,6 @@ xeometry.Viewer = function (cfg) {
 
     /**
      * Rotates the camera's 'eye' position about its 'look' position, around the 'up' vector.
-     *
      * @param {Number} angle Angle of rotation in degrees
      * @returns {Viewer} this
      */
@@ -1537,8 +1700,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Rotates the camera's 'eye' position about its 'look' position, pivoting around the X-axis.
-     *
+     * Rotates the camera's 'eye' position about its 'look' position, pivoting around its X-axis.
      * @param {Number} angle Angle of rotation in degrees
      * @returns {Viewer} this
      */
@@ -1548,9 +1710,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Rotates the camera's 'look' position about its 'eye' position, pivoting around the 'up' vector.
-     *
-     * <p>Applies constraints added with {@link #addConstraint}.</p>
+     * Rotates the camera's 'look' position about its 'eye' position, pivoting around its 'up' vector.
      *
      * @param {Number} angle Angle of rotation in degrees
      * @returns {Viewer} this
@@ -1561,7 +1721,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Rotates the camera's 'eye' position about its 'look' position, pivoting around the X-axis.
+     * Rotates the camera's 'eye' position about its 'look' position, pivoting around its X-axis.
      *
      * @param {Number} angle Angle of rotation in degrees
      * @returns {Viewer} this
@@ -1611,7 +1771,6 @@ xeometry.Viewer = function (cfg) {
      */
     this.getViewFitDuration = function () {
         return cameraFlight.duration;
-        return this;
     };
 
     /**
@@ -1640,7 +1799,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given annotation,  model(s), object(s) or boundary(s) in view.
+     * Moves the camera to fit the given annotation(s), model(s), object(s) and/or boundary(s).
      *
      * Preserves the direction that the camera is currently pointing in.
      *
@@ -1671,7 +1830,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the +X axis.
+     * Moves the camera to fit the given model(s), object(s) and/or boundary(s) in view, while looking along the +X axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
      * @param {Function} [ok] Callback fired when camera has arrived at its target position.
@@ -1683,7 +1842,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the +Z axis.
+     * Moves the camera to fit the given model(s), object(s) and/or boundary(s) in view, while looking along the +Z axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
      * @param {Function} [ok] Callback fired when camera has arrived at its target position.
@@ -1695,7 +1854,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the -X axis.
+     * Moves the camera to fit the given model(s), object(s) and/or boundary(s) in view, while looking along the -X axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
      * @param {Function} [ok] Callback fired when camera has arrived at its target position.
@@ -1707,7 +1866,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the +X axis.
+     * Moves the camera to fit the given model(s), object(s) and/or boundary(s) in view, while looking along the +X axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
      * @param {Function} [ok] Callback fired when camera has arrived at its target position.
@@ -1719,7 +1878,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the -Y axis.
+     * Moves the camera to fit the given model(s), object(s) and/or boundary(s) in view, while looking along the -Y axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
      * @param {Function} [ok] Callback fired when camera has arrived at its target position.
@@ -1731,7 +1890,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the +X axis.
+     * Moves the camera to fit the given model(s), object(s) and/or boundary(s) in view, while looking along the +X axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
      * @param {Function} [ok] Callback fired when camera has arrived at its target position.
@@ -1806,7 +1965,7 @@ xeometry.Viewer = function (cfg) {
     })();
 
     /**
-     * Rotates the camera's 'eye' position about its 'look' position, pivoting
+     * Sets the camera's 'eye' position orbiting its 'look' position, pivoting
      * about the camera's local horizontal axis, by the given increment on each frame.
      *
      * Call with a zero value to stop spinning about this axis.
@@ -1818,7 +1977,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Rotates the camera's 'eye' position about its 'look' position, pivoting
+     * Sets the camera's 'eye' position orbiting about its 'look' position, pivoting
      * about the camera's horizontal axis, by the given  increment on each frame.
      *
      * Call again with a zero value to stop spinning about this axis.
@@ -1834,11 +1993,11 @@ xeometry.Viewer = function (cfg) {
     //----------------------------------------------------------------------------------------------------
 
     /**
-     * Gets the first object that intersects the given ray.
+     * Picks the first object that intersects the given ray.
      *
      * @param {[Number, Number, Number]} origin World-space ray origin.
      * @param {[Number, Number, Number]} dir World-space ray direction vector.
-     * @returns {{id: String}} If object found, a hit record containing the ID of the object.
+     * @returns {{id: String}} If object found, a hit record containing the ID of the object, else null.
      * @example
      * var hit = viewer.rayCastObject([0,0,-5], [0,0,1]);
      * if (hit) {
@@ -1853,12 +2012,14 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the first object that intersects the given ray, along with geometric information about
+     * Picks the first object that intersects the given ray, along with geometric information about
      * the ray-object intersection.
      *
      * @param {[Number, Number, Number]} origin World-space ray origin.
      * @param {[Number, Number, Number]} dir World-space ray direction vector.
-     * @returns {{id: String, worldPos: [number,number,number], primIndex:number, bary: [number,number,number]}} If object found, a hit record containing the ID of object, World-space 3D surface intersection, primitive index and barycentric coordinates.
+     * @returns {{id: String, worldPos: [number,number,number], primIndex:number, bary: [number,number,number]}} If object
+     * found, a hit record containing the ID of object, World-space 3D surface intersection, primitive index and
+     * barycentric coordinates, else null.
      * @example
      * var hit = viewer.rayCastSurface([0,0,-5], [0,0,1]);
      * if (hit) {
@@ -1881,12 +2042,12 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Finds the closest object behind the given canvas coordinates.
+     * Picks the closest object behind the given canvas coordinates.
      *
      * This is equivalent to firing a ray through the canvas, down the negative Z-axis, to find the first entity it hits.
      *
      * @param {[Number, Number]} canvasPos Canvas position.
-     * @returns {{id: String}} If object found, a hit record containing the ID of the object.
+     * @returns {{id: String}} If object found, a hit record containing the ID of the object, else null.
      * @example
      * var hit = viewer.pickObject([234, 567]);
      * if (hit) {
@@ -1901,11 +2062,13 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the closest object behind the given canvas coordinates, along with geometric information about
+     * Picks the closest object behind the given canvas coordinates, along with geometric information about
      * the point on the object's surface that lies right behind those canvas coordinates.
      *
      * @param {[Number, Number]} canvasPos Canvas position.
-     * @returns {{id: String, worldPos: [number,number,number], primIndex:number, bary: [number,number,number]}} If object found, a hit record containing the ID of object, World-space 3D surface intersection, primitive index and barycentric coordinates.
+     * @returns {{id: String, worldPos: [number,number,number], primIndex:number, bary: [number,number,number]}} If object
+     * found, a hit record containing the ID of object, World-space 3D surface intersection, primitive index and
+     * barycentric coordinates, else null.
      * @example
      * var hit = viewer.pickSurface([234, 567]);
      * if (hit) {
@@ -1931,6 +2094,42 @@ xeometry.Viewer = function (cfg) {
     // Annotations
     //----------------------------------------------------------------------------------------------------
 
+    /**
+     * Creates an annotation.
+     *
+     * An annotation is a labeled pin that's attached to the surface of an object.
+     *
+     * An annotation is pinned within a triangle of an object's geometry, at a position given in barycentric
+     * coordinates. A barycentric coordinate is a three-element vector that indicates the position within
+     * the triangle as a weight per vertex, where a value of ````[0.3,0.3,0.3]```` places the annotation
+     * at the center of its triangle.
+     *
+     * An annotation can be configured with an optional camera position from which to view it, given as ````eye````,
+     * ````look```` and ````up```` vectors.
+     *
+     * By default, an annotation will be invisible while occluded by other objects in the 3D view.
+     *
+     * Note that when you pick an object with {@link #.Viewer#rayCastSurface} or {@link #.Viewer#pickSurface}, you'll get
+     * a triangle index and barycentric coordinates in the intersection result. This makes it convenient to
+     * create annotations directly from pick results.
+     *
+     * @param {String} id ID for the new annotation.
+     * @param {Object} cfg Properties for the new annotation.
+     * @param {String} cfg.object ID of an object to pin the annotation to.
+     * @param {String} [cfg.glyph=""] A glyph for the new annotation. This appears in the annotation's pin and
+     * is typically a short string of 1-2 chars, eg. "a1".
+     * @param {String} [cfg.title=""] Title text for the new annotation.
+     * @param {String} [cfg.desc=""] Description text for the new annotation.
+     * @param {Number} cfg.primIndex Index of a triangle, within the object's geometry indices, to attach the annotation to.
+     * @param {[Number, Number, Number]} cfg.bary Barycentric coordinates within the triangle, at which to position the annotation.
+     * @param {[Number, Number, Number]} [cfg.eye] Eye position for optional camera viewpoint.
+     * @param {[Number, Number, Number]} [cfg.look] Look position for optional camera viewpoint.
+     * @param {[Number, Number, Number]} [cfg.up] Up direction for optional camera viewpoint.
+     * @param {Boolean} [cfg.occludable=true] Whether or not the annotation dissappears while occluded by something else in the 3D view.
+     * @param {Boolean} [cfg.pinShown=true] Whether or not the annotation's pin is initially shown.
+     * @param {Boolean} [cfg.labelShown=true] Whether or not the annotation's label is initially shown.
+     * @returns {Viewer} this
+     */
     this.createAnnotation = function (id, cfg) {
         if (scene.components[id]) {
             error("Component with this ID already exists: " + id);
@@ -1976,6 +2175,14 @@ xeometry.Viewer = function (cfg) {
         return this;
     };
 
+    /**
+     * Gets the IDs of the annotations within a model, object or a type.
+     *
+     * When no argument is given, returns the IDs of all annotations.
+     *
+     * @param {String|String[]} id ID of a model, object or IFC type.
+     * @return {String[]} IDs of the annotations.
+     */
     this.getAnnotations = function (id) {
         //if (id !== undefined || id === null) {
         //    var objectsOfType = types[id];
@@ -1996,6 +2203,12 @@ xeometry.Viewer = function (cfg) {
         return Object.keys(annotations);
     };
 
+    /**
+     * Destroys an annotation.
+     *
+     * @param {String} id ID of the annotation.
+     * @return {Viewer} This viewer
+     */
     this.destroyAnnotation = function (id) {
         var annotation = annotations[id];
         if (!annotation) {
@@ -2010,6 +2223,11 @@ xeometry.Viewer = function (cfg) {
 
     };
 
+    /**
+     * Destroys all annotations.
+     *
+     * @return {Viewer} This viewer
+     */
     this.clearAnnotations = function () {
         for (var ids = Object.keys(annotations), i = 0; i < ids.length; i++) {
             this.destroyAnnotation(ids[i]);
@@ -2017,245 +2235,432 @@ xeometry.Viewer = function (cfg) {
         return this;
     };
 
+    /**
+     * Sets the triangle that an annotation is pinned to.
+     *
+     * The triangle is indicated by the position of the first of the triangle's vertex indices within
+     * the object's geometry indices array.
+     *
+     * @param {String} id ID of the annotation.
+     * @param {Number} primIndex The index of the triangle's first element within the geometry's
+     * indices array.
+     * @returns {Viewer} This viewer
+     */
     this.setAnnotationPrimIndex = function (id, primIndex) {
         var annotation = annotations[id];
         if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
+            error("Annotation not found: \"" + id + "\"");
             return this;
         }
         annotation.primIndex = primIndex;
         return this;
     };
 
+    /**
+     * Gets the triangle that an annotation is pinned to.
+     *
+     * The triangle is indicated by the position of the first of the triangle's vertex indices within
+     * the object's geometry indices array.
+     *
+     * @param {String} id ID of the annotation.
+     * @returns {Number} The index of the triangle's first element within the geometry's indices array.
+     */
     this.getAnnotationPrimIndex = function (id) {
         var annotation = annotations[id];
         if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
+            error("Annotation not found: \"" + id + "\"");
             return;
         }
         return annotation.primIndex;
     };
 
-    this.setAnnotationTitle = function (id, title) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return this;
-        }
-        annotation.title = title;
-        return this;
-    };
-
-    this.getAnnotationTitle = function (id) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return;
-        }
-        return annotation.title;
-    };
-
-    this.setAnnotationDesc = function (id, desc) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return this;
-        }
-        annotation.desc = desc;
-        return this;
-    };
-
-    this.getAnnotationDesc = function (id) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return;
-        }
-        return annotation.desc;
-    };
-
-    this.setAnnotationBary = function (id, bary) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return this;
-        }
-        annotation.bary = bary;
-        return this;
-    };
-
-    this.getAnnotationBary = function (id) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return;
-        }
-        return annotation.bary;
-    };
-
-    this.setAnnotationObject = function (id, objectId) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return this;
-        }
-        var object = objects[objectId];
-        if (!object) {
-            this.error("Object not found: \"" + objectId + "\"");
-            return this;
-        }
-        annotation.entity = object;
-        return this;
-    };
-
-    this.getAnnotationObject = function (id) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return;
-        }
-        var entity = annotation.entity;
-        return entity ? entity.id : null;
-    };
-
-    this.setAnnotationEye = function (id, eye) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return this;
-        }
-        annotation.eye = eye;
-        return this;
-    };
-
-    this.getAnnotationEye = function (id) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return;
-        }
-        return annotation.eye;
-    };
-
-    this.setAnnotationLook = function (id, look) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return this;
-        }
-        annotation.look = look;
-        return this;
-    };
-
-    this.getAnnotationLook = function (id) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return;
-        }
-        return annotation.look;
-    };
-
-    this.setAnnotationUp = function (id, up) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return this;
-        }
-        annotation.up = up;
-        return this;
-    };
-
-    this.getAnnotationUp = function (id) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return;
-        }
-        return annotation.up;
-    };
-
-    this.setAnnotationOccludable = function (id, occludable) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return this;
-        }
-        annotation.occludable = occludable;
-        return this;
-    };
-
-    this.getAnnotationOccludable = function (id) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return;
-        }
-        return annotation.occludable;
-    };
-
-    this.setAnnotationPinShown = function (id, pinShown) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return this;
-        }
-        annotation.pinShown = pinShown;
-        return this;
-    };
-
-    this.getAnnotationPinShown = function (id) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return;
-        }
-        return annotation.pinShown;
-    };
-
-    this.setAnnotationLabelShown = function (id, labelShown) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return this;
-        }
-        annotation.labelShown = labelShown;
-        return this;
-    };
-
-    this.getAnnotationLabelShown = function (id) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return;
-        }
-        return annotation.labelShown;
-    };
-
+    /**
+     * Sets the text within an annotation's pin.
+     *
+     * In order to fit within the pin, this should be a short string of 1-2 characters.
+     *
+     * @param {String} id ID of the annotation.
+     * @param {String} glyph Pin text.
+     * @returns {Viewer} This
+     */
     this.setAnnotationGlyph = function (id, glyph) {
         var annotation = annotations[id];
         if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
+            error("Annotation not found: \"" + id + "\"");
             return this;
         }
         annotation.glyph = glyph;
         return this;
     };
 
+    /**
+     * Gets the text within an annotation's pin.
+     *
+     * @param {String} id ID of the annotation.
+     * @returns {String} Pin text.
+     */
     this.getAnnotationGlyph = function (id) {
         var annotation = annotations[id];
         if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
+            error("Annotation not found: \"" + id + "\"");
             return;
         }
         return annotation.glyph;
     };
 
+    /**
+     * Sets the title text within an annotation's label.
+     *
+     * @param {String} id ID of the annotation.
+     * @param {String} title Title text.
+     * @returns {Viewer} This
+     */
+    this.setAnnotationTitle = function (id, title) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return this;
+        }
+        annotation.title = title;
+        return this;
+    };
+
+    /**
+     * Gets the title text within an annotation's label.
+     *
+     * @param {String} id ID of the annotation.
+     * @returns {String} Title text.
+     */
+    this.getAnnotationTitle = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.title;
+    };
+
+    /**
+     * Sets the description text within an annotation's label.
+     *
+     * @param {String} id ID of the annotation.
+     * @param {String} title Description text.
+     * @returns {Viewer} This
+     */
+    this.setAnnotationDesc = function (id, desc) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return this;
+        }
+        annotation.desc = desc;
+        return this;
+    };
+
+    /**
+     * Gets the description text within an annotation's label.
+     *
+     * @param {String} id ID of the annotation.
+     * @returns {String} Title text.
+     */
+    this.getAnnotationDesc = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.desc;
+    };
+
+    /**
+     * Sets the barycentric coordinates of an annotation within its triangle.
+     *
+     * A barycentric coordinate is a three-element vector that indicates the position within the triangle as a weight per vertex,
+     * where a value of ````[0.3,0.3,0.3]```` places the annotation at the center of its triangle.
+     *
+     * @param {String} id ID of the annotation.
+     * @param {[Number, Number, Number]} bary The barycentric coordinates.
+     * @returns {Viewer} This
+     */
+    this.setAnnotationBary = function (id, bary) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return this;
+        }
+        annotation.bary = bary;
+        return this;
+    };
+
+    /**
+     * Gets the barycentric coordinates of an annotation within its triangle.
+     *
+     * @param {String} id ID of the annotation.
+     * @returns {[Number, Number, Number]} The barycentric coordinates.
+     */
+    this.getAnnotationBary = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.bary;
+    };
+
+    /**
+     * Sets the object that an annotation is pinned to.
+     *
+     * An annotation must always be pinned to an object.
+     *
+     * @param {String} id ID of the annotation.
+     * @param {String} objectId ID of the object.
+     * @returns {Viewer} This
+     */
+    this.setAnnotationObject = function (id, objectId) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return this;
+        }
+        var object = objects[objectId];
+        if (!object) {
+            error("Object not found: \"" + objectId + "\"");
+            return this;
+        }
+        annotation.entity = object;
+        return this;
+    };
+
+    /**
+     * Gets the object that an annotation is pinned to.
+     *
+     * @param {String} id ID of the annotation.
+     * @returns {String} ID of the object.
+     */
+    this.getAnnotationObject = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        var entity = annotation.entity;
+        return entity ? entity.id : null;
+    };
+
+    /**
+     * Sets the camera ````eye```` position from which to view an annotation.
+     *
+     * @param {String} id ID of the annotation.
+     * @param {[Number, Number, Number]} eye Eye position for camera viewpoint.
+     * @returns {Viewer} This viewer.
+     */
+    this.setAnnotationEye = function (id, eye) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return this;
+        }
+        annotation.eye = eye;
+        return this;
+    };
+
+    /**
+     * Gets the camera ````eye```` position from which to view an annotation.
+     *
+     * @param {String} id ID of the annotation.
+     * @param {[Number, Number, Number]} eye Eye position for camera viewpoint.
+     */
+    this.getAnnotationEye = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.eye;
+    };
+
+    /**
+     * Sets the camera ````look```` position from which to view an annotation.
+     *
+     * @param {String} id ID of the annotation.
+     * @param {[Number, Number, Number]} look Look position for camera viewpoint.
+     * @returns {Viewer} This viewer.
+     */
+    this.setAnnotationLook = function (id, look) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return this;
+        }
+        annotation.look = look;
+        return this;
+    };
+
+    /**
+     * Gets the camera ````look```` position from which to view an annotation.
+     *
+     * @param {String} id ID of the annotation.
+     * @returns {[Number, Number, Number]} Look position for camera viewpoint.
+     */
+    this.getAnnotationLook = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.look;
+    };
+
+    /**
+     * Sets the camera ````up```` vector from which to view an annotation.
+     *
+     * @param {String} id ID of the annotation.
+     * @param {[Number, Number, Number]} up Up vector for camera viewpoint.
+     * @returns {Viewer} This viewer.
+     */
+    this.setAnnotationUp = function (id, up) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return this;
+        }
+        annotation.up = up;
+        return this;
+    };
+
+    /**
+     * Gets the camera ````up```` direction from which to view an annotation.
+     *
+     * @param {String} id ID of the annotation.
+     * @returns {[Number, Number, Number]} Up vector for camera viewpoint.
+     */
+    this.getAnnotationUp = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.up;
+    };
+
+    /**
+     * Sets whether or not an annotation dissappears when occluded by another object.
+     *
+     * @param {String} id ID of the annotation.
+     * @param {Boolean} occludable Whether the annotation dissappears when occluded.
+     * @returns {Viewer} This viewer.
+     */
+    this.setAnnotationOccludable = function (id, occludable) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return this;
+        }
+        annotation.occludable = occludable;
+        return this;
+    };
+
+    /**
+     * Gets whether or not an annotation dissappears when occluded by another object.
+     *
+     * @param {String} id ID of the annotation.
+     * @returns {Boolean} Whether the annotation dissappears when occluded.
+     */
+    this.getAnnotationOccludable = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.occludable;
+    };
+
+    /**
+     * Sets whether an annotation's pin is shown.
+     *
+     * @param {String} id ID of the annotation.
+     * @param {Boolean} pinShown Whether the annotation's pin is shown.
+     * @returns {Viewer} This viewer.
+     */
+    this.setAnnotationPinShown = function (id, pinShown) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return this;
+        }
+        annotation.pinShown = pinShown;
+        return this;
+    };
+
+    /**
+     * Gets whether an annotation's pin is shown.
+     *
+     * @param {String} id ID of the annotation.
+     * @returns {Boolean} Whether the annotation's pin is shown.
+     */
+    this.getAnnotationPinShown = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.pinShown;
+    };
+
+    /**
+     * Sets whether an annotation's label is shown.
+     *
+     * @param {String} id ID of the annotation.
+     * @param {Boolean} labelShown Whether the annotation's label is shown.
+     * @returns {Viewer} This viewer.
+     */
+    this.setAnnotationLabelShown = function (id, labelShown) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return this;
+        }
+        annotation.labelShown = labelShown;
+        return this;
+    };
+
+    /**
+     * Gets whether an annotation's label is shown.
+     *
+     * @param {String} id ID of the annotation.
+     * @returns {Boolean} Whether the annotation's label is shown.
+     */
+    this.getAnnotationLabelShown = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.labelShown;
+    };
+
     //----------------------------------------------------------------------------------------------------
-    // Arbitrary clipping planes
+    // User clipping planes
     //----------------------------------------------------------------------------------------------------
 
-    this.createclip = function (id, cfg) {
+    /**
+     * Creates a user-defined clipping plane.
+     *
+     * The plane is positioned at a given World-space position, oriented in a given direction. The plane
+     * may be configured to clip elements that fall either in front or behind it, and may be activated
+     * or deactivated.
+     *
+     * @param {String} id Unique ID to assign to the clipping plane.
+     * @param {Object} cfg Clip plane configuration.
+     * @param {[Number, Number, Number]} [cfg.pos=0,0,0] World-space position of the clip plane.
+     * @param {[Number, Number, Number]} [cfg.dir=[0,0,-1]} Vector indicating the orientation of the clip plane.
+     * @param {Boolean} [cfg.active=true] Whether the clip plane is initially active. Only clips while this is true.
+     * @param {Boolean} [cfg.shown=true] Whether to show a helper object to indicate the clip plane's position and orientation.
+     * @param {Number} [cfg.side=1] Which side of the plane to discard elements from. A value of ````1```` discards from
+     * the front of the plane (with respect to the plane orientation vector), while ````-1```` discards elements behind the plane.
+     * @returns {Viewer} this
+     */
+    this.createClip = function (id, cfg) {
         if (scene.components[id]) {
             error("Component with this ID already exists: " + id);
             return this;
@@ -2266,54 +2671,54 @@ xeometry.Viewer = function (cfg) {
         }
         var clip = new xeogl.Clip(scene, {
             id: id,
-            entity: object,
-            primIndex: primIndex,
-            bary: cfg.bary,
-            eye: cfg.eye,
-            look: cfg.look,
-            up: cfg.up,
-            occludable: cfg.occludable,
-            glyph: cfg.glyph,
-            title: cfg.title,
-            desc: cfg.desc,
-            pinShown: cfg.pinShown,
-            labelShown: cfg.labelShown
+            pos: cfg.pos,
+            dir: cfg.dir,
+            active: cfg.active
         });
         clips[clip.id] = clip;
-        //scene.clips.clips = scene.clips.clips.push
+        clipHelpers[clip.id] = new xeogl.ClipHelper(scene, {
+            clip: clip
+        });
+        clipsDirty = true;
+        if (cfg.shown) {
+            this.showClip(id);
+        } else {
+            this.hideClip(id);
+        }
         return this;
     };
 
-    this.getclips = function () {
-        //if (id !== undefined || id === null) {
-        //    var objectsOfType = types[id];
-        //    if (objectsOfType) {
-        //    //    return Object.keys(objectsOfType);
-        //    }
-        //    var model = models[id];
-        //    if (!model) {
-        //        error("Model not found: " + id);
-        //        return [];
-        //    }
-        //    var entities = model.types["xeogl.Entity"];
-        //    if (!entities) {
-        //        return [];
-        //    }
-        //    return Object.keys(entities);
-        //}
+    /**
+     * Gets the IDs of the clip planes currently in the viewer.
+     * @return {String[]} IDs of the clip planes.
+     */
+    this.getClips = function () {
         return Object.keys(clips);
     };
 
+    /**
+     * Removes a clip plane from this viewer.
+     * @param {String} id ID of the clip plane to remove.
+     * @returns {Viewer} this
+     */
     this.destroyClip = function (id) {
         var clip = clips[id];
         if (!clip) {
             return this;
         }
+        this.hideClip(id);
         clip.destroy();
         delete clips[id];
+        clipHelpers[id].destroy();
+        delete clipHelpers[id];
+        clipsDirty = true;
         return this;
     };
 
+    /**
+     * Removes all clip planes from this viewer.
+     * @returns {Viewer} this
+     */
     this.clearClips = function () {
         for (var ids = Object.keys(clips), i = 0; i < ids.length; i++) {
             this.destroyClip(ids[i]);
@@ -2321,39 +2726,121 @@ xeometry.Viewer = function (cfg) {
         return this;
     };
 
+    /**
+     * Shows a helper object to indicate the position and orientation of a clipping plane.
+     * @param {String} id ID of the clip plane to show.
+     * @returns {Viewer}
+     */
+    this.showClip = function (id) {
+        var clipHelper = clipHelpers[id];
+        if (!clipHelper) {
+            error("Clip not found: \"" + id + "\"");
+            return this;
+        }
+        clipHelper.visible = true;
+        return this;
+    };
+
+    /**
+     * Hides the helper object that indicates the position and orientation of the given clipping plane.
+     * @param {String} id ID of the clip plane to hide.
+     * @returns {Viewer}
+     */
+    this.hideClip = function (id) {
+        var clipHelper = clipHelpers[id];
+        if (!clipHelper) {
+            error("Clip not found: \"" + id + "\"");
+            return this;
+        }
+        clipHelper.visible = false;
+        return this;
+    };
+
+    /**
+     * Enables a clipping plane.
+     * @param {String} id ID of the clip plane to enable.
+     * @returns {Viewer}
+     */
+    this.enableClip = function (id) {
+        var clip = clips[id];
+        if (!clip) {
+            error("Clip not found: \"" + id + "\"");
+            return this;
+        }
+        clip.active = true;
+        return this;
+    };
+
+    /**
+     * Disables a clipping plane.
+     * @param {String} id ID of the clip plane to disable.
+     * @returns {Viewer}
+     */
+    this.disableClip = function (id) {
+        var clip = clips[id];
+        if (!clip) {
+            error("Clip not found: \"" + id + "\"");
+            return this;
+        }
+        clip.active = false;
+        return this;
+    };
+
+    /**
+     * Sets the position of the given clip plane.
+     * @param {String} id ID of the clip plane to remove.
+     * @param {[Number, Number, Number]} [pos=0,0,0] World-space position of the clip plane.
+     * @returns {Viewer}
+     */
     this.setClipPos = function (id, pos) {
         var clip = clips[id];
         if (!clip) {
-            this.error("Clip not found: \"" + id + "\"");
+            error("Clip not found: \"" + id + "\"");
             return this;
         }
         clip.pos = pos;
         return this;
     };
 
+    /**
+     * Gets the position of the given clip plane.
+     * @param {String} id ID of the clip plane.
+     * @returns {[Number, Number, Number]} World-space position of the plane.
+     */
     this.getClipPos = function (id) {
         var clip = getclip(id);
         if (!clip) {
-            this.error("Clip not found: \"" + id + "\"");
+            error("Clip not found: \"" + id + "\"");
             return;
         }
         return clip.pos;
     };
 
+    /**
+     * Sets the orientation of the given clip plane.
+     * @param {String} id ID of the clip plane.
+     * @param {[Number, Number, Number]} [dir=0,0,1] Orientation vector.
+     * @returns {Viewer} this
+     */
     this.setClipDir = function (id, dir) {
         var clip = clips[id];
         if (!clip) {
-            this.error("Clip not found: \"" + id + "\"");
+            error("Clip not found: \"" + id + "\"");
             return this;
         }
         clip.dir = dir;
         return this;
     };
 
+    /**
+     * Gets the orientation of the given clip plane.
+     * @param {String} id ID of the clip plane.
+     * @returns {[Number, Number, Number]} Orientation vector.
+     */
     this.getClipDir = function (id) {
-        var clip = clips(id);
+        var clip = clips[id];
         if (!clip) {
-            this.error("Clip not found: \"" + id + "\"");
+            error("Clip not found: \"" + id + "\"");
             return;
         }
         return clip.dir;
@@ -2403,6 +2890,11 @@ xeometry.Viewer = function (cfg) {
             }
         }
 
+        function getSrc(id) {
+            var src = modelSrcs[id];
+            return xeogl._isString(src) ? src : xeogl._copy(src);
+        }
+
         return function () {
             var bookmark = {};
             var id;
@@ -2411,13 +2903,14 @@ xeometry.Viewer = function (cfg) {
             var translate;
             var scale;
             var rotate;
+
             bookmark.models = [];
             for (id in models) {
                 if (models.hasOwnProperty(id)) {
                     model = models[id];
                     modelData = {
                         id: id,
-                        src: modelSrcs[id]
+                        src: getSrc(id)
                     };
                     translate = getTranslate(id);
                     if (translate) {
@@ -2434,6 +2927,7 @@ xeometry.Viewer = function (cfg) {
                     bookmark.models.push(modelData);
                 }
             }
+
             bookmark.objects = {};
             for (id in objects) {
                 var object;
@@ -2466,8 +2960,16 @@ xeometry.Viewer = function (cfg) {
                         objectState = objectState || (bookmark.objects[id] = {});
                         objectState.opacity = object.material.alpha;
                     }
+                    if (object.clippable) {
+                        objectState = objectState || (bookmark.objects[id] = {});
+                        objectState.clippable = true;
+                    } else if (objectState) {
+                        objectState.clippable = false;
+                    }
                 }
             }
+
+            bookmark.annotations = {};
             for (id in annotations) {
                 var annotation;
                 var annotationState;
@@ -2499,6 +3001,22 @@ xeometry.Viewer = function (cfg) {
                         bookmark.annotations = {};
                     }
                     bookmark.annotations[id] = annotationState;
+                }
+            }
+
+            bookmark.clips = {};
+            for (id in clips) {
+                var clip;
+                var clipsState;
+                if (clips.hasOwnProperty(id)) {
+                    clip = clips[id];
+                    clipsState = {
+                        pos: vecToArray(clip.pos),
+                        dir: vecToArray(clip.dir),
+                        active: clip.active,
+                        side: clip.side
+                    };
+                    bookmark.clips[id] = clipsState;
                 }
             }
 
@@ -2556,8 +3074,10 @@ xeometry.Viewer = function (cfg) {
 
         return function (bookmark) {
             if (!bookmark.models || bookmark.models.length === 0) {
+                this.clear();
                 return;
             }
+            self.clearClips();
             self.clearAnnotations();
             // TODO: unload models that are not in bookmark
             loadModels(bookmark.models, 0, function () {
@@ -2583,6 +3103,15 @@ xeometry.Viewer = function (cfg) {
                         if (objectState.opacity !== undefined) {
                             self.setOpacity(id, objectState.opacity); // FIXME: what if objects already loaded and transparent, but no opacity value here?
                         }
+                        if (objectState.clippable !== undefined) {
+                            self.setClippable(id, objectState.clippable);
+                        }
+                    }
+                }
+                var clipStates = bookmark.clips;
+                for (id in clipStates) {
+                    if (clipStates.hasOwnProperty(id)) {
+                        self.createClip(id, clipStates[id]);
                     }
                 }
                 var annotationStates = bookmark.annotations;
@@ -2630,7 +3159,7 @@ xeometry.Viewer = function (cfg) {
      * }, function(imageDataURL) {
      *     imageElement.src = imageDataURL;
      * });
-*
+     *
      * // Get snapshot synchronously, requires that viewer be
      * // configured with preserveDrawingBuffer; true
      * imageElement.src = viewer.getSnapshot({
@@ -2666,11 +3195,13 @@ xeometry.Viewer = function (cfg) {
         scales = {};
         annotations = {};
         objectAnnotations = {};
+        clips = {};
+        clipHelpers = {};
         return this;
     };
 
     function error(msg) {
-        console.log(msg);
+        console.error("[xeometry] " + msg);
     }
 
     this.setBookmark(cfg);
