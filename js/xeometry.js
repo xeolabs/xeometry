@@ -112,7 +112,7 @@ xeometry.Viewer = function (cfg) {
         orthographic: new xeogl.Ortho(scene, {
             scale: 1.0,
             near: 0.1,
-            far: 5000
+            far: 10000
         })
     };
 
@@ -411,6 +411,10 @@ xeometry.Viewer = function (cfg) {
         delete models[id];
         delete modelSrcs[id];
         delete eulerAngles[id];
+        delete transformable[id];
+        delete translations[id];
+        delete rotations[id];
+        delete scales[id];
         if (unloadedModel) {
             unloadedModel(id);
         }
@@ -3051,7 +3055,7 @@ xeometry.Viewer = function (cfg) {
             var clip;
             var clipState;
             for (id in clips) {
-                if (clip.hasOwnProperty(id)) {
+                if (clips.hasOwnProperty(id)) {
                     clip = clips[id];
                     clipState = {
                         id: id,
@@ -3235,7 +3239,7 @@ xeometry.Viewer = function (cfg) {
                 (bookmark.lockGimbalY === false) ? self.lockGimbalY() : self.unlockGimbalY();
                 self.setProjection(bookmark.projection || "perspective");
                 self.setViewFitFOV(bookmark.viewFitFOV || 45);
-                self.setViewFitDuration(bookmark.viewFitDuration !== undefined ? viewFitDuration : 0.5);
+                self.setViewFitDuration(bookmark.viewFitDuration !== undefined ? bookmark.viewFitDuration : 0.5);
                 self.setPerspectiveNear(bookmark.perspectiveNear !== undefined ? bookmark.perspectiveNear : 0.1);
                 self.setPerspectiveFar(bookmark.perspectiveFar != undefined ? bookmark.perspectiveFar : 10000.0);
                 self.setPerspectiveFOV(bookmark.perspectiveFOV || 60);
