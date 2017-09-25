@@ -2956,35 +2956,39 @@ xeometry.Viewer = function (cfg) {
                     objectState = null;
                     translate = getTranslate(id);
                     if (translate) {
-                        objectState = objectState || { id: id };
+                        objectState = objectState || {id: id};
                         objectState.translate = translate;
                     }
                     scale = getScale(id);
                     if (scale) {
-                        objectState = objectState || { id: id };
+                        objectState = objectState || {id: id};
                         objectState.scale = scale;
                     }
                     rotate = getRotate(id);
                     if (rotate) {
-                        objectState = objectState || { id: id };
+                        objectState = objectState || {id: id};
                         objectState.rotate = rotate;
                     }
                     if (!object.visible) {
-                        objectState = objectState || { id: id };
+                        objectState = objectState || {id: id};
                         objectState.visible = false;
                     }
                     if (object.material.alphaMode === "blend") {
                         if (object.material.alpha < 1.0) {
-                            objectState = objectState || { id: id };
+                            objectState = objectState || {id: id};
                             objectState.opacity = object.material.alpha;
                         }
                     }
+                    if (object.outlined) {
+                        objectState = objectState || {id: id};
+                        objectState.outlined = true;
+                    }
                     if (!object.clippable) {
-                        objectState = objectState || {};
+                        objectState = objectState || {id: id};
                         objectState.clippable = false;
                     }
                     if (!object.pickable) {
-                        objectState = objectState || {};
+                        objectState = objectState || {id: id};
                         objectState.pickable = false;
                     }
                     if (objectState) {
@@ -3193,7 +3197,7 @@ xeometry.Viewer = function (cfg) {
                     for (i = 0, len = objectStates.length; i < len; i++) {
                         objectState = objectStates[i];
                         id = objectState.id;
-                        if (objectState.visible !== true) {
+                        if (objectState.visible === false) {
                             invisible.push(id);
                         }
                         if (objectState.translate) {
@@ -3206,7 +3210,10 @@ xeometry.Viewer = function (cfg) {
                             self.setRotate(id, objectState.rotate);
                         }
                         if (objectState.opacity !== undefined) {
-                            self.setOpacity(id, objectState.opacity); // FIXME: what if objects already loaded and transparent, but no opacity value here?
+                            self.setOpacity(id, objectState.opacity);
+                        }
+                        if (!!objectState.outlined) {
+                            self.showOutline(id);
                         }
                         if (objectState.clippable !== undefined) {
                             self.setClippable(id, objectState.clippable);
