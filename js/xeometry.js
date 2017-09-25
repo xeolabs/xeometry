@@ -431,6 +431,7 @@ xeometry.Viewer = function (cfg) {
             }
         }
         this.clearAnnotations();
+        this.clearClips();
     };
 
     /**
@@ -1754,6 +1755,8 @@ xeometry.Viewer = function (cfg) {
     /**
      * Sets the camera's flight duration when fitting elements to view.
      *
+     * Initial default value is ````0.5```` seconds.
+     *
      * A value of zero (default) will cause the camera to instantly jump to each new target .
      *
      * @param {Number} value The new flight duration, in seconds.
@@ -2646,9 +2649,8 @@ xeometry.Viewer = function (cfg) {
     /**
      * Creates a user-defined clipping plane.
      *
-     * The plane is positioned at a given World-space position, oriented in a given direction. The plane
-     * may be configured to clip elements that fall either in front or behind it, and may be activated
-     * or deactivated.
+     * The plane is positioned at a given World-space position, oriented in a given direction, and may be
+     * active or inactive.
      *
      * @param {String} id Unique ID to assign to the clipping plane.
      * @param {Object} cfg Clip plane configuration.
@@ -2656,7 +2658,6 @@ xeometry.Viewer = function (cfg) {
      * @param {[Number, Number, Number]} [cfg.dir=[0,0,-1]} Vector indicating the orientation of the clip plane.
      * @param {Boolean} [cfg.active=true] Whether the clip plane is initially active. Only clips while this is true.
      * @param {Boolean} [cfg.shown=true] Whether to show a helper object to indicate the clip plane's position and orientation.
-     * @param {Number} [cfg.side=1] Which side of the plane to discard elements from. A value of ````1```` discards from
      * the front of the plane (with respect to the plane orientation vector), while ````-1```` discards elements behind the plane.
      * @returns {Viewer} this
      */
@@ -2855,9 +2856,15 @@ xeometry.Viewer = function (cfg) {
      *
      * The viewer can then be restored to the bookmark at any time using {@link #setBookmark}.
      *
+     * For compactness, a bookmark only contains state that has non-default values.
+     *
      * @return {Object} A JSON bookmark.
      */
     this.getBookmark = (function () {
+
+        // This method optimizes bookmark size by storing values only when they override default
+        // values, many of which are baked into xeogl. This method will therefore break if those
+        // default values happen to change within xeogl.
 
         var vecToArray = math.vecToArray;
 
@@ -2896,6 +2903,7 @@ xeometry.Viewer = function (cfg) {
         }
 
         return function () {
+
             var bookmark = {};
             var id;
             var model;
@@ -2904,7 +2912,9 @@ xeometry.Viewer = function (cfg) {
             var scale;
             var rotate;
 
-            bookmark.models = [];
+            // Serialize models
+
+            var modelStates = [];
             for (id in models) {
                 if (models.hasOwnProperty(id)) {
                     model = models[id];
@@ -2924,67 +2934,95 @@ xeometry.Viewer = function (cfg) {
                     if (rotate) {
                         modelData.rotate = rotate;
                     }
-                    bookmark.models.push(modelData);
+                    modelStates.push(modelData);
                 }
             }
+            if (modelStates.length > 0) {
+                bookmark.models = modelStates;
+            }
 
-            bookmark.objects = {};
+            // Serialize object states
+
+            var objectStates = [];
+            var object;
+            var objectState;
             for (id in objects) {
-                var object;
-                var objectState;
                 if (objects.hasOwnProperty(id)) {
                     object = objects[id];
                     objectState = null;
                     translate = getTranslate(id);
                     if (translate) {
-                        objectState = objectState || (bookmark.objects[id] = {});
+                        objectState = objectState || { id: id };
                         objectState.translate = translate;
                     }
                     scale = getScale(id);
                     if (scale) {
-                        objectState = objectState || (bookmark.objects[id] = {});
+                        objectState = objectState || { id: id };
                         objectState.scale = scale;
                     }
                     rotate = getRotate(id);
                     if (rotate) {
-                        objectState = objectState || (bookmark.objects[id] = {});
+                        objectState = objectState || { id: id };
                         objectState.rotate = rotate;
                     }
-                    if (object.visible) {
-                        objectState = objectState || (bookmark.objects[id] = {});
-                        objectState.visible = true;
-                    } else if (objectState) {
+                    if (!object.visible) {
+                        objectState = objectState || { id: id };
                         objectState.visible = false;
                     }
                     if (object.material.alphaMode === "blend") {
-                        objectState = objectState || (bookmark.objects[id] = {});
-                        objectState.opacity = object.material.alpha;
+                        if (object.material.alpha < 1.0) {
+                            objectState = objectState || { id: id };
+                            objectState.opacity = object.material.alpha;
+                        }
                     }
-                    if (object.clippable) {
-                        objectState = objectState || (bookmark.objects[id] = {});
-                        objectState.clippable = true;
-                    } else if (objectState) {
+                    if (!object.clippable) {
+                        objectState = objectState || {};
                         objectState.clippable = false;
+                    }
+                    if (!object.pickable) {
+                        objectState = objectState || {};
+                        objectState.pickable = false;
+                    }
+                    if (objectState) {
+                        objectStates.push(objectState);
                     }
                 }
             }
+            if (objectStates.length > 0) {
+                bookmark.objects = objectStates;
+            }
 
-            bookmark.annotations = {};
+            // Serialize annotations
+
+            var annotationStates = [];
+            var annotation;
+            var annotationState;
             for (id in annotations) {
-                var annotation;
-                var annotationState;
                 if (annotations.hasOwnProperty(id)) {
                     annotation = annotations[id];
                     annotationState = {
+                        id: id,
                         primIndex: annotation.primIndex,
-                        bary: vecToArray(annotation.bary),
-                        glyph: annotation.glyph,
-                        title: annotation.title,
-                        desc: annotation.desc,
-                        pinShown: annotation.pinShown,
-                        labelShown: annotation.labelShown,
-                        occludable: annotation.occludable
+                        bary: vecToArray(annotation.bary)
                     };
+                    if (annotation.glyph !== "") {
+                        annotationState.glyph = annotation.glyph;
+                    }
+                    if (annotation.title !== "") {
+                        annotationState.title = annotation.title;
+                    }
+                    if (annotation.desc !== "") {
+                        annotationState.desc = annotation.desc;
+                    }
+                    if (!annotation.pinShown) {
+                        annotationState.pinShown = annotation.pinShown;
+                    }
+                    if (!annotation.labelShown) {
+                        annotationState.labelShown = annotation.labelShown;
+                    }
+                    if (!annotation.occludable) {
+                        annotationState.occludable = annotation.occludable;
+                    }
                     if (annotation.entity) {
                         annotationState.object = annotation.entity.id;
                     }
@@ -3000,25 +3038,37 @@ xeometry.Viewer = function (cfg) {
                     if (!bookmark.annotations) {
                         bookmark.annotations = {};
                     }
-                    bookmark.annotations[id] = annotationState;
+                    annotationStates.push(annotationState);
                 }
+            }
+            if (annotationStates.length > 0) {
+                bookmark.annotations = annotationStates;
             }
 
-            bookmark.clips = {};
+            // Serialize clips
+
+            var clipStates = [];
+            var clip;
+            var clipState;
             for (id in clips) {
-                var clip;
-                var clipsState;
-                if (clips.hasOwnProperty(id)) {
+                if (clip.hasOwnProperty(id)) {
                     clip = clips[id];
-                    clipsState = {
+                    clipState = {
+                        id: id,
                         pos: vecToArray(clip.pos),
-                        dir: vecToArray(clip.dir),
-                        active: clip.active,
-                        side: clip.side
+                        dir: vecToArray(clip.dir)
                     };
-                    bookmark.clips[id] = clipsState;
+                    if (!clip.active) {
+                        clipState.active = clip.active;
+                    }
+                    clipStates.push(clipState);
                 }
             }
+            if (clipStates.length > 0) {
+                bookmark.clips = clipStates;
+            }
+
+            // Serialize camera position
 
             bookmark.lookat = {
                 eye: vecToArray(view.eye),
@@ -3026,15 +3076,56 @@ xeometry.Viewer = function (cfg) {
                 up: vecToArray(view.up)
             };
 
-            bookmark.projection = projectionType;
+            // Serialize all other viewer properties, when they have non-default values
 
-            bookmark.perspectiveNear = projections.perspective.near;
-            bookmark.perspectiveFar = projections.perspective.far;
-            bookmark.perspectiveFOV = projections.perspective.fovy;
+            if (view.gimbalLockY !== true) {
+                bookmark.gimbalLockY = view.gimbalLockY;
+            }
 
-            bookmark.orthoNear = projections.orthographic.near;
-            bookmark.orthoFar = projections.orthographic.far;
-            bookmark.orthoScale = projections.orthographic.scale;
+            if (cameraFlight.fitFOV !== 45) {
+                bookmark.viewFitFOV = cameraFlight.fitFOV;
+            }
+
+            if (cameraFlight.duration !== 0.5) {
+                bookmark.viewFitDuration = cameraFlight.duration;
+            }
+
+            if (projectionType !== "perspective") {
+                bookmark.projection = projectionType;
+            }
+
+            if (projections.perspective.near !== 0.1) {
+                bookmark.perspectiveNear = projections.perspective.near;
+            }
+
+            if (projections.perspective.far !== 10000.0) {
+                bookmark.perspectiveFar = projections.perspective.far;
+            }
+
+            if (projections.perspective.fovy !== 60.0) {
+                bookmark.perspectiveFOV = projections.perspective.fovy;
+            }
+
+            if (projections.orthographic.near !== 0.1) {
+                bookmark.orthoNear = projections.orthographic.near;
+            }
+
+            if (projections.orthographic.far !== 10000.0) {
+                bookmark.orthoFar = projections.orthographic.far;
+            }
+
+            if (projections.orthographic.scale !== 1.0) {
+                bookmark.orthoScale = projections.orthographic.scale;
+            }
+
+            if (scene.outline.thickness !== 15) {
+                bookmark.outlineThickness = scene.outline.thickness;
+            }
+
+            var outlineColor = scene.outline.color;
+            if (outlineColor[0] !== 1 || outlineColor[1] !== 1 || outlineColor[2] !== 0) {
+                bookmark.outlineColor = outlineColor;
+            }
 
             return bookmark;
         };
@@ -3044,9 +3135,11 @@ xeometry.Viewer = function (cfg) {
      * Sets viewer state to the snapshot contained in given JSON bookmark.
      *
      * A bookmark is a complete snapshot of the viewer's state, which was
-     * captured earlier with {@link #getBookmark}.
+     * captured earlier with {@link #getBookmark}. Setting a bookmark will
+     * clear everything in the viewer first.
      *
      * @param {Object} bookmark JSON bookmark.
+     * @param {Function} [ok] Callback fired once the bookmark has been set.
      * @returns {Viewer} this
      */
     this.setBookmark = (function () {
@@ -3072,24 +3165,32 @@ xeometry.Viewer = function (cfg) {
             });
         }
 
-        return function (bookmark) {
+        return function (bookmark, ok) {
+
+            this.clear();
+
             if (!bookmark.models || bookmark.models.length === 0) {
-                this.clear();
+                if (ok) {
+                    ok();
+                }
                 return;
             }
-            self.clearClips();
-            self.clearAnnotations();
-            // TODO: unload models that are not in bookmark
+
             loadModels(bookmark.models, 0, function () {
+
+                var i;
+                var len;
                 var id;
                 var objectStates = bookmark.objects;
-                var objectState;
-                var visible = [];
-                for (id in objectStates) {
-                    if (objectStates.hasOwnProperty(id)) {
-                        objectState = objectStates[id];
-                        if (objectState.visible) {
-                            visible.push(id);
+                var invisible = [];
+
+                if (objectStates) {
+                    var objectState;
+                    for (i = 0, len = objectStates.length; i < len; i++) {
+                        objectState = objectStates[i];
+                        id = objectState.id;
+                        if (objectState.visible !== true) {
+                            invisible.push(id);
                         }
                         if (objectState.translate) {
                             self.setTranslate(id, objectState.translate);
@@ -3108,28 +3209,45 @@ xeometry.Viewer = function (cfg) {
                         }
                     }
                 }
+
                 var clipStates = bookmark.clips;
-                for (id in clipStates) {
-                    if (clipStates.hasOwnProperty(id)) {
-                        self.createClip(id, clipStates[id]);
+                if (clipStates) {
+                    var clipState;
+                    for (i = 0, len = clipStates.length; i < len; i++) {
+                        clipState = clipStates[i];
+                        self.createClip(clipState.id, clipState);
                     }
                 }
+
                 var annotationStates = bookmark.annotations;
-                for (id in annotationStates) {
-                    if (annotationStates.hasOwnProperty(id)) {
-                        self.createAnnotation(id, annotationStates[id]);
+                if (annotationStates) {
+                    var annotationState;
+                    for (i = 0, len = annotationStates.length; i < len; i++) {
+                        annotationState = annotationStates[i];
+                        self.createAnnotation(annotationState.id, annotationState);
                     }
                 }
-                self.hide();
-                self.show(visible);
+
+                if (invisible.length > 0) {
+                    self.hide(invisible);
+                }
                 self.setEyeLookUp(bookmark.lookat.eye, bookmark.lookat.look, bookmark.lookat.up);
-                self.setProjection(bookmark.projection);
-                self.setPerspectiveNear(bookmark.perspectiveNear);
-                self.setPerspectiveFar(bookmark.perspectiveFar);
-                self.setPerspectiveFOV(bookmark.perspectiveFOV);
-                self.setOrthoNear(bookmark.orthoNear);
-                self.setOrthoFar(bookmark.orthoFar);
-                self.setOrthoScale(bookmark.orthoScale);
+                (bookmark.lockGimbalY === false) ? self.lockGimbalY() : self.unlockGimbalY();
+                self.setProjection(bookmark.projection || "perspective");
+                self.setViewFitFOV(bookmark.viewFitFOV || 45);
+                self.setViewFitDuration(bookmark.viewFitDuration !== undefined ? viewFitDuration : 0.5);
+                self.setPerspectiveNear(bookmark.perspectiveNear !== undefined ? bookmark.perspectiveNear : 0.1);
+                self.setPerspectiveFar(bookmark.perspectiveFar != undefined ? bookmark.perspectiveFar : 10000.0);
+                self.setPerspectiveFOV(bookmark.perspectiveFOV || 60);
+                self.setOrthoNear(bookmark.orthoNear != undefined ? bookmark.orthoNear : 0.1);
+                self.setOrthoFar(bookmark.orthoFar != undefined ? bookmark.orthoFar : 10000);
+                self.setOrthoScale(bookmark.orthoScale != undefined ? bookmark.orthoScale : 1.0);
+                self.setOutlineThickness(bookmark.outlineThickness != undefined ? bookmark.outlineThickness : 15);
+                self.setOutlineColor(bookmark.outlineColor != undefined ? bookmark.outlineColor : [1, 1, 0]);
+
+                if (ok) {
+                    ok();
+                }
             });
         };
     })();
@@ -3137,21 +3255,13 @@ xeometry.Viewer = function (cfg) {
     /**
      * Captures a snapshot image of the viewer's canvas.
      *
-     * When a callback is given, this method will capture the snapshot asynchronously, on the next animation frame,
-     * and return it via the callback.
-     *
-     * When no callback is given, this method captures and returns the snapshot immediately. Note that is only
-     * possible when you have configured the viewer to preserve the WebGL drawing buffer (which incurs a
-     * performance overhead).
-     *
      * @param {*} [params] Capture options.
      * @param {Number} [params.width] Desired width of result in pixels - defaults to width of canvas.
      * @param {Number} [params.height] Desired height of result in pixels - defaults to height of canvas.
      * @param {String} [params.format="jpeg"] Desired format; "jpeg", "png" or "bmp".
-     * @param {Function} [ok] Callback to return the image data when taking a snapshot asynchronously.
+     * @param {Function} ok Callback to return the image data.
      * @returns {String} String-encoded image data when taking the snapshot synchronously. Returns null when the ````ok```` callback is given.
      * @example
-     * // Get snapshot asynchronously
      * viewer.getSnapshot({
      *     width: 500,
      *     height: 500,
@@ -3159,23 +3269,14 @@ xeometry.Viewer = function (cfg) {
      * }, function(imageDataURL) {
      *     imageElement.src = imageDataURL;
      * });
-     *
-     * // Get snapshot synchronously, requires that viewer be
-     * // configured with preserveDrawingBuffer; true
-     * imageElement.src = viewer.getSnapshot({
-     *     width: 500,
-     *     height: 500,
-     *     format: "png"
-     * });
      */
     this.getSnapshot = function (params, ok) {
         params = params || {};
-        var src = scene.canvas.getSnapshot({
+        scene.canvas.getSnapshot({
             width: params.width, // Defaults to size of canvas
             height: params.height,
             format: params.format || "png" // Options are "jpeg" (default), "png" and "bmp"
         }, ok);
-        return ok ? null : src;
     };
 
     /**
