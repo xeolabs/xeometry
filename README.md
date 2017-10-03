@@ -123,9 +123,10 @@ viewer.destroy();
 
 You can load multiple glTF 2.0 models into a viewer at the same time, as well as multiple copies of the same model.
 
-> So far, xeometry only loads geometries, materials and modeling transform hierarchies, without animations. It does not
-load cameras or lights because the viewer manages those globally for all the models you load. In addition to glTF's core
-metallic material workflow, xeometry also supports specular and common materials, per the glTF 2.0 specification.
+> **glTF support:** xeometry loads glTF 2.0 geometries, materials and modeling transform hierarchies, without animations.
+ In addition to glTF's core
+metallic material workflow, xeometry also supports specular and common materials. It does not
+load cameras or lights because the viewer manages those globally, for all the models you load.
 
 Loading two separate models into a viewer:
 ````javascript
@@ -151,7 +152,7 @@ Clearing everything from the viewer:
 viewer.clear();
 ````
 
-## Querying scene content
+## Querying viewer content
 
 ### Getting models and objects
 
