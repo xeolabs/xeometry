@@ -1,86 +1,90 @@
 # xeometry
 
-An open-source WebGL-based glTF viewing toolkit built on [xeogl](http://xeogl.org).
+xeometry is a JavaScript API for viewing glTF models on WebGL.
 
- * [Examples](examples/index.html)
- * [Docs](docs)
+# Contents
 
-A **xeometry** viewer is a single facade class that wraps xeogl, with methods to
-load models from  [glTF](https://github.com/KhronosGroup/glTF),
-query, animate and navigate their objects and create sharable custom views.
+- [Introduction](#overview)
+- [Usage](#usage)
+  * [Creating and destroying viewers](#creating-and-destroying-viewers)
+  * [Loading and unloading models](#loading-and-unloading-models)
+  * [Controlling the camera](#controlling-the-camera)
+    + [Looking at things](#looking-at-things)
+    + [Panning the camera](#panning-the-camera)
+    + [Rotating the camera](#rotating-the-camera)
+    + [Zooming the camera](#zooming-the-camera)
+    + [Controlling camera projection](#controlling-camera-projection)
+  * [Querying models and objects](#querying-models-and-objects)
+  * [Assigning types to objects](#assigning-types-to-objects)
+  * [Querying boundaries of models and objects](#querying-boundaries-of-models-and-objects)
+  * [Querying object geometries](#querying-object-geometries)
+  * [Transforming models and objects](#transforming-models-and-objects)
+  * [Showing and hiding models and objects](#showing-and-hiding-models-and-objects)
+  * [Picking objects](#picking-objects)
+  * [Outlining objects](#outlining-objects)
+  * [Clipping planes](#clipping-planes)
+  * [Annotations](#annotations)
+  * [Canvas snapshots](#canvas-snapshots)
+  * [Saving and loading bookmarks](#saving-and-loading-bookmarks)
 
-When the glTF models are tagged with
-[IFC](https://en.wikipedia.org/wiki/Industry_Foundation_Classes) element types (optional), then
-the viewer can manage the objects using those type codes.
 
-You can also just operate on objects using their IDs:<br><br>
-[![](assets/sawObjects.png)](http://xeogl.org/examples/#presentation_annotations_tronTank)
+# Introduction
+
+A xeometry [Viewer](http://xeolabs.com/xeometry/docs/#viewer) is a single class that wraps [xeogl](http://xeogl.org) in a
+set of simple data-driven methods focused on loading glTF models and manipulating scene content to create cool presentations.
+
+The example below shows the idea. In this example, we're loading a glTF model of a reciprocating saw, setting some objects
+transparent to reveal the inner workings, then positioning the camera to fit everything in view.
+
+[![](http://xeolabs.com/xeometry/assets/sawObjects.png)](http://xeogl.org/examples/#presentation_annotations_tronTank)
 
 ```` JavaScript
 var viewer = new xeometry.Viewer({ canvasId: "theCanvas" });
 
 viewer.loadModel("saw", "models/Reciprocating_Saw.gltf", function () {
-     viewer.setOpacity([ // Make the red plastic casing transparent
-         "saw#body-node.entity.0",
-         "saw#body-node_1.entity.0",
-         "saw#body-node_2.entity.0",
-         "saw#body-node_3.entity.0",
-         "saw#body-node_11.entity.0",
-         "saw#body-node_110.entity.0",
-         "saw#body-node_29.entity.0",
-         "saw#body-node_7.entity.0",
-         "saw#body-node_6.entity.0"
-     ], 0.3);
-     viewer.viewFit(["saw"]);
+     viewer.setOpacity(["saw#0", "saw#1", "saw#2", "saw#3", "saw#11"], 0.3);
+     viewer.viewFit("saw");
 });
 ````
 
-# Contents
+Viewer methods generally get or set some property of a target element in the scene, such as the opacity of an object, or
+the position of the camera.
 
-- [Features](#features)
-- [Usage](#usage)
-    + [Loading the libs](#loading-the-libs)
-    + [Creating and destroying viewers](#creating-and-destroying-viewers)
-    + [Loading and unloading models](#loading-and-unloading-models)
-      - [Tagging models with IFC types](#tagging-models-with-ifc-types)
-    + [Querying models and objects](#querying-models-and-objects)
-    + [Querying boundaries of models and objects](#querying-boundaries-of-models-and-objects)
-    + [Transforming models and objects](#transforming-models-and-objects)
-    + [Showing and hiding models and objects](#showing-and-hiding-models-and-objects)
-    + [Controlling the camera](#controlling-the-camera)
-    + [Picking and ray casting objects](#picking-and-ray-casting-objects)
-    + [Saving and loading bookmarks](#saving-and-loading-bookmarks)
+Some of the things you can do with objects are:
 
-# Examples
+* showing and hiding,
+* rotating, scaling and translating,
+* changing opacity,
+* annotating,
+* outlining,
+* slicing with clipping planes,
+* getting boundaries,
+* fitting to view,
+* picking and raycasting.
 
-* See the [examples gallery](examples/index.html).
+xeometry tracks all your updates, and is able to serialize a viewer's state as a JSON bookmark:
 
-# Features
+```` JavaScript
+var bookmark = viewer.getBookmark();
+````
+A bookmark contains a complete snapshot of the viewer's state, including what models are loaded, object properties,
+camera position etc - everything you've done through the viewer API. We can restore a viewer to a bookmark at any time:
+```` JavaScript
+viewer.setBookmark(bookmark);
+````
+We can also initialize another viewer from a bookmark:
+```` JavaScript
+var viewer2 = new xeometry.Viewer({ canvasId: "anotherCanvas" });
+````
 
-* Load multiple glTF models
-* Tag glTF models with IFC types, to access the objects by type
-* Create multiple viewers in a page
-* Show and hide objects
-* Scale, rotate and translate objects
-* Query object boundaries
-* Find objects in boundary
-* Object surface picking and ray casting
-* Navigate camera to objects
-* Zoom, pan, rotate, spin, fly and jump camera
-* Save and load bookmarks
+# API Usage
 
-# Usage
+## Creating and destroying viewers
 
-### Loading the libs
-
-The first step is to link to the xeogl and xeometry libraries:
+The first step is to link to the xeometry library:
 ````html
-<script src="xeogl.js"></script>
 <script src="xeometry.js"></script>
 ````
-xeometry's only dependency is the xeogl library.
-
-### Creating and destroying viewers
 
 Create a viewer with a default internally-created canvas that fills the page:
 ````javascript
@@ -101,230 +105,70 @@ Destroy a viewer:
 viewer.destroy();
 ````
 
-### Loading and unloading models
+## Loading and unloading models
 
-You can load multiple glTF models into a viewer at the same time. You can also load multiple copies of the same model.
+You can load multiple glTF models into a viewer at the same time, as well as multiple copies of the same model.
 
-Load two glTF models into a viewer:
+Loading two separate models into a viewer:
 ````javascript
-viewer.loadModel("gearbox", "./GearboxAssy.gltf", function () {
+viewer.loadModel("saw", "./Reciprocating_Saw.gltf", function () { /* Loaded */ });
 
-    viewer.loadModel("saw", "./Reciprocating_Saw.gltf", function () {
-        //... two models loaded
-    });
-});
+viewer.loadModel("gearbox", "./GearboxAssy.gltf", function () { /* Loaded */ });
 ````
 
-Unload a model:
+Loading two copies of the same model into a viewer:
+````javascript
+viewer.loadModel("saw1", "./Reciprocating_Saw.gltf", function () { /* Loaded */ });
+
+viewer.loadModel("saw2", "./Reciprocating_Saw.gltf", function () { /* Loaded */ });
+````
+
+Unloading a model:
 ````javascript
 viewer.unloadModel("gearbox");
 ````
 
-#### Tagging models with IFC types
-
-Any entity within a glTF file can have an ````extra```` property for any app-specific information. For xeometry, we
-we use that that to tag our objects with IFC types, for example:
-
-````json
-{
-    //...
-    "nodes": [
-        {
-            "extra": "customData"
-        }
-    ]
-}
+Clearing everything from the viewer:
+````javascript
+viewer.clear();
 ````
 
-TODO
+## Controlling the camera
 
-### Querying models and objects
+A viewer has a single camera that can be moved in "orbit" or first-person mode, directed to fit target
+elements in view, and switched between perspective and orthographic projections.
 
-You can query the IDs of whatever models and objects are currently loaded.
-
-Get IDs of all models:
-````javascript
-var models = viewer.getModels();
-````
-
-Get IDs of all objects:
-````javascript
-var objects = viewer.getObjects();
-````
-
-Get ID of an object's model:
-````javascript
-var modelId = viewer.getModel("foo");
-````
-
-Get IDs of all objects within a model:
-````javascript
-var sawObjects = viewer.getObjects("saw");
-````
-
-Get IDs of objects of the given IFC type:
-````javascript
-var typeObjects = viewer.getObjects("ifcCurtainWall");
-````
-
-Get object's IFC type:
-````javascript
-var type = viewer.getType("foo"); // "DEFAULT" by default
-````
-
-Get all IFC types currently loaded:
-````javascript
-var types = viewer.getTypes();
-````
-
-### Querying boundaries of models and objects
-
-Everything within a viewer can be queried for its axis-aligned World-space boundary (AABB), which is given as an array containing values ````[xmin, ymin, zmin, xmax, ymax, zmax]````.
-
-Get the collective boundary of everything in a viewer:
-````javascript
-var allBoundary = viewer.getAABB();
-````
-
-Get the boundary of a model:
-````javascript
-var sawBoundary = viewer.getAABB("saw");
-````
-
-Get collective boundary of two objects:
-````javascript
-var objectsBoundary = viewer.getAABB(["foo", "bar"]);
-````
-
-Get collective boundary of all objects of the given IFC types:
-````javascript
-var objectsBoundary = viewer.getAABB(["IfcFlowController", "IfcFlowFitting"]);
-````
-
-Get collective boundary of two models:
-````javascript
-var modelsBoundary = viewer.getAABB(["saw", "gearbox"]);
-````
-
-Get collective boundary of the first five objects within a given model:
-````javascript
-var objectsBoundary2 = viewer.getAABB(viewer.objects("saw").slice(0, 5));
-````
-
-Get collective boundary of a model and a couple of objects:
-````javascript
-var objectsBoundary3 = viewer.getAABB(["saw", "outerCasing", "trigger");
-````
-
-### Transforming models and objects
-
-Each model and object can be independently transformed within a viewer.  Transforming a model or object
-will dynamically change the boundary extents returned by ````getAABB()```` (see previous section). A transformation consists of the following operations, applied in this order:
-
- * scale
- * X-axis rotation (degrees),
- * Y-axis rotation,
- * Z-axis rotation
- * translation
-
-Transform a model, move it along the X axis, scale it, then rotate it 90 degrees about its X-axis:
-````javascript
-viewer.setTranslate("saw", [100,0,0]);
-viewer.setScale("saw", [0.5,0.5,0.5]);
-viewer.setRotate("saw", [90,0,0]);
-`````
-
-Spin an object about its Y-axis:
-````javascript
-var angles =[0,0,0]; // Tait-Bryant angles about X, Y and Z, in degrees
-function spin() {
-    viewer.setRotate("outerCasing", angles);
-    angles[1] += 0.1;
-    requestAnimationFrame(spin);
-}
-spin();
-`````
-
-Get an object's translation, scale and rotation:
-````javascript
-var translate = viewer.setTranslate("saw");
-var scale = viewer.setScale("saw");
-var rotate = viewer.setRotate("saw");
-`````
-
-### Showing and hiding models and objects
-
-Show everything in a viewer:
-````javascript
-viewer.show();
-`````
-
-Hide everything in a viewer:
-````javascript
-viewer.hide();
-````
-
-Show all objects within a model:
-````javascript
-viewer.show("saw");
-````
-
-Hide all objects within a model:
-````javascript
-viewer.hide("saw");
-````
-
-Show given objects:
-````javascript
-viewer.show(["outerCover", "trigger"]);
-````
-
-Show all objects of the given IFC types:
-````javascript
-viewer.show(["IfcFlowController", "IfcFlowFitting"]);
-````
-
-Show a model and two objects:
-````javascript
-viewer.show(["saw", "outerCover", "trigger"]);
-````
-
-Hide a model, two objects and all objects of the given IFC type:
-````javascript
-viewer.hide(["saw", "outerCover", "trigger", "IfcFlowFitting"]);
-````
-
-### Controlling the camera
-
-The camera position can be updated at any time. The camera can also be made to fit the view to given models and
-objects, either by flying or jumping to a new position.
-
-Get camera eye, look and up:
+Getting camera ````eye````, ````look```` and ````up````:
 ````javascript
 var eye = viewer.getEye();
 var look = viewer.getLook();
 var up = viewer.getUp();
 ````
 
-Set camera eye, look and up:
+Setting camera ````eye````, ````look```` and ````up````:
 ````javascript
 viewer.setEye([0,0,-100]);
 viewer.setLook([0,0,0]);
 viewer.setUp([0,1,0]);
 ````
 
-Set the duration of camera flight to each new position:
+### Looking at things
+
+The camera can also be made to fit given models, objects, types or boundaries in view, either by flying or jumping to
+a new position.
+
+Make camera fly for two seconds as it moves to each new target:
 ````javascript
-viewer.setFlightDuration(2); // Seconds
+viewer.setViewFitDuration(2); // Seconds
 var duration = viewer.getFlightDuration();
 ````
 
-When the duration is set to zero, the camera will snap straight to each new position, otherwise it will fly.
+When the duration greater than zero, the camera will fly, otherwise it will snap straight to each new target.
 
 Fly camera to given position:
 ````javascript
 // Eye, look and "up" vector
-viewer.setEyeLookUp([0,0,-100],[0,0,0],[0,1,0], function() { 
+viewer.setEyeLookUp([0,0,-100],[0,0,0],[0,1,0], function() {
     // Camera arrived
 });
 ````
@@ -350,39 +194,52 @@ viewer.viewFit(["saw", "gearbox"], function() {
 });
 ````
 
-Fly camera to fit all objects of the given IFC types:
+Fly camera to fit all objects of the given types:
 ````javascript
 viewer.viewFit(["IfcFlowController", "IfcFlowFitting"], function() {
     // Camera arrived
 });
 ````
 
-Fly camera to fit a model, two objects, and all objects of the given IFC type:
+Fly camera to fit a model, two objects, and all objects of the given type:
 ````javascript
-viewer.viewFit(["saw", "outerCover", "trigger", "IfcFlowFitting"], function() {
+viewer.viewFit(["gearbox", "saw#1", "saw#5", "IfcFlowFitting"], function() {
     // Camera arrived
 });
 ````
 
-Switch camera to "jump" mode, where it will jump directly to each new position:
+Fly camera to fit all objects of the given types, looking along the World-space -X axis:
 ````javascript
-viewer.viewFit(false);
+viewer.viewFitLeft(["IfcFlowController", "IfcFlowFitting"], function() {
+    // Camera arrived
+});
+````
+
+Fly camera to fit a model, two objects, and all objects of the given type, looking along the World-space -Y axis:
+````javascript
+viewer.viewFitTop(["gearbox", "saw#1", "saw#5", "IfcFlowFitting"], function() {
+    // Camera arrived
+});
+````
+
+Set camera to jump directly to each new position:
+````javascript
+viewer.setViewFitDuration(0);
 ````
 
 Jump camera to given position:
 ````javascript
-// Eye, look and "up" vector
 viewer.setEyeLookUp([-100,0,0],[0,0,0],[0,1,0]);
 ````
 
 Jump camera to fit two objects in view - note we don't need the callback anymore because camera is now jumping:
 ````javascript
-viewer.viewFit(["foo", "bar"]);
+viewer.viewFit(["saw34", "saw5"]);
 ````
 
 Jump camera to fit a model and two objects in view:
 ````javascript
-viewer.viewFit(["saw", "outerCasing", "trigger"]);
+viewer.viewFit(["gearbox", "saw#2", "saw#5"]);
 ````
 
 Set how much of the field of view that a target boundary will occupy when flying the camera to fit models or objects to the view:
@@ -391,11 +248,288 @@ viewer.setViewFitFOV(20); // Degrees
 var fitFOV = viewer.fitFOV();
 ````
 
-### Picking and ray casting objects
+### Panning the camera
 
-You can pick and raycast objects through the API.
+You can pan the camera incrementally along its local axis.
 
-Finding the object at the given canvas coordinates:
+Panning translates the camera's ````eye```` and ````look```` positions in unison.
+
+* Horizontal panning moves the camera along the axis perpendicular to ````eye->look```` and ````up````.
+* Vertical panning moves the camera along ````up````.
+* Forward and back panning moves the camera along the ````eye->look```` vector.
+
+Pan camera ````eye```` and ````look```` five units along the axis orthogonal to ````eye->look```` and ````up````:
+````javascript
+viewer.panCamera([-5, 0, 0]);
+````
+
+Pan camera backwards 10 units along the ````eye->look```` vector:
+````javascript
+viewer.panCamera([0, 0, -10]);
+````
+
+### Rotating the camera
+
+You can rotate the camera incrementally, either rotating ````eye```` about ````look```` (orbiting),
+or rotating ````look```` about ````eye```` (first-person rotation).
+
+Vertical rotation is gimbal-locked to the World-space Y-axis by default. You can disable that
+ to make the camera pivot about its ````up```` vector, for more of a trackball type rotation:
+````javascript
+viewer.lockGimbalY(false);
+````
+
+Rotate the camera's ````eye```` about ````look````, pivoting around ````up````:
+````javascript
+viewer.rotateEyeY(10);
+````
+
+Rotate the camera's ````eye```` about ````look````, pivoting around the axis orthogonal to ````eye->look```` and ````up````:
+````javascript
+viewer.rotateEyeX(10);
+````
+
+Rotate the camera's ````look```` about ````eye````, pivoting around the World-space Y-axis if
+gimbal locking is enabled, otherwise pivoting around ````up````:
+````javascript
+viewer.rotateLookY(10);
+````
+
+Rotate the camera's ````look```` about ````eye````, pivoting around the World-space Y-axis if
+gimbal locking is enabled, otherwise pivoting around the axis orthogonal to ````eye->look```` and ````up````:
+````javascript
+viewer.rotateLookX(10);
+````
+
+### Zooming the camera
+
+You can zoom the camera incrementally, which varies the distance of ````eye```` from ````look````:
+````javascript
+viewer.zoom(12.3);
+````
+
+### Controlling camera projection
+
+You can switch the camera between perspective and orthographic projections.
+
+Switch camera to orthographic projection:
+````javascript
+viewer.setProjection("ortho");
+````
+Set orthographic projection properties:
+````javascript
+viewer.setOrthoScale(2.0); // How many units to fit within view volume
+viewer.setOrthoNear(0.1);
+viewer.setOrthoFar(8000);
+````
+
+Switch camera to perspective projection:
+
+````javascript
+viewer.setProjection("perspective");
+````
+
+Set perspective projection properties:
+````javascript
+viewer.setPerspectiveFOV(45); // Field of view in degrees
+viewer.setPerspectiveNear(0.1);
+viewer.setPerspectiveFar(10000);
+````
+
+Note that you can get and set properties for each projection at any time, regardless of which one is active.
+
+## Querying models and objects
+
+You can query the models and objects that are currently loaded.
+
+Get all models:
+````javascript
+var models = viewer.getModels();
+````
+
+Get all objects:
+````javascript
+var objects = viewer.getObjects();
+````
+
+Get all objects in a model:
+````javascript
+var saw = viewer.getObjects("saw");
+````
+
+Get an object's model:
+````javascript
+var model = viewer.getModel("saw#23");
+````
+
+## Assigning types to objects
+
+Each object in your viewer may optionally be assigned a type. Types are strings that mean something within
+the domain of your application. When using xeometry as an IFC viewer, for example, then types would likely
+ be IFC element types.
+
+When you have assigned types to your objects, then you can specify types as the targets for various xeometry methods.
+
+Assign types to two objects:
+````javascript
+viewer.setType("house#12", "IfcFlowController");
+viewer.setType("house#23", "IfcFlowFitting");
+````
+
+Get the type of an object:
+````javascript
+var type = viewer.getType("house#12");
+````
+
+Get all types in the viewer:
+````javascript
+var types = viewer.getTypes();
+````
+
+Get all objects of the given type:
+````javascript
+var typeObjects = viewer.getObjects("ifcCurtainWall");
+````
+
+## Querying boundaries of models and objects
+
+You can dynamically query the boundaries of models and objects.
+
+Boundaries are axis-aligned World-space boxes, given as an array of values ````[xmin, ymin, zmin, xmax, ymax, zmax]````.
+
+Get the collective boundary of everything in a viewer:
+````javascript
+var totalBoundary = viewer.getAABB();
+````
+
+Get the boundary of a model:
+````javascript
+var sawBoundary = viewer.getAABB("saw");
+````
+
+Get collective boundary of two objects:
+````javascript
+var objectsBoundary = viewer.getAABB(["saw34", "saw5"]);
+````
+
+Get collective boundary of all objects of the given types:
+````javascript
+var objectsBoundary = viewer.getAABB(["IfcFlowController", "IfcFlowFitting"]);
+````
+
+Get collective boundary of two models:
+````javascript
+var modelsBoundary = viewer.getAABB(["saw", "gearbox"]);
+````
+
+Get collective boundary of the first five objects within a given model:
+````javascript
+var objectsBoundary2 = viewer.getAABB(viewer.objects("saw").slice(0, 5));
+````
+
+Get collective boundary of a model and a couple of objects:
+````javascript
+var objectsBoundary3 = viewer.getAABB(["saw", "saw#2", "saw#5"]);
+````
+
+## Querying object geometries
+
+## Transforming models and objects
+
+You can independently transform each model and object in your viewer.
+
+[![](http://xeolabs.com/xeometry/assets/sawObjects.png)](http://xeogl.org/examples/#presentation_annotations_tronTank)
+
+A transform consists of the following operations, applied in this order:
+
+ 1. scale
+ 2. X-axis rotation (degrees),
+ 3. Y-axis rotation,
+ 4. Z-axis rotation
+ 5. translation
+
+An object's transform is relative to its model's transform.
+
+Note that transforming a model or object will dynamically change the boundary extents returned by ````getAABB()```` (see previous section).
+
+Translate a model along the X axis, scale it, then rotate it 90 degrees about its X-axis:
+````javascript
+viewer.setTranslate("saw", [100,0,0]);
+viewer.setScale("saw", [0.5,0.5,0.5]);
+viewer.setRotate("saw", [90,0,0]);
+`````
+
+Spin an object about its Y-axis:
+````javascript
+var angles =[0,0,0]; // Tait-Bryant angles about X, Y and Z, in degrees
+function spin() {
+    viewer.setRotate("saw#2", angles);
+    angles[1] += 0.1;
+    requestAnimationFrame(spin);
+}
+spin();
+`````
+
+Get an object's translation, scale and rotation:
+````javascript
+var translate = viewer.setTranslate("saw");
+var scale = viewer.setScale("saw");
+var rotate = viewer.setRotate("saw");
+`````
+
+## Showing and hiding models and objects
+
+You can independently show and hide each object in your viewer.
+
+Show everything in a viewer:
+````javascript
+viewer.show();
+`````
+
+Hide everything in a viewer:
+````javascript
+viewer.hide();
+````
+
+Show all objects within a model:
+````javascript
+viewer.show("saw");
+````
+
+Hide all objects within a model:
+````javascript
+viewer.hide("saw");
+````
+
+Show given objects:
+````javascript
+viewer.show(["saw#1", "saw#5"]);
+````
+
+Show all objects of the given types:
+````javascript
+viewer.show(["IfcFlowController", "IfcFlowFitting"]);
+````
+
+Show a model and two objects:
+````javascript
+viewer.show(["saw", "saw#1", "saw#5"]);
+````
+
+Hide a model, two objects and all objects of the given type:
+````javascript
+viewer.hide(["saw", "saw#1", "saw#5", "IfcFlowFitting"]);
+````
+
+## Picking objects
+
+You can select objects by picking or raycasting. Picking involves finding objects at given canvas coordinates,
+while raycasting involves finding objects that intersect an arbitrarily-positioned World-space ray.
+
+For both of these, you have the option of getting either just the object, or the object plus information
+about the 3D point that you've picked or raycasted on its surface.
+
+Picking the object at the given canvas coordinates:
 ````javascript
 var hit = viewer.pickObject([234, 567]);
 if (hit) {
@@ -403,7 +537,7 @@ if (hit) {
 }
 ````
 
-Finding the object at the given canvas coordinates, plus the 3D surface intersection:
+Picking a point on the surface of an object, at the given canvas coordinates:
 ````javascript
 hit = viewer.pickSurface([234, 567]);
 if (hit) {
@@ -413,17 +547,17 @@ if (hit) {
 }
 ````
 
-Finding the object that intersects a ray:
+Getting the object that intersects a ray:
 ````javascript
-hit = viewer.rayCastObject([0,0,-100], [0,0,1]);
+hit = viewer.rayCastObject([0,0,-100], [0,0,1]); // Origin, dir
 if (hit) {
-    console.log("object raycasted: " + hit.id + ");
+    console.log("object raycasted: " + hit.id);
 }
 ````
 
-Finding the object that intersects a ray, plus the surface intersection:
+Getting object and point of surface intersection with a World-space ray:
 ````javascript
-hit = viewer.rayCastSurface([0,0,-100], [0,0,1]);
+hit = viewer.rayCastSurface([0,0,-100], [0,0,1]); // Origin, dir
 if (hit) {
     var worldPos = hit.worldPos;
     console.log("object raycasted: " + hit.id);
@@ -431,18 +565,73 @@ if (hit) {
 }
 ````
 
-### Saving and loading bookmarks
+## Outlining objects
 
-You can save and restore the state of a viewer as a JSON bookmark. The bookmark will include:
+You can emphasize objects in your viewer by displaying outlines around them.
+
+[![](http://xeolabs.com/xeometry/assets/sawObjects.png)](http://xeogl.org/examples/#presentation_annotations_tronTank)
+
+## Clipping planes
+
+You can create an unlimited number of arbitrarily-positioned clipping planes in your viewer, as well as specify which
+objects are clipped by them.
+
+[![](http://xeolabs.com/xeometry/assets/sawObjects.png)](http://xeogl.org/examples/#presentation_annotations_tronTank)
+
+## Annotations
+
+An annotation is a labeled pin that's attached to the surface of an object.
+
+[![](http://xeolabs.com/xeometry/assets/sawObjects.png)](http://xeogl.org/examples/#presentation_annotations_tronTank)
+
+An annotation is pinned within a triangle of an object's geometry, at a position given in barycentric coordinates. A
+barycentric coordinate is a three-element vector that indicates the position within the triangle as a weight per vertex,
+where a value of [0.3,0.3,0.3] places the annotation at the center of its triangle.
+
+An annotation can be configured with an optional camera position from which to view it, given as eye, look and up vectors.
+
+By default, an annotation will be invisible while occluded by other objects in the 3D view.
+
+Note that when you pick an object with #.Viewer#rayCastSurface or #.Viewer#pickSurface, you'll get a triangle index and
+barycentric coordinates in the intersection result. This makes it convenient to create annotations directly from pick
+results.
+
+TODO: examples
+
+## Canvas snapshots
+
+You can grab a snapshot image of your viewer at any time, as a JPEG, PNG or BMP.
+
+Snapshots are taken asynchronously.
+
+Grab a PNG image of the canvas, scaled to 500x500 pixels:
+````javascript
+var image = new Image();
+
+viewer.getSnapshot({
+    width: 500, // Defaults to size of canvas
+    height: 500,
+    format: "png" // Options are "jpeg" (default), "png" and "bmp"
+}, function (imageData) {
+    image.src = imageData;
+});
+````
+
+## Saving and loading bookmarks
+
+You can save and restore the state of a viewer as a JSON bookmark. A bookmark contains all the viewer's state, including:
 
  * models loaded,
- * model and object visibilities
+ * object visibilities, opacities, outlines and types
  * model and object transforms
- * camera position
+ * camera position and projection
+ * annotations
+ * clipping planes
+ * outline appearance
 
 Save model state to JSON bookmark, clear model then restore it again from the bookmark:
 ````javascript
 var json = viewer.getBookmark();
 viewer.reset();
-viewer.setBookmark(json, function() { });
+viewer.setBookmark(json, function() { /* Loaded */ });
 ````
