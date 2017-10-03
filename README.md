@@ -44,7 +44,7 @@ cool presentations.
 The example below shows the idea. In this example, we're loading a glTF model of a reciprocating saw, setting some objects
 transparent to reveal the inner workings, then positioning the camera to fit everything in view.
 
-[![](http://xeolabs.com/xeometry/assets/sawObjects.png)](http://xeogl.org/examples/#presentation_annotations_tronTank)
+[![](http://xeolabs.com/xeometry/assets/sawObjects.png)](http://xeolabs.com/xeometry/examples/#effects_opacity)
 
 ````javascript
 var viewer = new xeometry.Viewer({ canvasId: "theCanvas" });
