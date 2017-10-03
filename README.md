@@ -46,7 +46,7 @@ transparent to reveal the inner workings, then positioning the camera to fit eve
 
 [![](http://xeolabs.com/xeometry/assets/sawObjects.png)](http://xeogl.org/examples/#presentation_annotations_tronTank)
 
-```` JavaScript
+````javascript
 var viewer = new xeometry.Viewer({ canvasId: "theCanvas" });
 
 viewer.loadModel("saw", "models/Reciprocating_Saw.gltf", function () {
@@ -72,16 +72,19 @@ Some of the things you can do with objects are:
 
 xeometry tracks all your updates, and is able to serialize a viewer's state as a JSON bookmark:
 
-```` JavaScript
+````javascript
 var bookmark = viewer.getBookmark();
 ````
 A bookmark contains a complete snapshot of the viewer's state, including what models are loaded, object properties,
 camera position etc - everything you've done through the viewer API. We can restore a viewer to a bookmark at any time:
-```` JavaScript
+
+````javascript
 viewer.setBookmark(bookmark);
 ````
+
 We can also initialize another viewer from a bookmark:
-```` JavaScript
+
+````javascript
 var viewer2 = new xeometry.Viewer({ canvasId: "anotherCanvas" });
 viewer2.setBookmark(bookmark);
 ````
@@ -118,9 +121,11 @@ viewer.destroy();
 
 ## Loading models
 
-You can load multiple glTF models into a viewer at the same time, as well as multiple copies of the same model.
+You can load multiple glTF 2.0 models into a viewer at the same time, as well as multiple copies of the same model.
 
-TODO: info on glTF2 features supported - PBR metal/rough/standard, static geometries, transforms
+So far, xeometry only loads geometries, materials and modeling transform hierarchies, without animations. It does not
+load cameras or lights because the viewer manages those globally for all the models you load. In addition to glTF's core
+metallic material workflow, xeometry also supports specular and common materials, per the glTF 2.0 specification.
 
 Loading two separate models into a viewer:
 ````javascript
