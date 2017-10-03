@@ -3,6 +3,7 @@ module.exports = function (grunt) {
     "use strict";
 
     var devScripts = [
+
         "libs/xeogl/xeogl.js",
         "libs/xeogl/geometry/vectorTextGeometry.js",
         "libs/xeogl/helpers/clipHelper.js",
@@ -10,7 +11,9 @@ module.exports = function (grunt) {
         "libs/xeogl/annotations/annotation.js",
         "libs/xeogl/annotations/annotation-style.js",
         "libs/xeogl/models/glTFModel.js",
-        "js/xeometry.js"
+
+        "js/viewer.js",
+        "js/cameraControl.js"
     ];
 
     grunt.initConfig({

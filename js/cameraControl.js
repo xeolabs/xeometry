@@ -1,6 +1,8 @@
 /**
  * Controls the camera of a xeometry.Viewer with the mouse.
  *
+ * This is xeometry's bundled, default camera control.
+ *
  * @class CameraControl
  * @param {Viewer} viewer A Viewer.
  * @param {Object} [cfg] Configs

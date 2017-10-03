@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+
+    <script src="../build/xeometry.min.js"></script>
+
+    <link href="css/styles.css" rel="stylesheet"/>
+</head>
+<body>
+<div id="info">
+    <h1>Querying data and view</h1>
+
+    <h2>Open console to see query results</h2>
+
+    <h2>Query IDs:</h2>
+
+    <ul>
+        <li><a href='javascript:getModels()'>
+            viewer.getModels();
+        </a></li>
+        <li><a href='javascript:getObjects()'>
+            viewer.getObjects();
+        </a></li>
+        <li><a href='javascript:getObjects("saw")'>
+            viewer.getObjects("saw");
+        </a></li>
+        <li><a href='javascript:getObjects(["saw", "gearbox"])'>
+            viewer.getObjects(["saw", "gearbox"]);
+        </a></li>
+        <li><a href='javascript:getObjects(["stab","footing","stair"])'>
+            viewer.getObjects(["stab","footing","stair"]);
+        </a></li>
+    </ul>
+
+    <h2>Query types:</h2>
+    <ul>
+        <li><a href='javascript:getTypes()'>
+            viewer.getTypes()
+        </a></li>
+        <li><a href='javascript:getTypes("saw")'>
+            viewer.getTypes("saw")
+        </a></li>
+        <li><a href='javascript:getType("saw#1.1")'>
+            viewer.getType("saw#1.1")
+        </a></li>
+    </ul>
+
+    <h2>Query boundaries:</h2>
+    <ul>
+
+        <li><a href='javascript:getAABB()'>
+            viewer.getAABB()
+        </a></li>
+        <li><a href='javascript:getAABB("gearbox")'>
+            viewer.getAABB("gearbox")
+        </a></li>
+        <li><a href='javascript:getAABB(["gearbox", "saw"])'>
+            viewer.getAABB(["gearbox", "saw"])
+        </a></li>
+        <li><a href='javascript:getAABB(["saw#1.1", "saw#1.2"])'>
+            viewer.getAABB(["saw#1.1", "saw#1.2"])
+        </a></li>
+        <li><a href='javascript:getAABB(["stab", "footing", "stair"])'>
+            viewer.getAABB(["stab", "footing", "stair"])
+        </a></li>
+    </ul>
+
+    <h2>Querying geometry of objects:</h2>
+    <ul>
+        <li><a href='javascript:getPrimitive("cassiopea#0jf0rYHfX3RAB3bSQRjmxl")'>
+            viewer.getPrimitive("cassiopea#0jf0rYHfX3RAB3bSQRjmxl")
+        </a></li>
+        <li><a href='javascript:getPositions("cassiopea#0jf0rYHfX3RAB3bSQRjmxl")'>
+            viewer.getPositions("cassiopea#0jf0rYHfX3RAB3bSQRjmxl")
+        </a></li>
+        <li><a href='javascript:getIndices("cassiopea#0jf0rYHfX3RAB3bSQRjmxl")'>
+            viewer.getIndices("cassiopea#0jf0rYHfX3RAB3bSQRjmxl")
+        </a></li>
+    </ul>
+</div>
+<div id="viewer-canvas">
+</div>
+
+<script>
+
+    var viewer = new xeometry.Viewer();
+
+    viewer.setEyeLookUp([0, 10, 40], [0, 10, 0], [0, 1, 0]);
+
+    viewer.loadModel("gearbox", "models/gltf/GearboxAssy/glTF/GearboxAssy.gltf", function () {
+        viewer.setTranslate("gearbox", [-159.20, -17.02, -3.21]);
+    });
+
+    viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF/ReciprocatingSaw.gltf", function () {
+        viewer.setTranslate("saw", [10, 17, 0]);
+        viewer.setScale("saw", [.09, .09, .09]);
+        viewer.setRotate("saw", [90, 0, 0]);
+    });
+
+    new xeometry.CameraControl(viewer);
+    
+    //----------------------------------------------------------------------
+
+    function getModels() {
+        var modelIds = viewer.getModels();
+        console.log("View models:");
+        console.log(JSON.stringify(modelIds, null, "\t"));
+    }
+
+    function getObjects(ids) {
+        console.log(JSON.stringify(viewer.getObjects(ids), null, "\t"));
+    }
+
+    function getTypes(ids) {
+        console.log(JSON.stringify(viewer.getTypes(ids), null, "\t"));
+    }
+
+    function getAABB(ids) {
+        console.log(JSON.stringify(vecToArray(viewer.getAABB(ids)), null, "\t"));
+    }
+
+    function getPrimitive(id) {
+        console.log(viewer.getPrimitive(id));
+    }
+
+    function getPositions(id) {
+        console.log(vecToArray(viewer.getPositions(id)));
+    }
+
+    function getIndices(id) {
+        console.log(vecToArray(viewer.getIndices(id)));
+    }
+
+    function vecToArray(v) {
+        v = Array.prototype.slice.call(v);
+        for (var i = 0, len = v.length; i < len; i++) {
+            v[i] = Math.round(v[i] * 100) / 100;
+        }
+        return v;
+    }
+
+</script>
+</body>
+</html>
