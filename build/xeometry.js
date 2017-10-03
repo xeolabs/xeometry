@@ -4,7 +4,7 @@
  * A WebGL-based 3D visualization engine from xeoLabs
  * http://xeolabs.com/xeometry
  *
- * Built on 2017-10-02
+ * Built on 2017-10-03
  *
  * MIT License
  * Copyright 2017, Lindsay Kay
@@ -45108,51 +45108,51 @@ xeogl.Annotation = xeogl.Pin.extend({
 ;var xeometry = {};
 
 /**
- A JavaScript API for viewing glTF models on WebGL.
-
- A xeometry Viewer is a single class that wraps [xeogl](http://xeogl.org) in a
- set of simple data-driven methods focused on loading glTF models and manipulating
- scene content to create cool presentations.
-
- @class Viewer
- @param {Object} [cfg] Configs
- @param {Function} [cfg.loadModel] Callback fired to load model
- @param {Function} [cfg.loadedModel] Callback fired when model loaded
- @param {Function} [cfg.unloadedModel] Callback fired when model unloaded
- @param {Object} [cfg.contextAttr] WebGL context attributes
- @example
-
- // Create viewer with default canvas
- var viewer1 = new xeometry.Viewer();
-
- // Create viewer bound to an existing canvas
- var viewer2 = new xeometry.Viewer({
-    canvas: "theCanvas"
- });
-
- // Create viewer that loads via custom loader callback
- var viewer3 = new xeometry.Viewer({
-    loadModel: function (modelId, src, ok, error) {
-        var request = new XMLHttpRequest();
-        request.overrideMimeType("application/json");
-        request.open('GET', src2, true);
-        request.onreadystatechange = function () {
-            if (request.readyState == 4 && // Request finished, response ready
-                request.status == "200") { // Status OK
-                    var json = JSON.parse(request.responseText);
-                    ok(json, this);
-            }
-        };
-        request.send(null);
-    },
-    loadedModel: function(modelId, src, ok) {
-        console.log("Loaded modelId=" + modelId);
-        ok(); // Unblock the viewer
-    },
-    unloadedModel: function(modelId, src) {
-        console.log("Unloaded modelId=" + modelId);
-    }
- });
+ * A JavaScript API for viewing glTF models on WebGL.
+ *
+ * A xeometry Viewer is a single class that wraps [xeogl](http://xeogl.org) in a
+ * set of simple data-driven methods focused on loading glTF models and manipulating
+ * their objects to create cool presentations.
+ *
+ * @class Viewer
+ * @param {Object} [cfg] Configs
+ * @param {Function} [cfg.loadModel] Callback fired to load model
+ * @param {Function} [cfg.loadedModel] Callback fired when model loaded
+ * @param {Function} [cfg.unloadedModel] Callback fired when model unloaded
+ * @param {Object} [cfg.contextAttr] WebGL context attributes
+ * @example
+ *
+ * // Create viewer with default canvas
+ * var viewer1 = new xeometry.Viewer();
+ *
+ * // Create viewer bound to an existing canvas
+ * var viewer2 = new xeometry.Viewer({
+ *     canvas: "theCanvas"
+ * });
+ *
+ * // Create viewer that loads via custom loader callback
+ * var viewer3 = new xeometry.Viewer({
+ *     loadModel: function (modelId, src, ok, error) {
+ *         var request = new XMLHttpRequest();
+ *         request.overrideMimeType("application/json");
+ *         request.open('GET', src2, true);
+ *         request.onreadystatechange = function () {
+ *             if (request.readyState == 4 && // Request finished, response ready
+ *                 request.status == "200") { // Status OK
+ *                     var json = JSON.parse(request.responseText);
+ *                     ok(json, this);
+ *             }
+ *         };
+ *         request.send(null);
+ *     },
+ *     loadedModel: function(modelId, src, ok) {
+ *         console.log("Loaded modelId=" + modelId);
+ *         ok(); // Unblock the viewer
+ *     },
+ *     unloadedModel: function(modelId, src) {
+ *         console.log("Unloaded modelId=" + modelId);
+ *     }
+ * });
  */
 xeometry.Viewer = function (cfg) {
 
@@ -45505,23 +45505,23 @@ xeometry.Viewer = function (cfg) {
         var entities = model.types["xeogl.Entity"];
         var entity;
         var meta;
-        for (var entityId in entities) {
-            if (entities.hasOwnProperty(entityId)) {
-                entity = entities[entityId];
+        for (var objectId in entities) {
+            if (entities.hasOwnProperty(objectId)) {
+                entity = entities[objectId];
                 // Deregister for type
                 meta = entity.meta;
                 var type = meta && meta.type ? meta.type : "DEFAULT";
                 var objectsOfType = types[type];
                 if (objectsOfType) {
-                    delete objectsOfType[entityId];
+                    delete objectsOfType[objectId];
                 }
-                delete objects[entityId];
-                delete objectModels[entityId];
-                delete eulerAngles[entityId];
-                delete transformable[entityId];
-                delete translations[entityId];
-                delete rotations[entityId];
-                delete scales[entityId];
+                delete objects[objectId];
+                delete objectModels[objectId];
+                delete eulerAngles[objectId];
+                delete transformable[objectId];
+                delete translations[objectId];
+                delete rotations[objectId];
+                delete scales[objectId];
             }
         }
         model.destroy();
