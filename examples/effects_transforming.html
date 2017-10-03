@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <script src="../build/xeometry.js"></script>
+    <script src="js/cameraControl.js"></script>
+    <script src="js/pickQueryObject.js"></script>
+    <link href="css/styles.css" rel="stylesheet"/>
+<body>
+
+<div id="info">
+    <h1>opacity</h1>
+
+    <h2>set opacity of models and objects</h2>
+    <ul>
+        <li><a href='javascript:viewer.setRotate("saw", [0,0,0])'><pre>setRotate("saw", [0,0,0]</pre></a></li>
+        <li><a href='javascript:viewer.setRotate("saw", [90,0,0])'><pre>setRotate("saw", [90,0,0]</pre></a></li>
+        <li><a href='javascript:viewer.setRotate("saw", [0,90,0])'><pre>setRotate("saw", [0,90,0]</pre></a></li>
+
+        <li><a href='javascript:viewer.setOpacity("saw", 0.4)'><pre>setOpacity("saw", 0.4)</pre></a></li>
+        <li><a href='javascript:viewer.setOpacity("saw", 0.6)'><pre>setOpacity("saw", 0.6)</pre></a></li>
+        <li><a href='javascript:viewer.setOpacity("saw", 1.0)'><pre>setOpacity("saw", 1.0)</pre></a></li>
+        <li><a href='javascript:viewer.setOpacity(["saw#1.1", "saw#1.2"], 0.2)'><pre>setOpacity(["saw#1.1", "saw#1.2"], 0.2)</pre></a></li>
+        <li><a href='javascript:viewer.setOpacity(["saw#1.1", "saw#1.2"], 0.4)'><pre>setOpacity(["saw#1.1", "saw#1.2"], 0.4)</pre></a></li>
+        <li><a href='javascript:viewer.setOpacity(["saw#1.1", "saw#1.2"], 0.6)'><pre>setOpacity(["saw#1.1", "saw#1.2"], 0.6)</pre></a></li>
+        <li><a href='javascript:viewer.setOpacity(["saw#1.1", "saw#1.2"], 1.0)'><pre>setOpacity(["saw#1.1", "saw#1.2"], 1.0)</pre></a></li>
+    </ul>
+</div>
+
+<script>
+
+    // Load saw, reveal motor by hiding objects
+
+    var viewer = new xeometry.Viewer();
+
+    viewer.setEye([-130, 0, 350]);
+    viewer.setLook([-110.8940200805664, -44.856651306152344, -0.46092796325683594]);
+
+    viewer.setViewFitDuration(1);
+
+    viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF/ReciprocatingSaw.gltf", function () {
+        viewer.setRotate("saw", [90, 0, 0]);
+    });
+
+    new xeometry.CameraControl(viewer);
+
+</script>
+</body>
+</html>

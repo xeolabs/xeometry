@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <script src="../build/xeometry.js"></script>
+    <script src="js/cameraControl.js"></script>
+    <script src="js/pickQueryObject.js"></script>
+    <link href="css/styles.css" rel="stylesheet"/>
+<body>
+
+<div id="info">
+    <h1>showing and hiding objects</h1>
+
+    <h2>show and hide models, types and objects</h2>
+    <ul>
+        <li><a href='javascript:viewer.hide()'><pre>viewer.hide()</pre></a></li>
+        <li><a href='javascript:viewer.show()'><pre>viewer.show()</pre></a></li>
+        <li><a href='javascript:viewer.hide("saw")'><pre>viewer.hide("saw")</pre></a></li>
+        <li><a href='javascript:viewer.show("saw")'><pre>viewer.show("saw")</pre></a></li>
+        <li><a href='javascript:viewer.hide(["saw#1.1", "saw#1.2"])'><pre>viewer.hide(["saw#1.1", "saw#1.2"])</pre></a></li>
+        <li><a href='javascript:viewer.show(["saw#1.1", "saw#1.2"])'><pre>viewer.show(["saw#1.1", "saw#1.2"])</pre></a></li>
+    </ul>
+</div>
+
+<script>
+
+    // Load saw, reveal motor by hiding objects
+
+    var viewer = new xeometry.Viewer();
+
+    viewer.setEye([-130, 0, 350]);
+    viewer.setLook([-130, 0, 0]);
+
+    viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF/ReciprocatingSaw.gltf", function () {
+        viewer.setRotate("saw", [90, 0, 0]);
+    });
+
+    new xeometry.CameraControl(viewer);
+    
+</script>
+</body>
+</html>

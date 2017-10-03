@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <script src="../build/xeometry.js"></script>
+    <script src="js/cameraControl.js"></script>
+    <link href="css/styles.css" rel="stylesheet"/>
+<body>
+
+<div id="info" class="light">
+    <h1>outlining</h1>
+
+    <h2>show and hide outlines</h2>
+
+    <ul>
+        <li><a href='javascript:viewer.showOutline()'><pre>showOutline()</pre></a></li>
+        <li><a href='javascript:viewer.showOutline("gearbox")'><pre>showOutline("gearbox")</pre></a></li>
+        <li><a href='javascript:viewer.showOutline(["gearbox#1", "gearbox#1.0", "gearbox#1.1", "gearbox#1.2", "gearbox#1.3", "gearbox#1.4", "gearbox#1.5", "gearbox#1.6", "gearbox#1.7", "gearbox#1.8", "gearbox#1.9"])'><pre>showOutline(["gearbox#1", "gearbox#1.0", ...])</pre></a></li>
+    </ul>
+
+    <ul>
+        <li><a href='javascript:viewer.hideOutline()'><pre>hideOutline()</pre></a></li>
+        <li><a href='javascript:viewer.hideOutline("gearbox")'><pre>hideOutline("gearbox")</pre></a></li>
+        <li><a href='javascript:viewer.hideOutline(["gearbox#1", "gearbox#1.0", "gearbox#1.1", "gearbox#1.2", "gearbox#1.3", "gearbox#1.4", "gearbox#1.5", "gearbox#1.6", "gearbox#1.7", "gearbox#1.8", "gearbox#1.9"])'><pre>hideOutline(["gearbox#1", "gearbox#1.0", ...])</pre></a></li>
+    </ul>
+
+    <h2>set outline color</h2>
+
+    <ul>
+        <li><a href='javascript:viewer.setOutlineColor([1, 0, 0])'><pre>setOutlineColor([1, 0, 0])</pre></a></li>
+        <li><a href='javascript:viewer.setOutlineColor([1, 1, 0])'><pre>setOutlineColor([1, 1, 0])</pre></a></li>
+        <li><a href='javascript:viewer.setOutlineColor([0, 1, 1])'><pre>setOutlineColor([0, 1, 1])</pre></a></li>
+        <li><a href='javascript:viewer.showOutline("gearbox")'><pre>showOutline("gearbox")</pre></a></li>
+        <li><a href='javascript:viewer.showOutline(["gearbox#1", "gearbox#1.0", "gearbox#1.1", "gearbox#1.2", "gearbox#1.3", "gearbox#1.4", "gearbox#1.5", "gearbox#1.6", "gearbox#1.7", "gearbox#1.8", "gearbox#1.9"])'><pre>showOutline(["gearbox#1", "gearbox#1.0", ...])</pre></a></li>
+    </ul>
+
+    <h2>set outline thickness</h2>
+
+    <ul>
+        <li><a href='javascript:viewer.setOutlineThickness(2)'><pre>setOutlineThickness(2)</pre></a></li>
+        <li><a href='javascript:viewer.setOutlineThickness(4)'><pre>setOutlineThickness(4)</pre></a></li>
+        <li><a href='javascript:viewer.setOutlineThickness(8)'><pre>setOutlineThickness(8)</pre></a></li>
+        <li><a href='javascript:viewer.setOutlineThickness(16)'><pre>setOutlineThickness(16)</pre></a></li>
+    </ul>
+</div>
+
+<script>
+
+    var viewer = new xeometry.Viewer();
+
+    viewer.setEye([15, 0, -20]);
+    viewer.setLook([0, 0, 0]);
+
+    viewer.loadModel("gearbox", "models/gltf/GearboxAssy/glTF/GearboxAssy.gltf", function () {
+
+        viewer.setOutlineColor([1, 1, 0]);
+        viewer.setOutlineThickness(8);
+
+        viewer.viewFit();
+    });
+
+    new xeometry.CameraControl(viewer);
+
+</script>
+</body>
+</html>
+
+
