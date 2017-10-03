@@ -158,7 +158,7 @@ viewer.clear();
 
 You can query the models and objects that are currently loaded in your viewer.
 
-Note that the ID of each object is prefixed by the ID of its model, ie. "&lt;model ID&gt;#&lt;object ID&gt;". Each object
+The ID of each object is prefixed by the ID of its model, ie. "&lt;model ID&gt;#&lt;object ID&gt;". Each object
 corresponds to a ````node```` element within its model's glTF file. If the ````node```` has a ````name```` attribute,
 then that's used for the object part of the ID, eg. "saw#outerCasing". Otherwise, the index of the ````node```` within
 the flTF file's ````nodes```` section is used, eg. "saw#23".
@@ -187,7 +187,7 @@ var model = viewer.getModel("saw#23");
 
 You can dynamically query the boundaries of models and objects in your viewer.
 
-A boundary is an axis-aligned World-space box, given as an array of values ````[xmin, ymin, zmin, xmax, ymax, zmax]````.
+A boundary is an axis-aligned bounding box (*AABB*) in World-space, given as an array of values ````[xmin, ymin, zmin, xmax, ymax, zmax]````.
 
 Transforming a model or object will update its boundary.
 
@@ -327,6 +327,15 @@ viewer.viewFit(function() {
     // Camera arrived
 });
 ````
+
+Fly camera to fit a boundary in view:
+````javascript
+viewer.viewFit([-50,-25,-50, 50, 25, 50], function() {
+    // Camera arrived
+});
+````
+A boundary is an axis-aligned bounding box (*AABB*) in World-space, given as an array of
+values ````[xmin, ymin, zmin, xmax, ymax, zmax]````.
 
 Fly camera to fit a model in view:
 ````javascript
@@ -711,6 +720,8 @@ viewer.reset();
 viewer.setBookmark(json, function() { /* Loaded */ });
 ````
 
-# Building
+# Appendix
+## Coordinate systems
+## Building
 
 
