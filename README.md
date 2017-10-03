@@ -2,31 +2,36 @@
 
 xeometry is a JavaScript API for viewing glTF models on WebGL.
 
+* [Examples](http://xeolabs.com/examples)
+* [API Docs](http://xeolabs.com/xeometry)
+
 # Contents
 
-- [Introduction](#overview)
+- [Introduction](#introduction)
+- [Motivation](#motivation)
 - [Usage](#usage)
-  * [Creating and destroying viewers](#creating-and-destroying-viewers)
-  * [Loading and unloading models](#loading-and-unloading-models)
-  * [Controlling the camera](#controlling-the-camera)
-    + [Looking at things](#looking-at-things)
-    + [Panning the camera](#panning-the-camera)
-    + [Rotating the camera](#rotating-the-camera)
-    + [Zooming the camera](#zooming-the-camera)
-    + [Controlling camera projection](#controlling-camera-projection)
-  * [Querying models and objects](#querying-models-and-objects)
+  * [Creating a viewer](#creating-a-viewer)
+  * [Loading models](#loading-models)
+  * [Querying scene content](#querying-scene-content)
+    + [Getting models and objects](#getting-models-and-objects)
+    + [Getting boundaries](#getting-boundaries)
+    + [Getting object geometries](#getting-object-geometries)
   * [Assigning types to objects](#assigning-types-to-objects)
-  * [Querying boundaries of models and objects](#querying-boundaries-of-models-and-objects)
-  * [Querying object geometries](#querying-object-geometries)
+  * [Camera control](#camera-control)
+    + [Fitting things in view](#fitting-things-in-view)
+    + [Panning](#panning)
+    + [Rotating](#rotating)
+    + [Zooming](#zooming)
+    + [Projections](#projections)
   * [Transforming models and objects](#transforming-models-and-objects)
   * [Showing and hiding models and objects](#showing-and-hiding-models-and-objects)
   * [Picking objects](#picking-objects)
   * [Outlining objects](#outlining-objects)
-  * [Clipping planes](#clipping-planes)
+  * [Clipping](#clipping)
   * [Annotations](#annotations)
   * [Canvas snapshots](#canvas-snapshots)
-  * [Saving and loading bookmarks](#saving-and-loading-bookmarks)
-
+  * [Viewer bookmarks](#viewer-bookmarks)
+  * [Building](#building)
 
 # Introduction
 
@@ -77,9 +82,11 @@ We can also initialize another viewer from a bookmark:
 var viewer2 = new xeometry.Viewer({ canvasId: "anotherCanvas" });
 ````
 
-# API Usage
+# Motivation
 
-## Creating and destroying viewers
+# Usage
+
+## Creating a viewer
 
 The first step is to link to the xeometry library:
 ````html
@@ -105,7 +112,7 @@ Destroy a viewer:
 viewer.destroy();
 ````
 
-## Loading and unloading models
+## Loading models
 
 You can load multiple glTF models into a viewer at the same time, as well as multiple copies of the same model.
 
@@ -133,7 +140,130 @@ Clearing everything from the viewer:
 viewer.clear();
 ````
 
-## Controlling the camera
+## Querying scene content
+
+### Getting models and objects
+
+You can query the models and objects that are currently loaded in your viewer.
+
+Get all models:
+````javascript
+var models = viewer.getModels();
+````
+
+Get all objects:
+````javascript
+var objects = viewer.getObjects();
+````
+
+Get all objects in a model:
+````javascript
+var saw = viewer.getObjects("saw");
+````
+
+Get an object's model:
+````javascript
+var model = viewer.getModel("saw#23");
+````
+
+### Getting boundaries
+
+You can dynamically query the boundaries of models and objects in your viewer. A boundary is an axis-aligned
+World-space box, given as an array of values ````[xmin, ymin, zmin, xmax, ymax, zmax]````.
+
+Get the collective boundary of everything in a viewer:
+````javascript
+var totalBoundary = viewer.getAABB();
+````
+
+Get the boundary of a model:
+````javascript
+var sawBoundary = viewer.getAABB("saw");
+````
+
+Get collective boundary of two objects:
+````javascript
+var objectsBoundary = viewer.getAABB(["saw34", "saw5"]);
+````
+
+Get collective boundary of all objects of the given types:
+````javascript
+var objectsBoundary = viewer.getAABB(["IfcFlowController", "IfcFlowFitting"]);
+````
+
+Get collective boundary of two models:
+````javascript
+var modelsBoundary = viewer.getAABB(["saw", "gearbox"]);
+````
+
+Get collective boundary of the first five objects within a given model:
+````javascript
+var objectsBoundary2 = viewer.getAABB(viewer.objects("saw").slice(0, 5));
+````
+
+Get collective boundary of a model and a couple of objects:
+````javascript
+var objectsBoundary3 = viewer.getAABB(["saw", "saw#2", "saw#5"]);
+````
+
+### Getting object geometries
+
+You can query the geometry of each of the objects in your viewer. This is useful when
+you want to implement application logic for things like collision detection etc.
+
+Geometry consists of World-space vertex positions, a primitive type, and indices, which link
+the positions together according to the primitive type.
+
+Transforming an object will update its vertex positions.
+
+Get the World-space vertex positions of an object:
+````javascript
+var positions = viewer.getPositions("saw#43");
+````
+
+Get the indices of an object:
+````javascript
+var indices = viewer.getIndices("saw#43");
+````
+
+Get an object's primitive type:
+````javascript
+var primitive = viewer.getPrimitive("saw#43");
+````
+
+Possible values for the primitive are 'points', 'lines',
+'line-loop', 'line-strip', 'triangles', 'triangle-strip' and 'triangle-fan'.
+
+## Assigning types to objects
+
+Each object in your viewer may optionally be assigned a type. Types are strings that mean something within
+the domain of your application. When using xeometry as an IFC viewer, for example, then types would likely
+ be IFC element types.
+
+When you have assigned types to your objects, then you can specify types as the targets for various xeometry methods.
+
+Assign types to two objects:
+````javascript
+viewer.setType("house#12", "IfcFlowController");
+viewer.setType("house#23", "IfcFlowFitting");
+````
+
+Get the type of an object:
+````javascript
+var type = viewer.getType("house#12");
+````
+
+Get all types in the viewer:
+````javascript
+var types = viewer.getTypes();
+````
+
+Get all objects of the given type:
+````javascript
+var typeObjects = viewer.getObjects("ifcCurtainWall");
+````
+
+## Camera control
 
 A viewer has a single camera that can be moved in "orbit" or first-person mode, directed to fit target
 elements in view, and switched between perspective and orthographic projections.
@@ -152,7 +282,7 @@ viewer.setLook([0,0,0]);
 viewer.setUp([0,1,0]);
 ````
 
-### Looking at things
+### Fitting things in view
 
 The camera can also be made to fit given models, objects, types or boundaries in view, either by flying or jumping to
 a new position.
@@ -160,7 +290,6 @@ a new position.
 Make camera fly for two seconds as it moves to each new target:
 ````javascript
 viewer.setViewFitDuration(2); // Seconds
-var duration = viewer.getFlightDuration();
 ````
 
 When the duration greater than zero, the camera will fly, otherwise it will snap straight to each new target.
@@ -248,7 +377,7 @@ viewer.setViewFitFOV(20); // Degrees
 var fitFOV = viewer.fitFOV();
 ````
 
-### Panning the camera
+### Panning
 
 You can pan the camera incrementally along its local axis.
 
@@ -268,7 +397,7 @@ Pan camera backwards 10 units along the ````eye->look```` vector:
 viewer.panCamera([0, 0, -10]);
 ````
 
-### Rotating the camera
+### Rotating
 
 You can rotate the camera incrementally, either rotating ````eye```` about ````look```` (orbiting),
 or rotating ````look```` about ````eye```` (first-person rotation).
@@ -301,16 +430,16 @@ gimbal locking is enabled, otherwise pivoting around the axis orthogonal to ````
 viewer.rotateLookX(10);
 ````
 
-### Zooming the camera
+### Zooming
 
 You can zoom the camera incrementally, which varies the distance of ````eye```` from ````look````:
 ````javascript
 viewer.zoom(12.3);
 ````
 
-### Controlling camera projection
+### Projections
 
-You can switch the camera between perspective and orthographic projections.
+You can switch the camera between perspective and orthographic projection at any time.
 
 Switch camera to orthographic projection:
 ````javascript
@@ -338,101 +467,6 @@ viewer.setPerspectiveFar(10000);
 
 Note that you can get and set properties for each projection at any time, regardless of which one is active.
 
-## Querying models and objects
-
-You can query the models and objects that are currently loaded.
-
-Get all models:
-````javascript
-var models = viewer.getModels();
-````
-
-Get all objects:
-````javascript
-var objects = viewer.getObjects();
-````
-
-Get all objects in a model:
-````javascript
-var saw = viewer.getObjects("saw");
-````
-
-Get an object's model:
-````javascript
-var model = viewer.getModel("saw#23");
-````
-
-## Assigning types to objects
-
-Each object in your viewer may optionally be assigned a type. Types are strings that mean something within
-the domain of your application. When using xeometry as an IFC viewer, for example, then types would likely
- be IFC element types.
-
-When you have assigned types to your objects, then you can specify types as the targets for various xeometry methods.
-
-Assign types to two objects:
-````javascript
-viewer.setType("house#12", "IfcFlowController");
-viewer.setType("house#23", "IfcFlowFitting");
-````
-
-Get the type of an object:
-````javascript
-var type = viewer.getType("house#12");
-````
-
-Get all types in the viewer:
-````javascript
-var types = viewer.getTypes();
-````
-
-Get all objects of the given type:
-````javascript
-var typeObjects = viewer.getObjects("ifcCurtainWall");
-````
-
-## Querying boundaries of models and objects
-
-You can dynamically query the boundaries of models and objects.
-
-Boundaries are axis-aligned World-space boxes, given as an array of values ````[xmin, ymin, zmin, xmax, ymax, zmax]````.
-
-Get the collective boundary of everything in a viewer:
-````javascript
-var totalBoundary = viewer.getAABB();
-````
-
-Get the boundary of a model:
-````javascript
-var sawBoundary = viewer.getAABB("saw");
-````
-
-Get collective boundary of two objects:
-````javascript
-var objectsBoundary = viewer.getAABB(["saw34", "saw5"]);
-````
-
-Get collective boundary of all objects of the given types:
-````javascript
-var objectsBoundary = viewer.getAABB(["IfcFlowController", "IfcFlowFitting"]);
-````
-
-Get collective boundary of two models:
-````javascript
-var modelsBoundary = viewer.getAABB(["saw", "gearbox"]);
-````
-
-Get collective boundary of the first five objects within a given model:
-````javascript
-var objectsBoundary2 = viewer.getAABB(viewer.objects("saw").slice(0, 5));
-````
-
-Get collective boundary of a model and a couple of objects:
-````javascript
-var objectsBoundary3 = viewer.getAABB(["saw", "saw#2", "saw#5"]);
-````
-
-## Querying object geometries
 
 ## Transforming models and objects
 
@@ -450,7 +484,10 @@ A transform consists of the following operations, applied in this order:
 
 An object's transform is relative to its model's transform.
 
-Note that transforming a model or object will dynamically change the boundary extents returned by ````getAABB()```` (see previous section).
+Transforming an object will dynamically update its boundary and geometry vertex positions.
+
+Transforming a model will dynamically update its boundary, along with the boundary and geometry vertex positions of each
+of its objects.
 
 Translate a model along the X axis, scale it, then rotate it 90 degrees about its X-axis:
 ````javascript
@@ -571,7 +608,7 @@ You can emphasize objects in your viewer by displaying outlines around them.
 
 [![](http://xeolabs.com/xeometry/assets/sawObjects.png)](http://xeogl.org/examples/#presentation_annotations_tronTank)
 
-## Clipping planes
+## Clipping
 
 You can create an unlimited number of arbitrarily-positioned clipping planes in your viewer, as well as specify which
 objects are clipped by them.
@@ -617,7 +654,7 @@ viewer.getSnapshot({
 });
 ````
 
-## Saving and loading bookmarks
+## Viewer bookmarks
 
 You can save and restore the state of a viewer as a JSON bookmark. A bookmark contains all the viewer's state, including:
 
@@ -635,3 +672,7 @@ var json = viewer.getBookmark();
 viewer.reset();
 viewer.setBookmark(json, function() { /* Loaded */ });
 ````
+
+## Building
+
+
