@@ -10,16 +10,18 @@
 <body>
 
 <div id="info">
-    <h1>setting opacity of objects</h1>
+    <h1>opacity</h1>
 
-    <h2>set opacity models, types and objects</h2>
+    <h2>set opacity of models and objects</h2>
     <ul>
-        <li><a href='javascript:viewer.setOpacity(0.4)'><pre>viewer.setOpacity(0.4)</pre></a></li>
-        <li><a href='javascript:viewer.show()'><pre>viewer.show()</pre></a></li>
-        <li><a href='javascript:viewer.hide("saw")'><pre>viewer.hide("saw")</pre></a></li>
-        <li><a href='javascript:viewer.show("saw")'><pre>viewer.show("saw")</pre></a></li>
-        <li><a href='javascript:viewer.hide(["saw#1.1", "saw#1.2"])'><pre>viewer.hide(["saw#1.1", "saw#1.2"])</pre></a></li>
-        <li><a href='javascript:viewer.show(["saw#1.1", "saw#1.2"])'><pre>viewer.show(["saw#1.1", "saw#1.2"])</pre></a></li>
+        <li><a href='javascript:viewer.setOpacity("saw", 0.2)'>setOpacity("saw", 0.2)</a></li>
+        <li><a href='javascript:viewer.setOpacity("saw", 0.4)'>setOpacity("saw", 0.4)</a></li>
+        <li><a href='javascript:viewer.setOpacity("saw", 0.6)'>setOpacity("saw", 0.6)</a></li>
+        <li><a href='javascript:viewer.setOpacity("saw", 1.0)'>setOpacity("saw", 1.0)</a></li>
+        <li><a href='javascript:viewer.setOpacity(["saw#1.1", "saw#1.2"], 0.2)'>setOpacity(["saw#1.1", "saw#1.2"], 0.2)</a></li>
+        <li><a href='javascript:viewer.setOpacity(["saw#1.1", "saw#1.2"], 0.4)'>setOpacity(["saw#1.1", "saw#1.2"], 0.4)</a></li>
+        <li><a href='javascript:viewer.setOpacity(["saw#1.1", "saw#1.2"], 0.6)'>setOpacity(["saw#1.1", "saw#1.2"], 0.6)</a></li>
+        <li><a href='javascript:viewer.setOpacity(["saw#1.1", "saw#1.2"], 1.0)'>setOpacity(["saw#1.1", "saw#1.2"], 1.0)</a></li>
     </ul>
 </div>
 
@@ -31,6 +33,8 @@
 
     viewer.setEye([-130, 0, 350]);
     viewer.setLook([-130, 0, 0]);
+
+    viewer.setViewFitDuration(1);
 
     viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF/ReciprocatingSaw.gltf", function () {
         viewer.setRotate("saw", [90, 0, 0]);

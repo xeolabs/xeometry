@@ -38,14 +38,14 @@
 
     function focusObject(id) {
         if (lastObject) {
-            viewer.setColor(lastObject, [0.2, 0.2, 0.4]);
+        ///    viewer.setColor(lastObject, [0.2, 0.2, 0.4]);
             viewer.setOpacity(lastObject, 0.3);
             viewer.hideOutline(id);
         }
         lastObject = id;
         viewer.setOpacity(id, 1.0);
         //viewer.setColor(id, colors[id]);
-        viewer.setColor(id, [1, 1, 0]);
+      //  viewer.setColor(id, [1, 1, 0]);
         viewer.viewFit(id);
      //       viewer.showOutline(id);
     }
@@ -70,7 +70,7 @@
             opacities[id] = viewer.getOpacity(id);
         }
 
-        viewer.setColor("gearbox", [0.2, 0.2, 0.4]);
+      //  viewer.setColor("gearbox", [0.2, 0.2, 0.4]);
         viewer.setOpacity("gearbox", 0.3);
 
         // Build menu

@@ -4,7 +4,7 @@
  * A WebGL-based 3D visualization engine from xeoLabs
  * http://xeolabs.com/xeometry
  *
- * Built on 2017-09-10
+ * Built on 2017-10-02
  *
  * MIT License
  * Copyright 2017, Lindsay Kay
@@ -18,7 +18,7 @@
  * A WebGL-based 3D visualization engine from xeoLabs
  * http://xeogl.org/
  *
- * Built on 2017-09-10
+ * Built on 2017-09-21
  *
  * MIT License
  * Copyright 2017, Lindsay Kay
@@ -5304,7 +5304,7 @@ var Canvas2Image = (function () {
         // Shadow->Object lookup
         this._shadowObjectLists = {};
 
-        // Render states 
+        // Render states
 
         this.lights = null;
         this.material = null;
@@ -5318,7 +5318,7 @@ var Canvas2Image = (function () {
         this.xray = null;
         this.modes = null;
 
-        // Dirty flags 
+        // Dirty flags
 
         this.objectListDirty = true;
         this.stateOrderDirty = true;
@@ -5406,17 +5406,18 @@ var Canvas2Image = (function () {
         }
 
         this._setChunk(object, 0, "program", object.program); // Must be first
-        this._setChunk(object, 1, "modelTransform", this.modelTransform);
-        this._setChunk(object, 2, "viewTransform", this.viewTransform);
-        this._setChunk(object, 3, "projTransform", this.projTransform);
-        this._setChunk(object, 4, "lights", this.lights);
-        this._setChunk(object, 5, this.material.type, this.material); // Supports different material systems
-        this._setChunk(object, 6, "clips", this.clips);
-        this._setChunk(object, 7, "viewport", this.viewport);
-        this._setChunk(object, 8, "outline", this.outline);
-        this._setChunk(object, 9, "xray", this.xray);
-        this._setChunk(object, 10, "geometry", this.geometry);
-        this._setChunk(object, 11, "draw", this.geometry, true); // Must be last
+        this._setChunk(object, 1, "modes", this.modes);
+        this._setChunk(object, 2, "modelTransform", this.modelTransform);
+        this._setChunk(object, 3, "viewTransform", this.viewTransform);
+        this._setChunk(object, 4, "projTransform", this.projTransform);
+        this._setChunk(object, 5, "lights", this.lights);
+        this._setChunk(object, 6, this.material.type, this.material); // Supports different material systems
+        this._setChunk(object, 7, "clips", this.clips);
+        this._setChunk(object, 8, "viewport", this.viewport);
+        this._setChunk(object, 9, "outline", this.outline);
+        this._setChunk(object, 10, "xray", this.xray);
+        this._setChunk(object, 11, "geometry", this.geometry);
+        this._setChunk(object, 12, "draw", this.geometry, true); // Must be last
 
         // Ambient light is global across everything in display, and
         // can never be disabled, so grab it now because we want to
@@ -5539,9 +5540,10 @@ var Canvas2Image = (function () {
                 this._objectList[this._objectListLen++] = this.objects[objectId];
             }
         }
-        for (var i = this._objectListLen, len = this._objectList.length; i < len; i) {
+        for (var i = this._objectListLen, len = this._objectList.length; i < len; i++) {
             this._objectList[i] = null; // Release memory
         }
+        this._objectList.length = this._objectListLen;
     };
 
     xeogl.renderer.Renderer.prototype._makeStateSortKeys = function () {
@@ -5855,11 +5857,12 @@ var Canvas2Image = (function () {
 
             if (numTransparentObjects > 0) {
 
+                gl.enable(gl.CULL_FACE);
                 gl.enable(gl.BLEND);
-                gl.depthMask(false);
+             //   gl.depthMask(false);
                 gl.blendEquation(gl.FUNC_ADD);
-                gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-                //gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+               // gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+                gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
                 gl.colorMask(true, true, true, true);
 
@@ -8443,15 +8446,7 @@ var Canvas2Image = (function () {
         var reflectivityFresnel;
         var emissiveFresnel;
         var receiveShadow;
-
-        var vertexPickObjectSrc;
-        var fragmentPickObjectSrc;
-        var vertexPickPrimSrc;
-        var fragmentPickPrimSrc;
-        var vertexShadowSrc;
-        var fragmentShadowSrc;
-        var vertexOutlineSrc;
-        var fragmentOutlineSrc;
+        var clipping;
 
         /**
          * Get source code for a program to render the given states.
@@ -8471,6 +8466,7 @@ var Canvas2Image = (function () {
             texturing = hasTextures();
             normals = hasNormals();
             normalMapping = hasNormalMap();
+            clipping = states.clips.clips.length > 0;
             phongMaterial = (states.material.type === "phongMaterial");
             MetallicMaterial = (states.material.type === "MetallicMaterial");
             SpecularMaterial = (states.material.type === "SpecularMaterial");
@@ -8573,9 +8569,6 @@ var Canvas2Image = (function () {
         // composed from state, in the same manner as the draw shaders.
 
         function vertexPickObject() {
-            if (vertexPickObjectSrc) {
-                return vertexPickObjectSrc;
-            }
             begin();
             add("// Object picking vertex shader");
             add("attribute vec3 position;");
@@ -8584,72 +8577,109 @@ var Canvas2Image = (function () {
             add("uniform mat4 viewNormalMatrix;");
             add("uniform mat4 projMatrix;");
             add("varying vec4 vViewPosition;");
+            if (clipping) {
+                add("varying vec4 vWorldPosition;");
+            }
             add("void main(void) {");
             add("   vec4 tmpVertex = vec4(position, 1.0); ");
-            add("   vViewPosition = viewMatrix * modelMatrix * tmpVertex;");
+            add("   vec4 worldPosition = modelMatrix * tmpVertex;");
+            add("   vViewPosition = viewMatrix * worldPosition;");
+            if (clipping) {
+                add("   vWorldPosition = worldPosition;");
+            }
             add("   gl_Position = projMatrix * vViewPosition;");
             add("}");
-            return vertexPickObjectSrc = end();
+            return end();
         }
 
         function fragmentPickObject() {
-            if (fragmentPickObjectSrc) {
-                return fragmentPickObjectSrc;
-            }
             begin();
             add("// Object picking fragment shader");
             add("precision " + getFSFloatPrecision(states.gl) + " float;");
             add("uniform vec4 pickColor;");
+            if (clipping) {
+                add("uniform bool clippable;");
+                add("varying vec4 vWorldPosition;");
+                for (var i = 0; i < states.clips.clips.length; i++) {
+                    add("uniform bool clipActive" + i + ";");
+                    add("uniform vec3 clipPos" + i + ";");
+                    add("uniform vec3 clipDir" + i + ";");
+                }
+            }
             add("void main(void) {");
+            if (clipping) {
+                add("if (clippable) {");
+                add("  float dist = 0.0;");
+                for (var i = 0; i < states.clips.clips.length; i++) {
+                    add("if (clipActive" + i + ") {");
+                    add("   dist += clamp(dot(-clipDir" + i + ".xyz, vWorldPosition.xyz - clipPos" + i + ".xyz), 0.0, 1000.0);");
+                    add("}");
+                }
+                add("  if (dist > 0.0) { discard; }");
+                add("}");
+            }
             add("   gl_FragColor = pickColor; ");
             add("}");
-            return fragmentPickObjectSrc = end();
+            return end();
         }
 
         function vertexPickPrimitive() {
-
-            if (vertexPickPrimSrc) {
-                return vertexPickPrimSrc;
-            }
-
             begin();
-
             add("// Triangle picking vertex shader");
-
             add("attribute vec3 position;");
             add("attribute vec4 color;");
-
             add("uniform vec3 pickColor;");
             add("uniform mat4 modelMatrix;");
             add("uniform mat4 viewMatrix;");
             add("uniform mat4 projMatrix;");
-
             add("varying vec4 vViewPosition;");
             add("varying vec4 vColor;");
-
+            if (clipping) {
+                add("varying vec4 vWorldPosition;");
+            }
             add("void main(void) {");
             add("   vec4 tmpVertex = vec4(position, 1.0); ");
             add("   vec4 worldPosition = modelMatrix * tmpVertex; ");
             add("   vec4 viewPosition = viewMatrix * worldPosition;");
+            if (clipping) {
+                add("   vWorldPosition = worldPosition;");
+            }
             add("   vColor = color;");
             add("   gl_Position = projMatrix * viewPosition;");
             add("}");
 
-            return vertexPickPrimSrc = end();
+            return end();
         }
 
         function fragmentPickPrimitive() {
-            if (fragmentPickPrimSrc) {
-                return fragmentPickPrimSrc;
-            }
             begin();
             add("// Triangle picking fragment shader");
             add("precision " + getFSFloatPrecision(states.gl) + " float;");
             add("varying vec4 vColor;");
+            if (clipping) {
+                add("uniform bool clippable;");
+                add("varying vec4 vWorldPosition;");
+                for (var i = 0; i < states.clips.clips.length; i++) {
+                    add("uniform bool clipActive" + i + ";");
+                    add("uniform vec3 clipPos" + i + ";");
+                    add("uniform vec3 clipDir" + i + ";");
+                }
+            }
             add("void main(void) {");
+            if (clipping) {
+                add("if (clippable) {");
+                add("  float dist = 0.0;");
+                for (var i = 0; i < states.clips.clips.length; i++) {
+                    add("if (clipActive" + i + ") {");
+                    add("   dist += clamp(dot(-clipDir" + i + ".xyz, vWorldPosition.xyz - clipPos" + i + ".xyz), 0.0, 1000.0);");
+                    add("}");
+                }
+                add("  if (dist > 0.0) { discard; }");
+                add("}");
+            }
             add("   gl_FragColor = vColor;");
             add("}");
-            return fragmentPickPrimSrc = end();
+            return end();
         }
 
         /// NOTE: Shadow shaders will become more complex and will eventually be
@@ -8662,21 +8692,47 @@ var Canvas2Image = (function () {
             add("uniform mat4 modelMatrix;");
             add("uniform mat4 shadowViewMatrix;");
             add("uniform mat4 shadowProjMatrix;");
+            if (clipping) {
+                add("varying vec4 vWorldPosition;");
+            }
             add("void main(void) {");
-            add("   gl_Position = shadowProjMatrix * (shadowViewMatrix * (modelMatrix * (vec4(position, 1.0))));");
+            add("   vec4 worldPosition = modelMatrix * (vec4(position, 1.0));");
+            if (clipping) {
+                add("   vWorldPosition = worldPosition;");
+            }
+            add("   gl_Position = shadowProjMatrix * (shadowViewMatrix * (worldPosition));");
             add("}");
-            return vertexShadowSrc = end();
+            return end();
         }
 
         function fragmentShadow() {
             begin();
             add("// Shadow map fragment shader");
             add("precision " + getFSFloatPrecision(states.gl) + " float;");
+            if (clipping) {
+                add("varying vec4 vWorldPosition;");
+                add("uniform bool clippable;");
+                for (var i = 0; i < states.clips.clips.length; i++) {
+                    add("uniform bool clipActive" + i + ";");
+                    add("uniform vec3 clipPos" + i + ";");
+                    add("uniform vec3 clipDir" + i + ";");
+                }
+            }
             add("void main(void) {");
+            if (clipping) {
+                add("if (clippable) {");
+                add("  float dist = 0.0;");
+                for (var i = 0; i < states.clips.clips.length; i++) {
+                    add("if (clipActive" + i + ") {");
+                    add("   dist += clamp(dot(-clipDir" + i + ".xyz, vWorldPosition.xyz - clipPos" + i + ".xyz), 0.0, 1000.0);");
+                    add("}");
+                }
+                add("  if (dist > 0.0) { discard; }");
+                add("}");
+            }
             add("   gl_FragColor = vec4(gl_FragCoord.z, 0.0, 0.0, 0.0);");
-            //     add("   gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);");
             add("}");
-            return fragmentShadowSrc = end();
+            return end();
         }
 
         function vertexOutline() {
@@ -8686,13 +8742,10 @@ var Canvas2Image = (function () {
             add("uniform mat4 viewMatrix;");
             add("uniform mat4 projMatrix;");
             add("uniform float thickness;");
-
             if (normals) {
                 add("attribute vec3 normal;");
             }
-
             var billboard = states.modes.billboard;
-
             if (billboard === "spherical" || billboard === "cylindrical") {
                 add("void billboard(inout mat4 mat) {");
                 add("   mat[0][0] = 1.0;");
@@ -8708,46 +8761,63 @@ var Canvas2Image = (function () {
                 add("   mat[2][2] =1.0;");
                 add("}");
             }
-
+            if (clipping) {
+                add("varying vec4 vWorldPosition;");
+            }
             add("void main(void) {");
-
             add("mat4 viewMatrix2 = viewMatrix;");
             add("mat4 modelMatrix2 = modelMatrix;");
-
             if (states.modes.stationary) {
                 add("viewMatrix2[3][0] = viewMatrix2[3][1] = viewMatrix2[3][2] = 0.0;")
             }
-
             if (billboard === "spherical" || billboard === "cylindrical") {
                 add("billboard(modelMatrix2);");
                 add("billboard(viewMatrix2);");
             }
-
             // Displacement
-
             if (normals) {
                 add("vec4 projPos = projMatrix * viewMatrix2 * modelMatrix2 * vec4(position.xyz, 1.0); ");
                 add("  vec3 offset = (normalize(normal) * (thickness * 0.0005 * (projPos.z/1.0)));");
             } else {
                 add("  vec3 offset = vec3(0.0, 0.0, 0.0);");
             }
-
-            add("vec4 worldVertex = modelMatrix * vec4(position.xyz + offset, 1.0); ");
-
-            add("  gl_Position = projMatrix * (viewMatrix * worldVertex);");
+            add("vec4 worldPosition = modelMatrix * vec4(position.xyz + offset, 1.0); ");
+            if (clipping) {
+                add("   vWorldPosition = worldPosition;");
+            }
+            add("  gl_Position = projMatrix * (viewMatrix * worldPosition);");
             add("}");
-            return vertexOutlineSrc = end();
+            return end();
         }
 
         function fragmentOutline() {
             begin();
             add("precision " + getFSFloatPrecision(states.gl) + " float;");
             add("uniform vec3  color;");
+            if (clipping) {
+                add("uniform bool clippable;");
+                add("varying vec4 vWorldPosition;");
+                for (var i = 0; i < states.clips.clips.length; i++) {
+                    add("uniform bool clipActive" + i + ";");
+                    add("uniform vec3 clipPos" + i + ";");
+                    add("uniform vec3 clipDir" + i + ";");
+                }
+            }
             add("void main(void) {");
+            if (clipping) {
+                add("if (clippable) {");
+                add("  float dist = 0.0;");
+                for (var i = 0; i < states.clips.clips.length; i++) {
+                    add("if (clipActive" + i + ") {");
+                    add("   dist += clamp(dot(-clipDir" + i + ".xyz, vWorldPosition.xyz - clipPos" + i + ".xyz), 0.0, 1000.0);");
+                    add("}");
+                }
+                add("  if (dist > 0.0) { discard; }");
+                add("}");
+            }
             add("   gl_FragColor = vec4(color, 1.0);");
             add("}");
-
-            return fragmentOutlineSrc = end();
+            return end();
         }
 
         function vertexDraw() {
@@ -8767,6 +8837,10 @@ var Canvas2Image = (function () {
             add("uniform    mat4 projMatrix;");
 
             add("varying    vec3 vViewPosition;");
+
+            if (clipping) {
+                add("varying vec4 vWorldPosition;");
+            }
 
             if (states.lights.lightMap) {
                 add("varying    vec3 vWorldNormal;");
@@ -8971,7 +9045,13 @@ var Canvas2Image = (function () {
             if (states.geometry.primitiveName === "points") {
                 add("gl_PointSize = pointSize;");
             }
+
+            if (clipping) {
+                add("vWorldPosition = worldPosition;");
+            }
+
             add("   vViewPosition = viewPosition.xyz;");
+
             add("   gl_Position = projMatrix * viewPosition;");
 
             if (receiveShadow) {
@@ -9012,240 +9092,258 @@ var Canvas2Image = (function () {
             add("precision " + getFSFloatPrecision(states.gl) + " float;");
 
             //--------------------------------------------------------------------------------
-            // LIGHT AND REFLECTION MAP INPUTS
-            // Define here so available globally to shader functions
+            // USER CLIP PLANES
             //--------------------------------------------------------------------------------
 
-            if (states.lights.lightMap) {
-                add("uniform samplerCube lightMap;");
-                add("uniform mat4 viewNormalMatrix;");
-            }
-
-            if (states.lights.reflectionMap) {
-                add("uniform samplerCube reflectionMap;");
-            }
-
-            if (states.lights.lightMap || states.lights.reflectionMap) {
-                add("uniform mat4 viewMatrix;");
-            }
-
-
-            //--------------------------------------------------------------------------------
-            // SHADING FUNCTIONS
-            //--------------------------------------------------------------------------------
-
-            // CONSTANT DEFINITIONS
-
-            add("#define PI 3.14159265359");
-            add("#define RECIPROCAL_PI 0.31830988618");
-            add("#define RECIPROCAL_PI2 0.15915494");
-            add("#define EPSILON 1e-6");
-
-            add("#define saturate(a) clamp( a, 0.0, 1.0 )");
-
-            // UTILITY DEFINITIONS
-
-            add("float pow2(const in float x) {");
-            add("   return x*x;");
-            add("}");
-
-            add("vec3 inverseTransformDirection(in vec3 dir, in mat4 matrix) {");
-            add("   return normalize( ( vec4( dir, 0.0 ) * matrix ).xyz );");
-            add("}");
-
-            // STRUCTURES
-
-            add("struct IncidentLight {");
-            add("   vec3 color;");
-            add("   vec3 direction;");
-            add("};");
-
-            add("struct ReflectedLight {");
-            add("   vec3 diffuse;");
-            add("   vec3 specular;");
-            add("};");
-
-            add("struct Geometry {");
-            add("   vec3 position;");
-            add("   vec3 viewNormal;");
-            add("   vec3 worldNormal;");
-            add("   vec3 viewEyeDir;");
-            add("};");
-
-            add("struct Material {");
-            add("   vec3    diffuseColor;");
-            add("   float   specularRoughness;");
-            add("   vec3    specularColor;");
-            add("   float   shine;"); // Only used for Phong
-            add("};");
-
-            // DIFFUSE BRDF EVALUATION
-
-            add("vec3 BRDF_Diffuse_Lambert(const in vec3 diffuseColor) {");
-            add("   return RECIPROCAL_PI * diffuseColor;");
-            add("}");
-
-            // COMMON UTILS
-
-            add("vec4 LinearTosRGB( in vec4 value ) {");
-            add("   return vec4(mix(pow(value.rgb,vec3(0.41666))*1.055-vec3(0.055), value.rgb*12.92, vec3(lessThanEqual(value.rgb,vec3(0.0031308)))),value.w);");
-            add("}");
-
-            if (phongMaterial) {
-
-                if (states.lights.lightMap || states.lights.reflectionMap) {
-
-                    add("void computePhongLightMapping(const in Geometry geometry, const in Material material, inout ReflectedLight reflectedLight) {");
-
-                    if (states.lights.lightMap) {
-                        add("   vec3 irradiance = textureCube(lightMap, geometry.worldNormal).rgb;");
-                        add("   irradiance *= PI;");
-                        add("   vec3 diffuseBRDFContrib = BRDF_Diffuse_Lambert(material.diffuseColor);");
-                        add("   reflectedLight.diffuse += irradiance * diffuseBRDFContrib;");
-                    }
-
-                    if (states.lights.reflectionMap) {
-                        //     add("   vec3 reflectVec             = reflect(-geometry.viewEyeDir, geometry.worldNormal);");
-                        //   //  add("   reflectVec                  = inverseTransformDirection(reflectVec, viewMatrix);");
-                        //     add("   vec3 radiance               = textureCube(reflectionMap, geometry.worldNormal).rgb;");
-                        ////     add("   radiance *= PI;");
-                        //     add("   reflectedLight.specular     += radiance;");
-                    }
-
-                    add("}");
+            if (clipping) {
+                add("varying vec4 vWorldPosition;");
+                add("uniform bool clippable;");
+                for (var i = 0; i < states.clips.clips.length; i++) {
+                    add("uniform bool clipActive" + i + ";");
+                    add("uniform vec3 clipPos" + i + ";");
+                    add("uniform vec3 clipDir" + i + ";");
                 }
-
-                add("void computePhongLighting(const in IncidentLight directLight, const in Geometry geometry, const in Material material, inout ReflectedLight reflectedLight) {");
-                add("   float dotNL     = saturate(dot(geometry.viewNormal, directLight.direction));");
-                add("   vec3 irradiance = dotNL * directLight.color * PI;");
-                add("   reflectedLight.diffuse  += irradiance * BRDF_Diffuse_Lambert(material.diffuseColor);");
-                add("   reflectedLight.specular += directLight.color * material.specularColor * pow(max(dot(reflect(-directLight.direction, -geometry.viewNormal), geometry.viewEyeDir), 0.0), material.shine);");
-                add("}");
             }
 
-            if (pbrMetalRough || pbrSpecGloss) {
+            if (geometry.normals) {
 
-                // IRRADIANCE EVALUATION
+                //--------------------------------------------------------------------------------
+                // LIGHT AND REFLECTION MAP INPUTS
+                // Define here so available globally to shader functions
+                //--------------------------------------------------------------------------------
 
-                //add("vec3 sample_reflectMapEquirect(const in vec3 reflect, const in float mipLevel) {");
-                //add("   vec2 sampleUV;");
-                //add("   sampleUV.y = saturate(reflect.y * 0.5 + 0.5);");
-                //add("   sampleUV.x = atan(reflect.z, reflect.x) * RECIPROCAL_PI2 + 0.5;");
-                //add("   vec4 texColor = texture2D(reflectionMap, sampleUV, mipLevel);");
-                //add("   return texColor.rgb;"); // assumed to be linear
-                //add("}");
-
-                add("float GGXRoughnessToBlinnExponent(const in float ggxRoughness) {");
-                add("   return (2.0 / pow2(ggxRoughness + 0.0001) - 2.0);");
-                add("}");
-
-                add("float getSpecularMIPLevel(const in float blinnShininessExponent, const in int maxMIPLevel) {");
-                add("   float maxMIPLevelScalar = float( maxMIPLevel );");
-                add("   float desiredMIPLevel = maxMIPLevelScalar - 0.79248 - 0.5 * log2( pow2( blinnShininessExponent ) + 1.0 );");
-                add("   return clamp( desiredMIPLevel, 0.0, maxMIPLevelScalar );");
-                add("}");
-
-                //add("vec3 getLightProbeIndirectRadiance(const in mat4 viewMatrix, const in Geometry geometry, const in float blinnShininessExponent, const in int maxMIPLevel) {");
-                //add("   vec3 reflectVec = reflect(geometry.viewEyeDir, geometry.viewNormal);");
-                //add("   reflectVec = inverseTransformDirection(reflectVec, viewMatrix);");
-                //add("   float mipLevel = getSpecularMIPLevel( blinnShininessExponent, maxMIPLevel );");
-                //add("   vec3 reflectionMapColor = sample_reflectMapEquirect(reflectVec, float(mipLevel));");
-                //add("   return reflectionMapColor;");
-                //add("}");
-
+                if (states.lights.lightMap) {
+                    add("uniform samplerCube lightMap;");
+                    add("uniform mat4 viewNormalMatrix;");
+                }
 
                 if (states.lights.reflectionMap) {
-                    add("vec3 getLightProbeIndirectRadiance(const in vec3 reflectVec, const in float blinnShininessExponent, const in int maxMIPLevel) {");
-                    add("   float mipLevel = 0.5 * getSpecularMIPLevel(blinnShininessExponent, maxMIPLevel);"); //TODO: a random factor - fix this
-                    add("   vec3 envMapColor = textureCube(reflectionMap, reflectVec, mipLevel).rgb;");
-                    add("   return envMapColor;");
-                    add("}");
+                    add("uniform samplerCube reflectionMap;");
                 }
-
-                // SPECULAR BRDF EVALUATION
-
-                add("vec3 F_Schlick(const in vec3 specularColor, const in float dotLH) {");
-                add("   float fresnel = exp2( ( -5.55473 * dotLH - 6.98316 ) * dotLH );");
-                add("   return ( 1.0 - specularColor ) * fresnel + specularColor;");
-                add("}");
-
-                add("float G_GGX_Smith(const in float alpha, const in float dotNL, const in float dotNV) {");
-                add("   float a2 = pow2( alpha );");
-                add("   float gl = dotNL + sqrt( a2 + ( 1.0 - a2 ) * pow2( dotNL ) );");
-                add("   float gv = dotNV + sqrt( a2 + ( 1.0 - a2 ) * pow2( dotNV ) );");
-                add("   return 1.0 / ( gl * gv );");
-                add("}");
-
-                add("float G_GGX_SmithCorrelated(const in float alpha, const in float dotNL, const in float dotNV) {");
-                add("   float a2 = pow2( alpha );");
-                add("   float gv = dotNL * sqrt( a2 + ( 1.0 - a2 ) * pow2( dotNV ) );");
-                add("   float gl = dotNV * sqrt( a2 + ( 1.0 - a2 ) * pow2( dotNL ) );");
-                add("   return 0.5 / max( gv + gl, EPSILON );");
-                add("}");
-
-                add("float D_GGX(const in float alpha, const in float dotNH) {");
-                add("   float a2 = pow2( alpha );");
-                add("   float denom = pow2( dotNH ) * ( a2 - 1.0 ) + 1.0;");
-                add("   return RECIPROCAL_PI * a2 / pow2( denom );");
-                add("}");
-
-                add("vec3 BRDF_Specular_GGX(const in IncidentLight incidentLight, const in Geometry geometry, const in vec3 specularColor, const in float roughness) {");
-                add("   float alpha = pow2( roughness );");
-                add("   vec3 halfDir = normalize( incidentLight.direction + geometry.viewEyeDir );");
-                add("   float dotNL = saturate( dot( geometry.viewNormal, incidentLight.direction ) );");
-                add("   float dotNV = saturate( dot( geometry.viewNormal, geometry.viewEyeDir ) );");
-                add("   float dotNH = saturate( dot( geometry.viewNormal, halfDir ) );");
-                add("   float dotLH = saturate( dot( incidentLight.direction, halfDir ) );");
-                add("   vec3  F = F_Schlick( specularColor, dotLH );");
-                add("   float G = G_GGX_SmithCorrelated( alpha, dotNL, dotNV );");
-                add("   float D = D_GGX( alpha, dotNH );");
-                add("   return F * (G * D);");
-                add("}");
-
-                add("vec3 BRDF_Specular_GGX_Environment(const in Geometry geometry, const in vec3 specularColor, const in float roughness) {");
-                add("   float dotNV = saturate(dot(geometry.viewNormal, geometry.viewEyeDir));");
-                add("   const vec4 c0 = vec4( -1, -0.0275, -0.572,  0.022);");
-                add("   const vec4 c1 = vec4(  1,  0.0425,   1.04, -0.04);");
-                add("   vec4 r = roughness * c0 + c1;");
-                add("   float a004 = min(r.x * r.x, exp2(-9.28 * dotNV)) * r.x + r.y;");
-                add("   vec2 AB    = vec2(-1.04, 1.04) * a004 + r.zw;");
-                add("   return specularColor * AB.x + AB.y;");
-                add("}");
-
 
                 if (states.lights.lightMap || states.lights.reflectionMap) {
+                    add("uniform mat4 viewMatrix;");
+                }
 
-                    add("void computePBRLightMapping(const in Geometry geometry, const in Material material, inout ReflectedLight reflectedLight) {");
+                //--------------------------------------------------------------------------------
+                // SHADING FUNCTIONS
+                //--------------------------------------------------------------------------------
 
-                    if (states.lights.lightMap) {
-                        add("   vec3 irradiance = textureCube(lightMap, geometry.worldNormal).rgb;");
-                        add("   irradiance *= PI;");
-                        add("   vec3 diffuseBRDFContrib = BRDF_Diffuse_Lambert(material.diffuseColor);");
-                        add("   reflectedLight.diffuse += irradiance * diffuseBRDFContrib;");
-                        //   add("   reflectedLight.diffuse = vec3(1.0, 0.0, 0.0);");
+                // CONSTANT DEFINITIONS
+
+                add("#define PI 3.14159265359");
+                add("#define RECIPROCAL_PI 0.31830988618");
+                add("#define RECIPROCAL_PI2 0.15915494");
+                add("#define EPSILON 1e-6");
+
+                add("#define saturate(a) clamp( a, 0.0, 1.0 )");
+
+                // UTILITY DEFINITIONS
+
+                add("float pow2(const in float x) {");
+                add("   return x*x;");
+                add("}");
+
+                add("vec3 inverseTransformDirection(in vec3 dir, in mat4 matrix) {");
+                add("   return normalize( ( vec4( dir, 0.0 ) * matrix ).xyz );");
+                add("}");
+
+                // STRUCTURES
+
+                add("struct IncidentLight {");
+                add("   vec3 color;");
+                add("   vec3 direction;");
+                add("};");
+
+                add("struct ReflectedLight {");
+                add("   vec3 diffuse;");
+                add("   vec3 specular;");
+                add("};");
+
+                add("struct Geometry {");
+                add("   vec3 position;");
+                add("   vec3 viewNormal;");
+                add("   vec3 worldNormal;");
+                add("   vec3 viewEyeDir;");
+                add("};");
+
+                add("struct Material {");
+                add("   vec3    diffuseColor;");
+                add("   float   specularRoughness;");
+                add("   vec3    specularColor;");
+                add("   float   shine;"); // Only used for Phong
+                add("};");
+
+                // DIFFUSE BRDF EVALUATION
+
+                add("vec3 BRDF_Diffuse_Lambert(const in vec3 diffuseColor) {");
+                add("   return RECIPROCAL_PI * diffuseColor;");
+                add("}");
+
+                // COMMON UTILS
+
+                add("vec4 LinearTosRGB( in vec4 value ) {");
+                add("   return vec4(mix(pow(value.rgb,vec3(0.41666))*1.055-vec3(0.055), value.rgb*12.92, vec3(lessThanEqual(value.rgb,vec3(0.0031308)))),value.w);");
+                add("}");
+
+                if (phongMaterial) {
+
+                    if (states.lights.lightMap || states.lights.reflectionMap) {
+
+                        add("void computePhongLightMapping(const in Geometry geometry, const in Material material, inout ReflectedLight reflectedLight) {");
+
+                        if (states.lights.lightMap) {
+                            add("   vec3 irradiance = textureCube(lightMap, geometry.worldNormal).rgb;");
+                            add("   irradiance *= PI;");
+                            add("   vec3 diffuseBRDFContrib = BRDF_Diffuse_Lambert(material.diffuseColor);");
+                            add("   reflectedLight.diffuse += irradiance * diffuseBRDFContrib;");
+                        }
+
+                        if (states.lights.reflectionMap) {
+                            //     add("   vec3 reflectVec             = reflect(-geometry.viewEyeDir, geometry.worldNormal);");
+                            //   //  add("   reflectVec                  = inverseTransformDirection(reflectVec, viewMatrix);");
+                            //     add("   vec3 radiance               = textureCube(reflectionMap, geometry.worldNormal).rgb;");
+                            ////     add("   radiance *= PI;");
+                            //     add("   reflectedLight.specular     += radiance;");
+                        }
+
+                        add("}");
                     }
 
-                    if (states.lights.reflectionMap) {
-                        add("   vec3 reflectVec             = reflect(-geometry.viewEyeDir, geometry.viewNormal);");
-                        add("   reflectVec                  = inverseTransformDirection(reflectVec, viewMatrix);");
-                        add("   float blinnExpFromRoughness = GGXRoughnessToBlinnExponent(material.specularRoughness);");
-                        add("   vec3 radiance               = getLightProbeIndirectRadiance(reflectVec, blinnExpFromRoughness, 8);");
-                        add("   vec3 specularBRDFContrib    = BRDF_Specular_GGX_Environment(geometry, material.specularColor, material.specularRoughness);");
-                        add("   reflectedLight.specular     += radiance * specularBRDFContrib;");
-                    }
-
+                    add("void computePhongLighting(const in IncidentLight directLight, const in Geometry geometry, const in Material material, inout ReflectedLight reflectedLight) {");
+                    add("   float dotNL     = saturate(dot(geometry.viewNormal, directLight.direction));");
+                    add("   vec3 irradiance = dotNL * directLight.color * PI;");
+                    add("   reflectedLight.diffuse  += irradiance * BRDF_Diffuse_Lambert(material.diffuseColor);");
+                    add("   reflectedLight.specular += directLight.color * material.specularColor * pow(max(dot(reflect(-directLight.direction, -geometry.viewNormal), geometry.viewEyeDir), 0.0), material.shine);");
                     add("}");
                 }
 
-                // MAIN LIGHTING COMPUTATION FUNCTION
+                if (pbrMetalRough || pbrSpecGloss) {
 
-                add("void computePBRLighting(const in IncidentLight incidentLight, const in Geometry geometry, const in Material material, inout ReflectedLight reflectedLight) {");
-                add("   float dotNL     = saturate(dot(geometry.viewNormal, incidentLight.direction));");
-                add("   vec3 irradiance = dotNL * incidentLight.color * PI;");
-                add("   reflectedLight.diffuse  += irradiance * BRDF_Diffuse_Lambert(material.diffuseColor);");
-                add("   reflectedLight.specular += irradiance * BRDF_Specular_GGX(incidentLight, geometry, material.specularColor, material.specularRoughness);");
-                add("}");
-            }
+                    // IRRADIANCE EVALUATION
+
+                    //add("vec3 sample_reflectMapEquirect(const in vec3 reflect, const in float mipLevel) {");
+                    //add("   vec2 sampleUV;");
+                    //add("   sampleUV.y = saturate(reflect.y * 0.5 + 0.5);");
+                    //add("   sampleUV.x = atan(reflect.z, reflect.x) * RECIPROCAL_PI2 + 0.5;");
+                    //add("   vec4 texColor = texture2D(reflectionMap, sampleUV, mipLevel);");
+                    //add("   return texColor.rgb;"); // assumed to be linear
+                    //add("}");
+
+                    add("float GGXRoughnessToBlinnExponent(const in float ggxRoughness) {");
+                    add("   return (2.0 / pow2(ggxRoughness + 0.0001) - 2.0);");
+                    add("}");
+
+                    add("float getSpecularMIPLevel(const in float blinnShininessExponent, const in int maxMIPLevel) {");
+                    add("   float maxMIPLevelScalar = float( maxMIPLevel );");
+                    add("   float desiredMIPLevel = maxMIPLevelScalar - 0.79248 - 0.5 * log2( pow2( blinnShininessExponent ) + 1.0 );");
+                    add("   return clamp( desiredMIPLevel, 0.0, maxMIPLevelScalar );");
+                    add("}");
+
+                    //add("vec3 getLightProbeIndirectRadiance(const in mat4 viewMatrix, const in Geometry geometry, const in float blinnShininessExponent, const in int maxMIPLevel) {");
+                    //add("   vec3 reflectVec = reflect(geometry.viewEyeDir, geometry.viewNormal);");
+                    //add("   reflectVec = inverseTransformDirection(reflectVec, viewMatrix);");
+                    //add("   float mipLevel = getSpecularMIPLevel( blinnShininessExponent, maxMIPLevel );");
+                    //add("   vec3 reflectionMapColor = sample_reflectMapEquirect(reflectVec, float(mipLevel));");
+                    //add("   return reflectionMapColor;");
+                    //add("}");
+
+
+                    if (states.lights.reflectionMap) {
+                        add("vec3 getLightProbeIndirectRadiance(const in vec3 reflectVec, const in float blinnShininessExponent, const in int maxMIPLevel) {");
+                        add("   float mipLevel = 0.5 * getSpecularMIPLevel(blinnShininessExponent, maxMIPLevel);"); //TODO: a random factor - fix this
+                        add("   vec3 envMapColor = textureCube(reflectionMap, reflectVec, mipLevel).rgb;");
+                        add("   return envMapColor;");
+                        add("}");
+                    }
+
+                    // SPECULAR BRDF EVALUATION
+
+                    add("vec3 F_Schlick(const in vec3 specularColor, const in float dotLH) {");
+                    add("   float fresnel = exp2( ( -5.55473 * dotLH - 6.98316 ) * dotLH );");
+                    add("   return ( 1.0 - specularColor ) * fresnel + specularColor;");
+                    add("}");
+
+                    add("float G_GGX_Smith(const in float alpha, const in float dotNL, const in float dotNV) {");
+                    add("   float a2 = pow2( alpha );");
+                    add("   float gl = dotNL + sqrt( a2 + ( 1.0 - a2 ) * pow2( dotNL ) );");
+                    add("   float gv = dotNV + sqrt( a2 + ( 1.0 - a2 ) * pow2( dotNV ) );");
+                    add("   return 1.0 / ( gl * gv );");
+                    add("}");
+
+                    add("float G_GGX_SmithCorrelated(const in float alpha, const in float dotNL, const in float dotNV) {");
+                    add("   float a2 = pow2( alpha );");
+                    add("   float gv = dotNL * sqrt( a2 + ( 1.0 - a2 ) * pow2( dotNV ) );");
+                    add("   float gl = dotNV * sqrt( a2 + ( 1.0 - a2 ) * pow2( dotNL ) );");
+                    add("   return 0.5 / max( gv + gl, EPSILON );");
+                    add("}");
+
+                    add("float D_GGX(const in float alpha, const in float dotNH) {");
+                    add("   float a2 = pow2( alpha );");
+                    add("   float denom = pow2( dotNH ) * ( a2 - 1.0 ) + 1.0;");
+                    add("   return RECIPROCAL_PI * a2 / pow2( denom );");
+                    add("}");
+
+                    add("vec3 BRDF_Specular_GGX(const in IncidentLight incidentLight, const in Geometry geometry, const in vec3 specularColor, const in float roughness) {");
+                    add("   float alpha = pow2( roughness );");
+                    add("   vec3 halfDir = normalize( incidentLight.direction + geometry.viewEyeDir );");
+                    add("   float dotNL = saturate( dot( geometry.viewNormal, incidentLight.direction ) );");
+                    add("   float dotNV = saturate( dot( geometry.viewNormal, geometry.viewEyeDir ) );");
+                    add("   float dotNH = saturate( dot( geometry.viewNormal, halfDir ) );");
+                    add("   float dotLH = saturate( dot( incidentLight.direction, halfDir ) );");
+                    add("   vec3  F = F_Schlick( specularColor, dotLH );");
+                    add("   float G = G_GGX_SmithCorrelated( alpha, dotNL, dotNV );");
+                    add("   float D = D_GGX( alpha, dotNH );");
+                    add("   return F * (G * D);");
+                    add("}");
+
+                    add("vec3 BRDF_Specular_GGX_Environment(const in Geometry geometry, const in vec3 specularColor, const in float roughness) {");
+                    add("   float dotNV = saturate(dot(geometry.viewNormal, geometry.viewEyeDir));");
+                    add("   const vec4 c0 = vec4( -1, -0.0275, -0.572,  0.022);");
+                    add("   const vec4 c1 = vec4(  1,  0.0425,   1.04, -0.04);");
+                    add("   vec4 r = roughness * c0 + c1;");
+                    add("   float a004 = min(r.x * r.x, exp2(-9.28 * dotNV)) * r.x + r.y;");
+                    add("   vec2 AB    = vec2(-1.04, 1.04) * a004 + r.zw;");
+                    add("   return specularColor * AB.x + AB.y;");
+                    add("}");
+
+
+                    if (states.lights.lightMap || states.lights.reflectionMap) {
+
+                        add("void computePBRLightMapping(const in Geometry geometry, const in Material material, inout ReflectedLight reflectedLight) {");
+
+                        if (states.lights.lightMap) {
+                            add("   vec3 irradiance = textureCube(lightMap, geometry.worldNormal).rgb;");
+                            add("   irradiance *= PI;");
+                            add("   vec3 diffuseBRDFContrib = BRDF_Diffuse_Lambert(material.diffuseColor);");
+                            add("   reflectedLight.diffuse += irradiance * diffuseBRDFContrib;");
+                            //   add("   reflectedLight.diffuse = vec3(1.0, 0.0, 0.0);");
+                        }
+
+                        if (states.lights.reflectionMap) {
+                            add("   vec3 reflectVec             = reflect(-geometry.viewEyeDir, geometry.viewNormal);");
+                            add("   reflectVec                  = inverseTransformDirection(reflectVec, viewMatrix);");
+                            add("   float blinnExpFromRoughness = GGXRoughnessToBlinnExponent(material.specularRoughness);");
+                            add("   vec3 radiance               = getLightProbeIndirectRadiance(reflectVec, blinnExpFromRoughness, 8);");
+                            add("   vec3 specularBRDFContrib    = BRDF_Specular_GGX_Environment(geometry, material.specularColor, material.specularRoughness);");
+                            add("   reflectedLight.specular     += radiance * specularBRDFContrib;");
+                        }
+
+                        add("}");
+                    }
+
+                    // MAIN LIGHTING COMPUTATION FUNCTION
+
+                    add("void computePBRLighting(const in IncidentLight incidentLight, const in Geometry geometry, const in Material material, inout ReflectedLight reflectedLight) {");
+                    add("   float dotNL     = saturate(dot(geometry.viewNormal, incidentLight.direction));");
+                    add("   vec3 irradiance = dotNL * incidentLight.color * PI;");
+                    add("   reflectedLight.diffuse  += irradiance * BRDF_Diffuse_Lambert(material.diffuseColor);");
+                    add("   reflectedLight.specular += irradiance * BRDF_Specular_GGX(incidentLight, geometry, material.specularColor, material.specularRoughness);");
+                    add("}");
+
+                } // (pbrMetalRough || pbrSpecGloss)
+
+            } // geometry.normals
 
             //--------------------------------------------------------------------------------
             // GEOMETRY INPUTS
@@ -9533,6 +9631,18 @@ var Canvas2Image = (function () {
             //================================================================================
 
             add("void main(void) {");
+
+            if (clipping) {
+                add("if (clippable) {");
+                add("  float dist = 0.0;");
+                for (var i = 0; i < states.clips.clips.length; i++) {
+                    add("if (clipActive" + i + ") {");
+                    add("   dist += clamp(dot(-clipDir" + i + ".xyz, vWorldPosition.xyz - clipPos" + i + ".xyz), 0.0, 1000.0);");
+                    add("}");
+                }
+                add("  if (dist > 0.0) { discard; }");
+                add("}");
+            }
 
             if (geometry.primitiveName === "points") {
                 add("vec2 cxy = 2.0 * gl_PointCoord - 1.0;");
@@ -9916,7 +10026,7 @@ var Canvas2Image = (function () {
             }
 
             add("gl_FragColor = vec4(outgoingLight, alpha);");
-             //    add("gl_FragColor = LinearTosRGB(gl_FragColor);");  // Gamma correction
+            //    add("gl_FragColor = LinearTosRGB(gl_FragColor);");  // Gamma correction
 
             add("}");
 
@@ -10154,85 +10264,89 @@ var Canvas2Image = (function () {
 
     "use strict";
 
-    /**
-     * Create display state chunk type for draw and pick render of user clipping planes
-     */
     xeogl.renderer.ChunkFactory.createChunkType({
 
         type: "clips",
 
         build: function () {
 
+            var type;
             var i;
             var len;
-
-            this._uClipModeDraw = this._uClipModeDraw || [];
-            this._uClipPlaneDraw = this._uClipPlaneDraw || [];
-
-            var draw = this.program.draw;
-
-            for (i = 0, len = this.state.clips.length; i < len; i++) {
-                this._uClipModeDraw[i] = draw.getUniform("xeo_uClipMode" + i);
-                this._uClipPlaneDraw[i] = draw.getUniform("xeo_uClipPlane" + i)
-            }
-
-            this._uClipModePick = this._uClipModePick || [];
-            this._uClipPlanePick = this._uClipPlanePick || [];
-
-            var pick = this.program.pick;
-
-            for (i = 0, len = this.state.clips.length; i < len; i++) {
-                this._uClipModePick[i] = pick.getUniform("xeo_uClipMode" + i);
-                this._uClipPlanePick[i] = pick.getUniform("xeo_uClipPlane" + i)
-            }
-        },
-
-        drawPick: function (frameCtx) {
-
-            return;
-
-            var uClipMode = (frameCtx.pick) ? this._uClipModePick : this._uClipModeDraw;
-            var uClipPlane = (frameCtx.pick) ? this._uClipPlanePick : this._uClipPlaneDraw;
-
-            var mode;
-            var plane;
+            var uniforms;
+            var program;
             var clips = this.state.clips;
-            var clip;
+            var clipUniforms;
 
-            for (var i = 0, len = clips.length; i < len; i++) {
+            this._uniforms = {
+                draw: [],
+                pickObject: [],
+                pickPrimitive: [],
+                outline: []
+            };
 
-                mode = uClipMode[i];
-                plane = uClipPlane[i];
-
-                if (mode && plane) {
-
-                    clip = clips[i];
-
-                    if (clip.mode === "inside") {
-
-                        mode.setValue(2);
-                        plane.setValue(clip.plane);
-
-                    } else if (clip.mode === "outside") {
-
-                        mode.setValue(1);
-                        plane.setValue(clip.plane);
-
-                    } else {
-
-                        // Disabled
-
-                        mode.setValue(0);
+            for (type in this._uniforms) {
+                if (this._uniforms.hasOwnProperty(type)) {
+                    uniforms = this._uniforms[type];
+                    program = this.program[type];
+                    for (i = 0, len = clips.length; i < len; i++) {
+                        clipUniforms = {
+                            active: program.getUniform("clipActive" + i),
+                            pos: program.getUniform("clipPos" + i),
+                            dir: program.getUniform("clipDir" + i)
+                        };
+                        uniforms.push(clipUniforms);
                     }
                 }
             }
         },
 
-        outline: function(frameCtx) {
-            this.drawPick(frameCtx);
+        _drawAndPick: function (frameCtx, type) {
+            var clips = this.state.clips;
+            var clip;
+            var uniforms = this._uniforms[type];
+            var clipUniforms;
+            var uClipActive;
+            var uClipPos;
+            var uClipDir;
+            for (var i = 0, len = uniforms.length; i < len; i++) {
+                clip = clips[i];
+                clipUniforms = uniforms[i];
+                uClipActive = clipUniforms.active;
+                if (uClipActive) {
+                    uClipActive.setValue(clip.active);
+                }
+                uClipPos = clipUniforms.pos;
+                if (uClipPos) {
+                    clipUniforms.pos.setValue(clip.pos);
+                }
+                uClipDir = clipUniforms.dir;
+                if (uClipDir) {
+                    clipUniforms.dir.setValue(clip.dir);
+                }
+            }
+        },
+
+        draw: function (frameCtx) {
+            this._drawAndPick(frameCtx, "draw");
+        },
+
+        shadow: function (frameCtx) {
+            this._drawAndPick(frameCtx, "shadow");
+        },
+
+        pickObject: function (frameCtx) {
+            this._drawAndPick(frameCtx, "pickObject");
+        },
+
+        pickPrimitive: function (frameCtx) {
+            this._drawAndPick(frameCtx, "pickPrimitive");
+        },
+
+        outline: function (frameCtx) {
+            this._drawAndPick(frameCtx, "outline");
         }
     });
-
 })();;(function () {
 
     "use strict";
@@ -10259,6 +10373,9 @@ var Canvas2Image = (function () {
             if (state.indices) {
                 gl.drawElements(state.primitive, state.indices.numItems, state.indices.itemType, 0);
                 frameCtx.drawElements++;
+
+            } else if (state.positions) {
+                gl.drawArrays(gl.TRIANGLES, 0, state.positions.numItems);
             }
         },
 
@@ -10269,6 +10386,9 @@ var Canvas2Image = (function () {
             if (state.indices) {
                 gl.drawElements(state.primitive, state.indices.numItems, state.indices.itemType, 0);
                 frameCtx.drawElements++;
+
+            } else if (state.positions) {
+                gl.drawArrays(state.primitive, 0, state.positions.numItems);
             }
         },
 
@@ -10290,6 +10410,9 @@ var Canvas2Image = (function () {
 
             if (state.indices) {
                 gl.drawElements(state.primitive, state.indices.numItems, state.indices.itemType, 0);
+
+            } else if (state.positions) {
+                gl.drawArrays(state.primitive, 0, state.positions.numItems);
             }
         },
 
@@ -10301,7 +10424,7 @@ var Canvas2Image = (function () {
             var pickPositions = state.getPickPositions();
 
             if (pickPositions) {
-                gl.drawArrays(state.primitive, 0, pickPositions.numItems / 3);
+                gl.drawArrays(state.primitive, 0, pickPositions.numItems);
             }
         },
 
@@ -10675,38 +10798,35 @@ var Canvas2Image = (function () {
         type: "modes",
 
         build: function () {
+
+            this._clippableDraw = this.program.draw.getUniform("clippable");
+            this._clippableShadow = this.program.shadow.getUniform("clippable");
+            this._clippablePickObject = this.program.pickObject.getUniform("clippable");
+            this._clippablePickPrimitive = this.program.pickPrimitive.getUniform("clippable");
         },
 
         draw: function (frameCtx) {
-
-            var state = this.state;
-            var gl = this.program.gl;
-
-            //..?
+            if (this._clippableDraw) {
+                this._clippableDraw.setValue(this.state.clippable);
+            }
         },
 
         shadow: function (frameCtx) {
-
-            var state = this.state;
-            var gl = this.program.gl;
-
-            //..?
+            if (this._clippableShadow) {
+                this._clippableShadow.setValue(this.state.clippable);
+            }
         },
 
         pickObject: function (frameCtx) {
-
-            var state = this.state;
-            var gl = this.program.gl;
-
-            //..?
+            if (this._clippablePickObject) {
+                this._clippablePickObject.setValue(this.state.clippable);
+            }
         },
 
         pickPrimitive: function (frameCtx) {
-
-            var state = this.state;
-            var gl = this.program.gl;
-
-            //..?
+            if (this._clippablePickPrimitive) {
+                this._clippablePickPrimitive.setValue(this.state.clippable);
+            }
         }
     });
 })();
@@ -12806,7 +12926,8 @@ var Canvas2Image = (function () {
          * The method is given a component type, configuration and optional instance ID, like so:
          *
          * ````javascript
-         * var material = myComponent.create(xeogl.PhongMaterial, {
+         * var material = myComponent.create({
+         *      type: "xeogl.PhongMaterial",
          *      diffuse: [1,0,0],
          *      specular: [1,1,0]
          * }, "myMaterial");
@@ -12816,19 +12937,17 @@ var Canvas2Image = (function () {
          * {{#crossLink "PhongMaterial"}}{{/crossLink}}, passing the given  attributes to the component's constructor.
          *
          * If you call this method again, specifying the same ````type```` and ````instanceId````, the method will return the same
-         * component instance that it returned the first time, and will ignore the configuration:
+         * component instance that it returned the first time, and will ignore the new configuration:
          *
          * ````javascript
-         * var material2 = component.create(xeogl.PhongMaterial, { specular: [1,1,0] }, "myMaterial");
+         * var material2 = component.create({ type: "xeogl.PhongMaterial", specular: [1,1,0] }, "myMaterial");
          * ````
          *
          * So in this example, our {{#crossLink "PhongMaterial"}}{{/crossLink}} will continue to have the red specular
          * and diffuse color that we specified the first time.
          *
          * Each time you call this method with the same ````type```` and ````instanceId````, the Scene will internally increment a
-         * reference count for the component instance. You can release the shared component instance with a call to
-         * {{#crossLink "Scene/putSharedComponent:method"}}{{/crossLink}}, and once you have released it as many
-         * times as you got it, the Scene will destroy the component.
+         * reference count for the component instance.
          *
          * @method create
          * @param {*} [cfg] Configuration for the component instance - only used if this is the first time you are getting
@@ -14075,7 +14194,8 @@ var Canvas2Image = (function () {
                     return this.components["default.material"] ||
                         new xeogl.PhongMaterial(this, {
                             id: "default.material",
-                            isDefault: true
+                            isDefault: true,
+                            emissive: [0.4, 0.4, 0.4] // Visible by default on geometry without normals
                         });
                 }
             },
@@ -14430,20 +14550,32 @@ var Canvas2Image = (function () {
                                 var indices = geometry.indices;
                                 var positions = geometry.positions;
 
-                                var ia = indices[i];
-                                var ib = indices[i + 1];
-                                var ic = indices[i + 2];
+                                var ia3;
+                                var ib3;
+                                var ic3;
 
-                                var ia3 = ia * 3;
-                                var ib3 = ib * 3;
-                                var ic3 = ic * 3;
+                                if (indices) {
 
-                                //
-                                triangleVertices[0] = ia;
-                                triangleVertices[1] = ib;
-                                triangleVertices[2] = ic;
+                                    var ia = indices[i];
+                                    var ib = indices[i + 1];
+                                    var ic = indices[i + 2];
 
-                                hit.indices = triangleVertices;
+                                    triangleVertices[0] = ia;
+                                    triangleVertices[1] = ib;
+                                    triangleVertices[2] = ic;
+
+                                    hit.indices = triangleVertices;
+
+                                    ia3 = ia * 3;
+                                    ib3 = ib * 3;
+                                    ic3 = ic * 3;
+
+                                } else {
+
+                                    ia3 = i * 3;
+                                    ib3 = ia3 + 3;
+                                    ic3 = ib3 + 3;
+                                }
 
                                 a[0] = positions[ia3];
                                 a[1] = positions[ia3 + 1];
@@ -14754,7 +14886,7 @@ var Canvas2Image = (function () {
                 if (this._dirtyEntities.hasOwnProperty(id)) {
                     entity = this._dirtyEntities[id];
                     if (entity._valid()) {
-                        entity._compileAsynch();
+                        entity._compileAsynch(); // FIXME: asynch compilation breaks when destroying xeogl.Clip components
                         //entity._compile();
                         delete this._dirtyEntities[id];
                         countCompiledEntities++;
@@ -15288,11 +15420,18 @@ var Canvas2Image = (function () {
 
                 if (aabb) {
 
-                    if (aabb[3] <= aabb[0] || aabb[4] <= aabb[1] || aabb[5] <= aabb[2]) {
+                    if (aabb[3] < aabb[0] || aabb[4] < aabb[1] || aabb[5] < aabb[2]) {
+
+                        // Don't fly to an inverted boundary
+                        return;
+                    }
+
+                    if (aabb[3] === aabb[0] && aabb[4] === aabb[1] && aabb[5] === aabb[2]) {
 
                         // Don't fly to an empty boundary
                         return;
                     }
+
 
                     // Show boundary
 
@@ -16557,7 +16696,7 @@ var Canvas2Image = (function () {
         /**
          Returns a snapshot of this Canvas as a Base64-encoded image.
 
-         When a callback is given, this method will capture the snapshot asynchronously, on the next animation frame
+         When a callback is given, this method will capture the snapshot asynchronously, on the next animation frame,
          and return it via the callback.
 
          When no callback is given, this method captures and returns the snapshot immediately. Note that is only
@@ -16579,9 +16718,9 @@ var Canvas2Image = (function () {
          // Get snapshot synchronously, requires that Scene be
          // configured with preserveDrawingBuffer; true
          imageElement.src = myScene.canvas.getSnapshot({
-             width: 500, // Defaults to size of canvas
+             width: 500,
              height: 500,
-             format: "png" // Options are "jpeg" (default), "png" and "bmp"
+             format: "png"
          });
          ````
          @method getSnapshot
@@ -17164,76 +17303,69 @@ var Canvas2Image = (function () {
  * @module xeogl
  * @submodule clipping
  */;/**
- A **Clip** is an arbitrarily-aligned World-space clipping plane used to create
- cross-section views of associated {{#crossLink "Entity"}}Entities{{/crossLink}}.
+ A **Clip** is an arbitrarily-aligned World-space clipping plane.
+
+ <a href="../../examples/#clipping_userClipPlanes"><img src="../../../assets/images/screenshots/Clips.png"></img></a>
 
  ## Overview
 
- * These are grouped within {{#crossLink "Clips"}}Clips{{/crossLink}} components, which are attached to
- {{#crossLink "Entity"}}Entities{{/crossLink}}. See the {{#crossLink "Clips"}}Clips{{/crossLink}} documentation
- for more info.
- * A Clip is specified in World-space, as being perpendicular to a vector {{#crossLink "Clip/dir:property"}}{{/crossLink}}
- that emanates from the origin, offset at a distance {{#crossLink "Clip/dist:property"}}{{/crossLink}} along that vector.
- * You can move a Clip back and forth along its vector by varying {{#crossLink "Clip/dist:property"}}{{/crossLink}}.
- * Likewise, you can rotate a Clip about the origin by rotating the {{#crossLink "Clip/dir:property"}}{{/crossLink}} vector.
- * A Clip is has a {{#crossLink "Clip/mode:property"}}{{/crossLink}},  which indicates whether it is disabled
- ("disabled"), discarding fragments that fall on the origin-side of the plane ("inside"), or clipping fragments that
- fall on the other side of the plane from the origin ("outside").
- * You can update the {{#crossLink "Clip/mode:property"}}{{/crossLink}} of a Clip to activate or deactivate it, or to
- switch which side it discards fragments from.
- * Clipping may also be enabled or disabled for specific {{#crossLink "Entity"}}Entities{{/crossLink}} via their {{#crossLink "Entity/clippable:property"}}{{/crossLink}} properties.
+ * Used to slice portions off objects, to create cross-section views or reveal interiors.
+ * Is contained within {{#crossLink "Clips"}}{{/crossLink}} components, which are attached to {{#crossLink "Entity"}}Entities{{/crossLink}}.
+ * Has a World-space position in {{#crossLink "Clip/pos:property"}}{{/crossLink}} and a orientation in {{#crossLink "Clip/dir:property"}}{{/crossLink}}.
+ * Discards elements from the half-space in the direction of {{#crossLink "Clip/dir:property"}}{{/crossLink}}.
+ * Can be be enabled or disabled via its {{#crossLink "Clip/active:property"}}{{/crossLink}} property.
 
- <img src="../../../assets/images/Clip.png"></img>
+ <img src="../../../assets/images/Clips.png"></img>
 
  ## Usage
 
-
- * In this example we have an {{#crossLink "Entity"}}{{/crossLink}} that's clipped by a {{#crossLink "Clips"}}{{/crossLink}}
- that contains two {{#crossLink "Clip"}}{{/crossLink}} planes.
- * The first {{#crossLink "Clip"}}{{/crossLink}} plane is on the
- positive diagonal, while the second is on the negative diagonal.
- * The {{#crossLink "Entity"}}Entity's{{/crossLink}}
- {{#crossLink "Geometry"}}{{/crossLink}} is a box, and the planes will clip off two of the box's corners.
-
+ In the example below, we have an {{#crossLink "Entity"}}{{/crossLink}} that's attached by a {{#crossLink "Clips"}}{{/crossLink}}
+ that contains two {{#crossLink "Clip"}}{{/crossLink}} components.  The first {{#crossLink "Clip"}}{{/crossLink}} is on the
+ positive diagonal, while the second is on the negative diagonal. The {{#crossLink "Entity"}}Entity's{{/crossLink}} {{#crossLink "Geometry"}}{{/crossLink}}
+ is a box, which will get two of its corners clipped off.
 
  ````javascript
  // Create a set of Clip planes
  clips = new xeogl.Clip({
-     clips: [
+    clips: [
 
-         // Clip plane on negative diagonal
-         new xeogl.Clip({
-             dir: [-1.0, -1.0, -1.0], // Direction of Clip from World space origin
-             dist: 2.0,               // Distance along direction vector
-             mode: "outside"          // Clip fragments that fall beyond the plane
-         }),
+        // Clip plane on negative diagonal
+        new xeogl.Clip({
+            pos: [1.0, 1.0, 1.0],
+            dir: [-1.0, -1.0, -1.0],
+            active: true
+        }),
 
-         // Clip plane on positive diagonal
-         new xeogl.Clip({
-             dir: [1.0, 1.0, 1.0],
-             dist: 2.0,
-             mode: "outside"
-         })
-     ]
+        // Clip plane on positive diagonal
+        new xeogl.Clip({
+            pos: [-1.0, -1.0, -1.0],
+            dir: [1.0, 1.0, 1.0],
+            active: true
+        })
+    ]
  });
 
  // Create an Entity that's clipped by our Clip planes
  var entity = new xeogl.Entity({
      geometry: new xeogl.BoxGeometry(),
-     clips: clips
+     clips: clips,
+     clippable: true // Enable clipping (default)
  });
  ````
 
- ### Toggling clipping on and off
+ ### Switching clipping on and off for an Entity
 
- An {{#crossLink "Entity"}}{{/crossLink}}is clippable by default. We can toggle its clippability like so:
+ An {{#crossLink "Entity"}}{{/crossLink}}'s {{#crossLink "Entity/clippable:property"}}{{/crossLink}} property indicates
+ whether or not it is affected by Clip components.
+
+ You can switch it at any time, like this:
 
  ```` javascript
  // Disable clipping for the Entity
  entity.clippable = false;
 
  // Enable clipping for the Entity
- entity.clippable = false;
+ entity.clippable = true;
  ````
 
  @class Clip
@@ -17246,10 +17378,9 @@ var Canvas2Image = (function () {
  @param [cfg.id] {String} Optional ID, unique among all components in the parent {{#crossLink "Scene"}}Scene{{/crossLink}}, generated automatically when omitted.
  You only need to supply an ID if you need to be able to find the Clip by ID within the {{#crossLink "Scene"}}Scene{{/crossLink}}.
  @param [cfg.meta] {String:Object} Optional map of user-defined metadata to attach to this Clip.
- @param [cfg.mode="disabled"] {String} Clipping mode - "disabled" to clip nothing, "inside" to reject points inside the plane, "outside" to reject points outside the plane.
- @param [dir= [1, 0, 0]] {Array of Number} The direction of the clipping plane from the World-space origin.
- @param [dist=1.0] {Number} Distance to the clipping plane along the direction vector.
-
+ @param [cfg.active=true] {Boolean} Indicates whether or not this Clip is active.
+ @param [cfg.pos=[0,0,0]] {Array of Number} World-space position of the clipping plane.
+ @param [cfg.dir=[0,0 -1]] {Array of Number} Vector perpendicular to the plane surface, indicating its orientation.
  @extends Component
  */
 (function () {
@@ -17263,73 +17394,95 @@ var Canvas2Image = (function () {
         _init: function (cfg) {
 
             this._state = {
-                mode: "disabled",
-                dir: [1,0,0],
-                dist: 1.0
+                active: true,
+                pos: new Float32Array(3),
+                dir: new Float32Array(3)
             };
 
-            this.mode = cfg.mode;
+            this.active = cfg.active;
+            this.pos = cfg.pos;
             this.dir = cfg.dir;
-            this.dist = cfg.dist;
         },
 
         _props: {
 
             /**
-             The current mode of this Clip.
+             Indicates whether this Clip is active or not.
 
-             Possible states are:
+             Fires a {{#crossLink "Clip/active:event"}}{{/crossLink}} event on change.
 
-
-             * "disabled" - inactive
-             * "inside" - clipping fragments that fall within the half-space on the origin-side of the Clip plane
-             * "outside" - clipping fragments that fall on the other side of the Clip plane from the origin
-
-
-             Fires a {{#crossLink "Clip/mode:event"}}{{/crossLink}} event on change.
-
-             @property mode
-             @default "disabled"
-             @type String
+             @property active
+             @default true
+             @type Boolean
              */
-            mode: {
+            active: {
 
                 set: function (value) {
 
-                    this._state.mode =  value || "disabled";
-
-                    this._renderer.imageDirty = true;
+                    this._state.active = value !== false;
 
                     /**
-                     Fired whenever this Clip's {{#crossLink "Clip/mode:property"}}{{/crossLink}} property changes.
+                     Fired whenever this Clip's {{#crossLink "Clip/active:property"}}{{/crossLink}} property changes.
 
-                     @event mode
-                     @param value {String} The property's new value
+                     @event active
+                     @param value {Boolean} The property's new value
                      */
-                    this.fire("mode", this._state.mode);
+                    this.fire("active", this._state.active);
                 },
 
                 get: function () {
-                    return this._state.mode;
+                    return this._state.active;
                 }
             },
 
             /**
-             A vector emanating from the World-space origin that indicates the orientation of this Clip plane.
+             The World-space position of this Clip's plane.
 
-             The Clip plane will be oriented perpendicular to this vector.
+             Fires a {{#crossLink "Clip/pos:event"}}{{/crossLink}} event on change.
+
+             @property pos
+             @default [0, 0, 0]
+             @type Float32Array
+             */
+            pos: {
+
+                set: function (value) {
+
+                    this._state.pos.set(value || [0, 0, 0]);
+
+                    this._renderer.imageDirty = true;
+
+                    /**
+                     Fired whenever this Clip's {{#crossLink "Clip/pos:property"}}{{/crossLink}} property changes.
+
+                     @event pos
+                     @param value Float32Array The property's new value
+                     */
+                    this.fire("pos", this._state.pos);
+                },
+
+                get: function () {
+                    return this._state.pos;
+                }
+            },
+
+            /**
+             Vector indicating the orientation of this Clip plane.
+
+             The vector originates at {{#crossLink "Clip/pos:property"}}{{/crossLink}}. Elements on the
+             same side of the vector are clipped.
 
              Fires a {{#crossLink "Clip/dir:event"}}{{/crossLink}} event on change.
 
              @property dir
-             @default [1.0, 1.0, 1.0]
+             @default [0, 0, -1]
              @type Float32Array
              */
             dir: {
 
                 set: function (value) {
 
-                    this._state.dir =  value || xeogl.math.vec3([1, 0, 0]);
+                    this._state.dir.set(value || [0, 0, -1]);
 
                     this._renderer.imageDirty = true;
 
@@ -17337,7 +17490,7 @@ var Canvas2Image = (function () {
                      Fired whenever this Clip's {{#crossLink "Clip/dir:property"}}{{/crossLink}} property changes.
 
                      @event dir
-                     @param  value  {Float32Array} The property's new value
+                     @param value {Float32Array} The property's new value
                      */
                     this.fire("dir", this._state.dir);
                 },
@@ -17345,77 +17498,22 @@ var Canvas2Image = (function () {
                 get: function () {
                     return this._state.dir;
                 }
-            },
-
-            /**
-             The position of this Clip along the vector indicated by {{#crossLink "Clip/dir:property"}}{{/crossLink}}.
-
-             This is the distance of the Clip plane from the World-space origin.
-
-             Fires a {{#crossLink "Clip/dist:event"}}{{/crossLink}} event on change.
-
-             @property dist
-             @default 1.0
-             @type Number
-             */
-            dist: {
-
-                set: function (value) {
-
-                    this._state.dist = value !== undefined ? value : 1.0;
-
-                    this._renderer.imageDirty = true;
-
-                    /**
-                     Fired whenever this Clip's {{#crossLink "Clip/dist:property"}}{{/crossLink}} property changes.
-
-                     @event dist
-                     @param  value Number The property's new value
-                     */
-                    this.fire("dist", this._state.dist);
-                },
-
-                get: function () {
-                    return this._state.dist;
-                }
             }
         },
 
         _getJSON: function () {
             return {
-                mode: this._state.mode,
+                active: this._state.active,
                 dir: xeogl.math.vecToArray(this._state.dir),
-                dist: this._state.dist
+                pos: xeogl.math.vecToArray(this._state.pos)
             };
         }
     });
-
 })();
 ;/**
+ A **Clips** applies a set of {{#crossLink "Clip"}}{{/crossLink}} planes to attached {{#crossLink "Entity"}}Entities{{/crossLink}}.
 
- A **Clips** is a group of arbitrarily-aligned World-space {{#crossLink "Clip"}}Clip{{/crossLink}} planes, which may be used to create
- cross-section views of attached {{#crossLink "Entity"}}Entities{{/crossLink}}.
-
- ## Overview
-
-
- * Each {{#crossLink "Clip"}}Clip{{/crossLink}} is specified in World-space, as being perpendicular to a vector
- {{#crossLink "Clip/dir:property"}}{{/crossLink}} that emanates from the origin, offset at a
- distance {{#crossLink "Clip/dist:property"}}{{/crossLink}} along that vector.
- * You can move each {{#crossLink "Clip"}}Clip{{/crossLink}} back and forth along its vector by varying
- its {{#crossLink "Clip/dist:property"}}{{/crossLink}}.
- * Likewise, you can rotate each {{#crossLink "Clip"}}Clip{{/crossLink}} about the origin by rotating
- its {{#crossLink "Clip/dir:property"}}{{/crossLink}} vector.
- * Each {{#crossLink "Clip"}}Clip{{/crossLink}} is has a {{#crossLink "Clip/mode:property"}}{{/crossLink}}, which indicates whether it is disabled ("disabled"), discarding fragments that fall on the origin-side of the plane ("inside"), or clipping fragments that fall on the other side of the plane from the origin ("outside").
- * You can update each {{#crossLink "Clip"}}Clip{{/crossLink}}'s {{#crossLink "Clip/mode:property"}}{{/crossLink}} to
- activate or deactivate it, or to switch which side it discards fragments from.
- * Clipping may also be enabled or disabled for specific {{#crossLink "Entity"}}Entities{{/crossLink}} via their {{#crossLink "Entity/clippable:property"}}{{/crossLink}} properties.
-
- <img src="../../../assets/images/Clips.png"></img>
-
- ## Usage
-
- See {{#crossLink "Clip"}}{{/crossLink}} for an example.
+ See {{#crossLink "Clip"}}{{/crossLink}} for more info.
 
  @class Clips
  @module xeogl
@@ -17608,10 +17706,8 @@ var Canvas2Image = (function () {
             var hash = [];
 
             for (var i = 0, len = clips.length; i < len; i++) {
-
                 clip = clips[i];
-
-                hash.push(clip._state.mode);
+                hash.push("cp");
             }
 
             hash.push(";");
@@ -37319,7 +37415,7 @@ TODO
         // Returns true if there is enough on this Entity to render something.
         _valid: function () {
             var geometry = this._attached.geometry;
-            return !this.destroyed && geometry && geometry.positions && geometry.indices;
+            return !this.destroyed && geometry && geometry.positions;
 
         },
 
@@ -40482,6 +40578,2076 @@ TODO
 
 })();
 xeogl.version="1.0.0";;/**
+ A **VectorTextGeometry** extends {{#crossLink "Geometry"}}{{/crossLink}} to define vector text geometry for attached {{#crossLink "Entity"}}Entities{{/crossLink}}.
+
+ <a href="../../examples/#geometry_primitives_vectorText"><img src="../../assets/images/screenshots/VectorTextGeometry.png"></img></a>
+
+ ## Overview
+
+ * A VectorTextGeometry is a mesh of line segments in the X-Y plane  that is generated from the value of
+ its {{#crossLink "VectorTextGeometry/text:property"}}{{/crossLink}} property.
+ * Text is monospaced and each character occupies a square cell.
+ * Set its {{#crossLink "VectorTextGeometry/origin:property"}}{{/crossLink}}, {{#crossLink "VectorTextGeometry/size:property"}}{{/crossLink}} or {{#crossLink "VectorTextGeometry/text:property"}}{{/crossLink}} properties to new values at any time to dynamically regenerate it.
+
+ ## Example
+
+ ````javascript
+ new xeogl.Entity({
+     geometry: new xeogl.VectorTextGeometry({
+         text: "Attack ships on fire off the Shoulder of Orion",
+         origin: [0,0,0],
+         size: 2 // Size of each square character cell
+     }),
+     material: new xeogl.PhongMaterial({
+         emissive: [0.5, 1.0, 1.0],
+         lineWidth: 2
+     }),
+     lights: new xeogl.Lights({
+         lights: [] // No lights - rely on emissive color
+     }),
+     transform: new xeogl.Translate({
+         xyz: [0, 40, 0]
+     })
+ });
+ ````
+
+ @class VectorTextGeometry
+ @module xeogl
+ @submodule geometry
+ @constructor
+ @param [scene] {Scene} Parent {{#crossLink "Scene"}}Scene{{/crossLink}} - creates this VectorTextGeometry in the default
+ {{#crossLink "Scene"}}Scene{{/crossLink}} when omitted.
+ @param [cfg] {*} Configs
+ @param [cfg.id] {String} Optional ID, unique among all components in the parent {{#crossLink "Scene"}}Scene{{/crossLink}},
+ generated automatically when omitted.
+ @param [cfg.meta] {String:Object} Optional map of user-defined metadata to attach to this VectorTextGeometry.
+ @param [cfg.origin] {Float32Array} 3D point indicating the top left corner of the VectorTextGeometry.
+ @param [cfg.size=1] {Number} Size of each character.
+ @param [cfg.text=""] {String} The text.
+ @extends Geometry
+ */
+(function () {
+
+    "use strict";
+
+    var letters;
+
+    xeogl.VectorTextGeometry = xeogl.Geometry.extend({
+
+        type: "xeogl.VectorTextGeometry",
+
+        _init: function (cfg) {
+
+            this._super(cfg);
+
+            this.text = cfg.text;
+            this.origin = cfg.origin;
+            this.size = cfg.size;
+        },
+
+        /**
+         * Implement protected virtual template method {{#crossLink "Geometry/method:_update"}}{{/crossLink}},
+         * to generate geometry data arrays.
+         *
+         * @protected
+         */
+        _update: function () {
+
+            if (!letters) {
+                letters = buildStrokeData();
+            }
+
+            var xOrigin = this._origin[0];
+            var yOrigin = this._origin[1];
+            var zOrigin = this._origin[2];
+
+            var positions = [];
+            var indices = [];
+            var lines = this._text.split("\n");
+            var countVerts = 0;
+            var y = 0;
+            var x;
+            var str;
+            var len;
+            var c;
+            var mag = 1.0 / 25.0;
+            var penUp;
+            var p1;
+            var p2;
+            var needLine;
+            var pointsLen;
+            var a;
+
+            for (var iLine = 0; iLine < lines.length; iLine++) {
+
+                x = 0;
+                str = lines[iLine];
+                len = str.length;
+
+                for (var i = 0; i < len; i++) {
+
+                    c = letters[str.charAt(i)];
+
+                    if (c == '\n') {
+                        //alert("newline");
+                    }
+
+                    if (!c) {
+                        continue;
+                    }
+
+                    penUp = 1;
+                    p1 = -1;
+                    p2 = -1;
+                    needLine = false;
+
+                    pointsLen = c.points.length;
+
+                    for (var j = 0; j < pointsLen; j++) {
+                        a = c.points[j];
+
+                        if (a[0] == -1 && a[1] == -1) {
+                            penUp = 1;
+                            needLine = false;
+                            continue;
+                        }
+
+                        positions.push((x + (a[0] * this._size) * mag) + xOrigin);
+                        positions.push((y + (a[1] * this._size) * mag) + yOrigin);
+                        positions.push(0 + zOrigin);
+
+                        if (p1 == -1) {
+                            p1 = countVerts;
+                        } else if (p2 == -1) {
+                            p2 = countVerts;
+                        } else {
+                            p1 = p2;
+                            p2 = countVerts;
+                        }
+                        countVerts++;
+
+                        if (penUp) {
+                            penUp = false;
+
+                        } else {
+                            indices.push(p1);
+                            indices.push(p2);
+                        }
+
+                        needLine = true;
+                    }
+                    x += c.width * mag * this._size;
+
+                }
+                y -= 35 * mag * this._size;
+            }
+
+            this.primitive = "lines";
+            this.positions = positions;
+            this.normals = null;
+            this.uv = null;
+            this.indices = indices;
+        },
+
+        _props: {
+
+            /**
+             * The text for this VectorText
+             *
+             * Fires a {{#crossLink "VectorTextGeometry/text:event"}}{{/crossLink}} event on change.
+             *
+             * @property text
+             * @default ""
+             * @type String
+             */
+            text: {
+
+                set: function (value) {
+
+                    value = value || "";
+
+                    if (this._text === value) {
+                        return;
+                    }
+
+                    this._text = value;
+
+                    this._needUpdate();
+
+                    /**
+                     * Fired whenever this VectorTextGeometry's {{#crossLink "VectorTextGeometry/text:property"}}{{/crossLink}} property changes.
+                     * @event text
+                     * @type Boolean
+                     * @param value The property's new value
+                     */
+                    this.fire("text", this._text);
+                },
+
+                get: function () {
+                    return this._text;
+                }
+            },
+
+            /**
+             * 3D point indicating the top left corner this VectorTextGeometry.
+             *
+             * Fires an {{#crossLink "VectorTextGeometry/origin:event"}}{{/crossLink}} event on change.
+             *
+             * @property origin
+             * @default [0,0,0]
+             * @type {Float32Array}
+             */
+            origin: {
+
+                set: function (value) {
+
+                    (this._origin = this._origin || new xeogl.math.vec3()).set(value || [0, 0, 0]);
+
+                    this._needUpdate();
+
+                    /**
+                     Fired whenever this VectorTextGeometry's {{#crossLink "VectorTextGeometry/origin:property"}}{{/crossLink}} property changes.
+                     @event origin
+                     @param value {Float32Array} The property's new value
+                     */
+                    this.fire("origin", this._origin);
+                },
+
+                get: function () {
+                    return this._origin;
+                }
+            },
+
+            /**
+             * Size of each character cell.
+             *
+             * Fires a {{#crossLink "VectorText/size:event"}}{{/crossLink}} event on change.
+             *
+             * @property size
+             * @default 1
+             * @type Number
+             */
+            size: {
+
+                set: function (value) {
+
+                    value = value || 1;
+
+                    if (this._size === value) {
+                        return;
+                    }
+
+                    if (value < 0) {
+                        this.warn("negative size not allowed - will invert");
+                        value = value * -1;
+                    }
+
+                    this._size = value;
+
+                    this._needUpdate();
+
+                    /**
+                     * Fired whenever this VectorText's {{#crossLink "VectorText/size:property"}}{{/crossLink}} property changes.
+                     * @event size
+                     * @type Number
+                     * @param value The property's new value
+                     */
+                    this.fire("size", this._size);
+                },
+
+                get: function () {
+                    return this._size;
+                }
+            },
+
+            _getJSON: function () {
+                return {
+                    center: this._center.slice(),
+                    size: this._size,
+                    text: this._text
+                };
+            }
+        }
+    });
+
+    function buildStrokeData() {
+        return {
+            ' ': {width: 16, points: []},
+            '!': {
+                width: 10, points: [
+                    [5, 21],
+                    [5, 7],
+                    [-1, -1],
+                    [5, 2],
+                    [4, 1],
+                    [5, 0],
+                    [6, 1],
+                    [5, 2]
+                ]
+            },
+            '"': {
+                width: 16, points: [
+                    [4, 21],
+                    [4, 14],
+                    [-1, -1],
+                    [12, 21],
+                    [12, 14]
+                ]
+            },
+            '#': {
+                width: 21, points: [
+                    [11, 25],
+                    [4, -7],
+                    [-1, -1],
+                    [17, 25],
+                    [10, -7],
+                    [-1, -1],
+                    [4, 12],
+                    [18, 12],
+                    [-1, -1],
+                    [3, 6],
+                    [17, 6]
+                ]
+            },
+            '$': {
+                width: 20, points: [
+                    [8, 25],
+                    [8, -4],
+                    [-1, -1],
+                    [12, 25],
+                    [12, -4],
+                    [-1, -1],
+                    [17, 18],
+                    [15, 20],
+                    [12, 21],
+                    [8, 21],
+                    [5, 20],
+                    [3, 18],
+                    [3, 16],
+                    [4, 14],
+                    [5, 13],
+                    [7, 12],
+                    [13, 10],
+                    [15, 9],
+                    [16, 8],
+                    [17, 6],
+                    [17, 3],
+                    [15, 1],
+                    [12, 0],
+                    [8, 0],
+                    [5, 1],
+                    [3, 3]
+                ]
+            },
+            '%': {
+                width: 24, points: [
+                    [21, 21],
+                    [3, 0],
+                    [-1, -1],
+                    [8, 21],
+                    [10, 19],
+                    [10, 17],
+                    [9, 15],
+                    [7, 14],
+                    [5, 14],
+                    [3, 16],
+                    [3, 18],
+                    [4, 20],
+                    [6, 21],
+                    [8, 21],
+                    [10, 20],
+                    [13, 19],
+                    [16, 19],
+                    [19, 20],
+                    [21, 21],
+                    [-1, -1],
+                    [17, 7],
+                    [15, 6],
+                    [14, 4],
+                    [14, 2],
+                    [16, 0],
+                    [18, 0],
+                    [20, 1],
+                    [21, 3],
+                    [21, 5],
+                    [19, 7],
+                    [17, 7]
+                ]
+            },
+            '&': {
+                width: 26, points: [
+                    [23, 12],
+                    [23, 13],
+                    [22, 14],
+                    [21, 14],
+                    [20, 13],
+                    [19, 11],
+                    [17, 6],
+                    [15, 3],
+                    [13, 1],
+                    [11, 0],
+                    [7, 0],
+                    [5, 1],
+                    [4, 2],
+                    [3, 4],
+                    [3, 6],
+                    [4, 8],
+                    [5, 9],
+                    [12, 13],
+                    [13, 14],
+                    [14, 16],
+                    [14, 18],
+                    [13, 20],
+                    [11, 21],
+                    [9, 20],
+                    [8, 18],
+                    [8, 16],
+                    [9, 13],
+                    [11, 10],
+                    [16, 3],
+                    [18, 1],
+                    [20, 0],
+                    [22, 0],
+                    [23, 1],
+                    [23, 2]
+                ]
+            },
+            '\'': {
+                width: 10, points: [
+                    [5, 19],
+                    [4, 20],
+                    [5, 21],
+                    [6, 20],
+                    [6, 18],
+                    [5, 16],
+                    [4, 15]
+                ]
+            },
+            '(': {
+                width: 14, points: [
+                    [11, 25],
+                    [9, 23],
+                    [7, 20],
+                    [5, 16],
+                    [4, 11],
+                    [4, 7],
+                    [5, 2],
+                    [7, -2],
+                    [9, -5],
+                    [11, -7]
+                ]
+            },
+            ')': {
+                width: 14, points: [
+                    [3, 25],
+                    [5, 23],
+                    [7, 20],
+                    [9, 16],
+                    [10, 11],
+                    [10, 7],
+                    [9, 2],
+                    [7, -2],
+                    [5, -5],
+                    [3, -7]
+                ]
+            },
+            '*': {
+                width: 16, points: [
+                    [8, 21],
+                    [8, 9],
+                    [-1, -1],
+                    [3, 18],
+                    [13, 12],
+                    [-1, -1],
+                    [13, 18],
+                    [3, 12]
+                ]
+            },
+            '+': {
+                width: 26, points: [
+                    [13, 18],
+                    [13, 0],
+                    [-1, -1],
+                    [4, 9],
+                    [22, 9]
+                ]
+            },
+            ',': {
+                width: 10, points: [
+                    [6, 1],
+                    [5, 0],
+                    [4, 1],
+                    [5, 2],
+                    [6, 1],
+                    [6, -1],
+                    [5, -3],
+                    [4, -4]
+                ]
+            },
+            '-': {
+                width: 26, points: [
+                    [4, 9],
+                    [22, 9]
+                ]
+            },
+            '.': {
+                width: 10, points: [
+                    [5, 2],
+                    [4, 1],
+                    [5, 0],
+                    [6, 1],
+                    [5, 2]
+                ]
+            },
+            '/': {
+                width: 22, points: [
+                    [20, 25],
+                    [2, -7]
+                ]
+            },
+            '0': {
+                width: 20, points: [
+                    [9, 21],
+                    [6, 20],
+                    [4, 17],
+                    [3, 12],
+                    [3, 9],
+                    [4, 4],
+                    [6, 1],
+                    [9, 0],
+                    [11, 0],
+                    [14, 1],
+                    [16, 4],
+                    [17, 9],
+                    [17, 12],
+                    [16, 17],
+                    [14, 20],
+                    [11, 21],
+                    [9, 21]
+                ]
+            },
+            '1': {
+                width: 20, points: [
+                    [6, 17],
+                    [8, 18],
+                    [11, 21],
+                    [11, 0]
+                ]
+            },
+            '2': {
+                width: 20, points: [
+                    [4, 16],
+                    [4, 17],
+                    [5, 19],
+                    [6, 20],
+                    [8, 21],
+                    [12, 21],
+                    [14, 20],
+                    [15, 19],
+                    [16, 17],
+                    [16, 15],
+                    [15, 13],
+                    [13, 10],
+                    [3, 0],
+                    [17, 0]
+                ]
+            },
+            '3': {
+                width: 20, points: [
+                    [5, 21],
+                    [16, 21],
+                    [10, 13],
+                    [13, 13],
+                    [15, 12],
+                    [16, 11],
+                    [17, 8],
+                    [17, 6],
+                    [16, 3],
+                    [14, 1],
+                    [11, 0],
+                    [8, 0],
+                    [5, 1],
+                    [4, 2],
+                    [3, 4]
+                ]
+            },
+            '4': {
+                width: 20, points: [
+                    [13, 21],
+                    [3, 7],
+                    [18, 7],
+                    [-1, -1],
+                    [13, 21],
+                    [13, 0]
+                ]
+            },
+            '5': {
+                width: 20, points: [
+                    [15, 21],
+                    [5, 21],
+                    [4, 12],
+                    [5, 13],
+                    [8, 14],
+                    [11, 14],
+                    [14, 13],
+                    [16, 11],
+                    [17, 8],
+                    [17, 6],
+                    [16, 3],
+                    [14, 1],
+                    [11, 0],
+                    [8, 0],
+                    [5, 1],
+                    [4, 2],
+                    [3, 4]
+                ]
+            },
+            '6': {
+                width: 20, points: [
+                    [16, 18],
+                    [15, 20],
+                    [12, 21],
+                    [10, 21],
+                    [7, 20],
+                    [5, 17],
+                    [4, 12],
+                    [4, 7],
+                    [5, 3],
+                    [7, 1],
+                    [10, 0],
+                    [11, 0],
+                    [14, 1],
+                    [16, 3],
+                    [17, 6],
+                    [17, 7],
+                    [16, 10],
+                    [14, 12],
+                    [11, 13],
+                    [10, 13],
+                    [7, 12],
+                    [5, 10],
+                    [4, 7]
+                ]
+            },
+            '7': {
+                width: 20, points: [
+                    [17, 21],
+                    [7, 0],
+                    [-1, -1],
+                    [3, 21],
+                    [17, 21]
+                ]
+            },
+            '8': {
+                width: 20, points: [
+                    [8, 21],
+                    [5, 20],
+                    [4, 18],
+                    [4, 16],
+                    [5, 14],
+                    [7, 13],
+                    [11, 12],
+                    [14, 11],
+                    [16, 9],
+                    [17, 7],
+                    [17, 4],
+                    [16, 2],
+                    [15, 1],
+                    [12, 0],
+                    [8, 0],
+                    [5, 1],
+                    [4, 2],
+                    [3, 4],
+                    [3, 7],
+                    [4, 9],
+                    [6, 11],
+                    [9, 12],
+                    [13, 13],
+                    [15, 14],
+                    [16, 16],
+                    [16, 18],
+                    [15, 20],
+                    [12, 21],
+                    [8, 21]
+                ]
+            },
+            '9': {
+                width: 20, points: [
+                    [16, 14],
+                    [15, 11],
+                    [13, 9],
+                    [10, 8],
+                    [9, 8],
+                    [6, 9],
+                    [4, 11],
+                    [3, 14],
+                    [3, 15],
+                    [4, 18],
+                    [6, 20],
+                    [9, 21],
+                    [10, 21],
+                    [13, 20],
+                    [15, 18],
+                    [16, 14],
+                    [16, 9],
+                    [15, 4],
+                    [13, 1],
+                    [10, 0],
+                    [8, 0],
+                    [5, 1],
+                    [4, 3]
+                ]
+            },
+            ':': {
+                width: 10, points: [
+                    [5, 14],
+                    [4, 13],
+                    [5, 12],
+                    [6, 13],
+                    [5, 14],
+                    [-1, -1],
+                    [5, 2],
+                    [4, 1],
+                    [5, 0],
+                    [6, 1],
+                    [5, 2]
+                ]
+            },
+            ';': {
+                width: 10, points: [
+                    [5, 14],
+                    [4, 13],
+                    [5, 12],
+                    [6, 13],
+                    [5, 14],
+                    [-1, -1],
+                    [6, 1],
+                    [5, 0],
+                    [4, 1],
+                    [5, 2],
+                    [6, 1],
+                    [6, -1],
+                    [5, -3],
+                    [4, -4]
+                ]
+            },
+            '<': {
+                width: 24, points: [
+                    [20, 18],
+                    [4, 9],
+                    [20, 0]
+                ]
+            },
+            '=': {
+                width: 26, points: [
+                    [4, 12],
+                    [22, 12],
+                    [-1, -1],
+                    [4, 6],
+                    [22, 6]
+                ]
+            },
+            '>': {
+                width: 24, points: [
+                    [4, 18],
+                    [20, 9],
+                    [4, 0]
+                ]
+            },
+            '?': {
+                width: 18, points: [
+                    [3, 16],
+                    [3, 17],
+                    [4, 19],
+                    [5, 20],
+                    [7, 21],
+                    [11, 21],
+                    [13, 20],
+                    [14, 19],
+                    [15, 17],
+                    [15, 15],
+                    [14, 13],
+                    [13, 12],
+                    [9, 10],
+                    [9, 7],
+                    [-1, -1],
+                    [9, 2],
+                    [8, 1],
+                    [9, 0],
+                    [10, 1],
+                    [9, 2]
+                ]
+            },
+            '@': {
+                width: 27, points: [
+                    [18, 13],
+                    [17, 15],
+                    [15, 16],
+                    [12, 16],
+                    [10, 15],
+                    [9, 14],
+                    [8, 11],
+                    [8, 8],
+                    [9, 6],
+                    [11, 5],
+                    [14, 5],
+                    [16, 6],
+                    [17, 8],
+                    [-1, -1],
+                    [12, 16],
+                    [10, 14],
+                    [9, 11],
+                    [9, 8],
+                    [10, 6],
+                    [11, 5],
+                    [-1, -1],
+                    [18, 16],
+                    [17, 8],
+                    [17, 6],
+                    [19, 5],
+                    [21, 5],
+                    [23, 7],
+                    [24, 10],
+                    [24, 12],
+                    [23, 15],
+                    [22, 17],
+                    [20, 19],
+                    [18, 20],
+                    [15, 21],
+                    [12, 21],
+                    [9, 20],
+                    [7, 19],
+                    [5, 17],
+                    [4, 15],
+                    [3, 12],
+                    [3, 9],
+                    [4, 6],
+                    [5, 4],
+                    [7, 2],
+                    [9, 1],
+                    [12, 0],
+                    [15, 0],
+                    [18, 1],
+                    [20, 2],
+                    [21, 3],
+                    [-1, -1],
+                    [19, 16],
+                    [18, 8],
+                    [18, 6],
+                    [19, 5]
+                ]
+            },
+            'A': {
+                width: 18, points: [
+                    [9, 21],
+                    [1, 0],
+                    [-1, -1],
+                    [9, 21],
+                    [17, 0],
+                    [-1, -1],
+                    [4, 7],
+                    [14, 7]
+                ]
+            },
+            'B': {
+                width: 21, points: [
+                    [4, 21],
+                    [4, 0],
+                    [-1, -1],
+                    [4, 21],
+                    [13, 21],
+                    [16, 20],
+                    [17, 19],
+                    [18, 17],
+                    [18, 15],
+                    [17, 13],
+                    [16, 12],
+                    [13, 11],
+                    [-1, -1],
+                    [4, 11],
+                    [13, 11],
+                    [16, 10],
+                    [17, 9],
+                    [18, 7],
+                    [18, 4],
+                    [17, 2],
+                    [16, 1],
+                    [13, 0],
+                    [4, 0]
+                ]
+            },
+            'C': {
+                width: 21, points: [
+                    [18, 16],
+                    [17, 18],
+                    [15, 20],
+                    [13, 21],
+                    [9, 21],
+                    [7, 20],
+                    [5, 18],
+                    [4, 16],
+                    [3, 13],
+                    [3, 8],
+                    [4, 5],
+                    [5, 3],
+                    [7, 1],
+                    [9, 0],
+                    [13, 0],
+                    [15, 1],
+                    [17, 3],
+                    [18, 5]
+                ]
+            },
+            'D': {
+                width: 21, points: [
+                    [4, 21],
+                    [4, 0],
+                    [-1, -1],
+                    [4, 21],
+                    [11, 21],
+                    [14, 20],
+                    [16, 18],
+                    [17, 16],
+                    [18, 13],
+                    [18, 8],
+                    [17, 5],
+                    [16, 3],
+                    [14, 1],
+                    [11, 0],
+                    [4, 0]
+                ]
+            },
+            'E': {
+                width: 19, points: [
+                    [4, 21],
+                    [4, 0],
+                    [-1, -1],
+                    [4, 21],
+                    [17, 21],
+                    [-1, -1],
+                    [4, 11],
+                    [12, 11],
+                    [-1, -1],
+                    [4, 0],
+                    [17, 0]
+                ]
+            },
+            'F': {
+                width: 18, points: [
+                    [4, 21],
+                    [4, 0],
+                    [-1, -1],
+                    [4, 21],
+                    [17, 21],
+                    [-1, -1],
+                    [4, 11],
+                    [12, 11]
+                ]
+            },
+            'G': {
+                width: 21, points: [
+                    [18, 16],
+                    [17, 18],
+                    [15, 20],
+                    [13, 21],
+                    [9, 21],
+                    [7, 20],
+                    [5, 18],
+                    [4, 16],
+                    [3, 13],
+                    [3, 8],
+                    [4, 5],
+                    [5, 3],
+                    [7, 1],
+                    [9, 0],
+                    [13, 0],
+                    [15, 1],
+                    [17, 3],
+                    [18, 5],
+                    [18, 8],
+                    [-1, -1],
+                    [13, 8],
+                    [18, 8]
+                ]
+            },
+            'H': {
+                width: 22, points: [
+                    [4, 21],
+                    [4, 0],
+                    [-1, -1],
+                    [18, 21],
+                    [18, 0],
+                    [-1, -1],
+                    [4, 11],
+                    [18, 11]
+                ]
+            },
+            'I': {
+                width: 8, points: [
+                    [4, 21],
+                    [4, 0]
+                ]
+            },
+            'J': {
+                width: 16, points: [
+                    [12, 21],
+                    [12, 5],
+                    [11, 2],
+                    [10, 1],
+                    [8, 0],
+                    [6, 0],
+                    [4, 1],
+                    [3, 2],
+                    [2, 5],
+                    [2, 7]
+                ]
+            },
+            'K': {
+                width: 21, points: [
+                    [4, 21],
+                    [4, 0],
+                    [-1, -1],
+                    [18, 21],
+                    [4, 7],
+                    [-1, -1],
+                    [9, 12],
+                    [18, 0]
+                ]
+            },
+            'L': {
+                width: 17, points: [
+                    [4, 21],
+                    [4, 0],
+                    [-1, -1],
+                    [4, 0],
+                    [16, 0]
+                ]
+            },
+            'M': {
+                width: 24, points: [
+                    [4, 21],
+                    [4, 0],
+                    [-1, -1],
+                    [4, 21],
+                    [12, 0],
+                    [-1, -1],
+                    [20, 21],
+                    [12, 0],
+                    [-1, -1],
+                    [20, 21],
+                    [20, 0]
+                ]
+            },
+            'N': {
+                width: 22, points: [
+                    [4, 21],
+                    [4, 0],
+                    [-1, -1],
+                    [4, 21],
+                    [18, 0],
+                    [-1, -1],
+                    [18, 21],
+                    [18, 0]
+                ]
+            },
+            'O': {
+                width: 22, points: [
+                    [9, 21],
+                    [7, 20],
+                    [5, 18],
+                    [4, 16],
+                    [3, 13],
+                    [3, 8],
+                    [4, 5],
+                    [5, 3],
+                    [7, 1],
+                    [9, 0],
+                    [13, 0],
+                    [15, 1],
+                    [17, 3],
+                    [18, 5],
+                    [19, 8],
+                    [19, 13],
+                    [18, 16],
+                    [17, 18],
+                    [15, 20],
+                    [13, 21],
+                    [9, 21]
+                ]
+            },
+            'P': {
+                width: 21, points: [
+                    [4, 21],
+                    [4, 0],
+                    [-1, -1],
+                    [4, 21],
+                    [13, 21],
+                    [16, 20],
+                    [17, 19],
+                    [18, 17],
+                    [18, 14],
+                    [17, 12],
+                    [16, 11],
+                    [13, 10],
+                    [4, 10]
+                ]
+            },
+            'Q': {
+                width: 22, points: [
+                    [9, 21],
+                    [7, 20],
+                    [5, 18],
+                    [4, 16],
+                    [3, 13],
+                    [3, 8],
+                    [4, 5],
+                    [5, 3],
+                    [7, 1],
+                    [9, 0],
+                    [13, 0],
+                    [15, 1],
+                    [17, 3],
+                    [18, 5],
+                    [19, 8],
+                    [19, 13],
+                    [18, 16],
+                    [17, 18],
+                    [15, 20],
+                    [13, 21],
+                    [9, 21],
+                    [-1, -1],
+                    [12, 4],
+                    [18, -2]
+                ]
+            },
+            'R': {
+                width: 21, points: [
+                    [4, 21],
+                    [4, 0],
+                    [-1, -1],
+                    [4, 21],
+                    [13, 21],
+                    [16, 20],
+                    [17, 19],
+                    [18, 17],
+                    [18, 15],
+                    [17, 13],
+                    [16, 12],
+                    [13, 11],
+                    [4, 11],
+                    [-1, -1],
+                    [11, 11],
+                    [18, 0]
+                ]
+            },
+            'S': {
+                width: 20, points: [
+                    [17, 18],
+                    [15, 20],
+                    [12, 21],
+                    [8, 21],
+                    [5, 20],
+                    [3, 18],
+                    [3, 16],
+                    [4, 14],
+                    [5, 13],
+                    [7, 12],
+                    [13, 10],
+                    [15, 9],
+                    [16, 8],
+                    [17, 6],
+                    [17, 3],
+                    [15, 1],
+                    [12, 0],
+                    [8, 0],
+                    [5, 1],
+                    [3, 3]
+                ]
+            },
+            'T': {
+                width: 16, points: [
+                    [8, 21],
+                    [8, 0],
+                    [-1, -1],
+                    [1, 21],
+                    [15, 21]
+                ]
+            },
+            'U': {
+                width: 22, points: [
+                    [4, 21],
+                    [4, 6],
+                    [5, 3],
+                    [7, 1],
+                    [10, 0],
+                    [12, 0],
+                    [15, 1],
+                    [17, 3],
+                    [18, 6],
+                    [18, 21]
+                ]
+            },
+            'V': {
+                width: 18, points: [
+                    [1, 21],
+                    [9, 0],
+                    [-1, -1],
+                    [17, 21],
+                    [9, 0]
+                ]
+            },
+            'W': {
+                width: 24, points: [
+                    [2, 21],
+                    [7, 0],
+                    [-1, -1],
+                    [12, 21],
+                    [7, 0],
+                    [-1, -1],
+                    [12, 21],
+                    [17, 0],
+                    [-1, -1],
+                    [22, 21],
+                    [17, 0]
+                ]
+            },
+            'X': {
+                width: 20, points: [
+                    [3, 21],
+                    [17, 0],
+                    [-1, -1],
+                    [17, 21],
+                    [3, 0]
+                ]
+            },
+            'Y': {
+                width: 18, points: [
+                    [1, 21],
+                    [9, 11],
+                    [9, 0],
+                    [-1, -1],
+                    [17, 21],
+                    [9, 11]
+                ]
+            },
+            'Z': {
+                width: 20, points: [
+                    [17, 21],
+                    [3, 0],
+                    [-1, -1],
+                    [3, 21],
+                    [17, 21],
+                    [-1, -1],
+                    [3, 0],
+                    [17, 0]
+                ]
+            },
+            '[': {
+                width: 14, points: [
+                    [4, 25],
+                    [4, -7],
+                    [-1, -1],
+                    [5, 25],
+                    [5, -7],
+                    [-1, -1],
+                    [4, 25],
+                    [11, 25],
+                    [-1, -1],
+                    [4, -7],
+                    [11, -7]
+                ]
+            },
+            '\\': {
+                width: 14, points: [
+                    [0, 21],
+                    [14, -3]
+                ]
+            },
+            ']': {
+                width: 14, points: [
+                    [9, 25],
+                    [9, -7],
+                    [-1, -1],
+                    [10, 25],
+                    [10, -7],
+                    [-1, -1],
+                    [3, 25],
+                    [10, 25],
+                    [-1, -1],
+                    [3, -7],
+                    [10, -7]
+                ]
+            },
+            '^': {
+                width: 16, points: [
+                    [6, 15],
+                    [8, 18],
+                    [10, 15],
+                    [-1, -1],
+                    [3, 12],
+                    [8, 17],
+                    [13, 12],
+                    [-1, -1],
+                    [8, 17],
+                    [8, 0]
+                ]
+            },
+            '_': {
+                width: 16, points: [
+                    [0, -2],
+                    [16, -2]
+                ]
+            },
+            '`': {
+                width: 10, points: [
+                    [6, 21],
+                    [5, 20],
+                    [4, 18],
+                    [4, 16],
+                    [5, 15],
+                    [6, 16],
+                    [5, 17]
+                ]
+            },
+            'a': {
+                width: 19, points: [
+                    [15, 14],
+                    [15, 0],
+                    [-1, -1],
+                    [15, 11],
+                    [13, 13],
+                    [11, 14],
+                    [8, 14],
+                    [6, 13],
+                    [4, 11],
+                    [3, 8],
+                    [3, 6],
+                    [4, 3],
+                    [6, 1],
+                    [8, 0],
+                    [11, 0],
+                    [13, 1],
+                    [15, 3]
+                ]
+            },
+            'b': {
+                width: 19, points: [
+                    [4, 21],
+                    [4, 0],
+                    [-1, -1],
+                    [4, 11],
+                    [6, 13],
+                    [8, 14],
+                    [11, 14],
+                    [13, 13],
+                    [15, 11],
+                    [16, 8],
+                    [16, 6],
+                    [15, 3],
+                    [13, 1],
+                    [11, 0],
+                    [8, 0],
+                    [6, 1],
+                    [4, 3]
+                ]
+            },
+            'c': {
+                width: 18, points: [
+                    [15, 11],
+                    [13, 13],
+                    [11, 14],
+                    [8, 14],
+                    [6, 13],
+                    [4, 11],
+                    [3, 8],
+                    [3, 6],
+                    [4, 3],
+                    [6, 1],
+                    [8, 0],
+                    [11, 0],
+                    [13, 1],
+                    [15, 3]
+                ]
+            },
+            'd': {
+                width: 19, points: [
+                    [15, 21],
+                    [15, 0],
+                    [-1, -1],
+                    [15, 11],
+                    [13, 13],
+                    [11, 14],
+                    [8, 14],
+                    [6, 13],
+                    [4, 11],
+                    [3, 8],
+                    [3, 6],
+                    [4, 3],
+                    [6, 1],
+                    [8, 0],
+                    [11, 0],
+                    [13, 1],
+                    [15, 3]
+                ]
+            },
+            'e': {
+                width: 18, points: [
+                    [3, 8],
+                    [15, 8],
+                    [15, 10],
+                    [14, 12],
+                    [13, 13],
+                    [11, 14],
+                    [8, 14],
+                    [6, 13],
+                    [4, 11],
+                    [3, 8],
+                    [3, 6],
+                    [4, 3],
+                    [6, 1],
+                    [8, 0],
+                    [11, 0],
+                    [13, 1],
+                    [15, 3]
+                ]
+            },
+            'f': {
+                width: 12, points: [
+                    [10, 21],
+                    [8, 21],
+                    [6, 20],
+                    [5, 17],
+                    [5, 0],
+                    [-1, -1],
+                    [2, 14],
+                    [9, 14]
+                ]
+            },
+            'g': {
+                width: 19, points: [
+                    [15, 14],
+                    [15, -2],
+                    [14, -5],
+                    [13, -6],
+                    [11, -7],
+                    [8, -7],
+                    [6, -6],
+                    [-1, -1],
+                    [15, 11],
+                    [13, 13],
+                    [11, 14],
+                    [8, 14],
+                    [6, 13],
+                    [4, 11],
+                    [3, 8],
+                    [3, 6],
+                    [4, 3],
+                    [6, 1],
+                    [8, 0],
+                    [11, 0],
+                    [13, 1],
+                    [15, 3]
+                ]
+            },
+            'h': {
+                width: 19, points: [
+                    [4, 21],
+                    [4, 0],
+                    [-1, -1],
+                    [4, 10],
+                    [7, 13],
+                    [9, 14],
+                    [12, 14],
+                    [14, 13],
+                    [15, 10],
+                    [15, 0]
+                ]
+            },
+            'i': {
+                width: 8, points: [
+                    [3, 21],
+                    [4, 20],
+                    [5, 21],
+                    [4, 22],
+                    [3, 21],
+                    [-1, -1],
+                    [4, 14],
+                    [4, 0]
+                ]
+            },
+            'j': {
+                width: 10, points: [
+                    [5, 21],
+                    [6, 20],
+                    [7, 21],
+                    [6, 22],
+                    [5, 21],
+                    [-1, -1],
+                    [6, 14],
+                    [6, -3],
+                    [5, -6],
+                    [3, -7],
+                    [1, -7]
+                ]
+            },
+            'k': {
+                width: 17, points: [
+                    [4, 21],
+                    [4, 0],
+                    [-1, -1],
+                    [14, 14],
+                    [4, 4],
+                    [-1, -1],
+                    [8, 8],
+                    [15, 0]
+                ]
+            },
+            'l': {
+                width: 8, points: [
+                    [4, 21],
+                    [4, 0]
+                ]
+            },
+            'm': {
+                width: 30, points: [
+                    [4, 14],
+                    [4, 0],
+                    [-1, -1],
+                    [4, 10],
+                    [7, 13],
+                    [9, 14],
+                    [12, 14],
+                    [14, 13],
+                    [15, 10],
+                    [15, 0],
+                    [-1, -1],
+                    [15, 10],
+                    [18, 13],
+                    [20, 14],
+                    [23, 14],
+                    [25, 13],
+                    [26, 10],
+                    [26, 0]
+                ]
+            },
+            'n': {
+                width: 19, points: [
+                    [4, 14],
+                    [4, 0],
+                    [-1, -1],
+                    [4, 10],
+                    [7, 13],
+                    [9, 14],
+                    [12, 14],
+                    [14, 13],
+                    [15, 10],
+                    [15, 0]
+                ]
+            },
+            'o': {
+                width: 19, points: [
+                    [8, 14],
+                    [6, 13],
+                    [4, 11],
+                    [3, 8],
+                    [3, 6],
+                    [4, 3],
+                    [6, 1],
+                    [8, 0],
+                    [11, 0],
+                    [13, 1],
+                    [15, 3],
+                    [16, 6],
+                    [16, 8],
+                    [15, 11],
+                    [13, 13],
+                    [11, 14],
+                    [8, 14]
+                ]
+            },
+            'p': {
+                width: 19, points: [
+                    [4, 14],
+                    [4, -7],
+                    [-1, -1],
+                    [4, 11],
+                    [6, 13],
+                    [8, 14],
+                    [11, 14],
+                    [13, 13],
+                    [15, 11],
+                    [16, 8],
+                    [16, 6],
+                    [15, 3],
+                    [13, 1],
+                    [11, 0],
+                    [8, 0],
+                    [6, 1],
+                    [4, 3]
+                ]
+            },
+            'q': {
+                width: 19, points: [
+                    [15, 14],
+                    [15, -7],
+                    [-1, -1],
+                    [15, 11],
+                    [13, 13],
+                    [11, 14],
+                    [8, 14],
+                    [6, 13],
+                    [4, 11],
+                    [3, 8],
+                    [3, 6],
+                    [4, 3],
+                    [6, 1],
+                    [8, 0],
+                    [11, 0],
+                    [13, 1],
+                    [15, 3]
+                ]
+            },
+            'r': {
+                width: 13, points: [
+                    [4, 14],
+                    [4, 0],
+                    [-1, -1],
+                    [4, 8],
+                    [5, 11],
+                    [7, 13],
+                    [9, 14],
+                    [12, 14]
+                ]
+            },
+            's': {
+                width: 17, points: [
+                    [14, 11],
+                    [13, 13],
+                    [10, 14],
+                    [7, 14],
+                    [4, 13],
+                    [3, 11],
+                    [4, 9],
+                    [6, 8],
+                    [11, 7],
+                    [13, 6],
+                    [14, 4],
+                    [14, 3],
+                    [13, 1],
+                    [10, 0],
+                    [7, 0],
+                    [4, 1],
+                    [3, 3]
+                ]
+            },
+            't': {
+                width: 12, points: [
+                    [5, 21],
+                    [5, 4],
+                    [6, 1],
+                    [8, 0],
+                    [10, 0],
+                    [-1, -1],
+                    [2, 14],
+                    [9, 14]
+                ]
+            },
+            'u': {
+                width: 19, points: [
+                    [4, 14],
+                    [4, 4],
+                    [5, 1],
+                    [7, 0],
+                    [10, 0],
+                    [12, 1],
+                    [15, 4],
+                    [-1, -1],
+                    [15, 14],
+                    [15, 0]
+                ]
+            },
+            'v': {
+                width: 16, points: [
+                    [2, 14],
+                    [8, 0],
+                    [-1, -1],
+                    [14, 14],
+                    [8, 0]
+                ]
+            },
+            'w': {
+                width: 22, points: [
+                    [3, 14],
+                    [7, 0],
+                    [-1, -1],
+                    [11, 14],
+                    [7, 0],
+                    [-1, -1],
+                    [11, 14],
+                    [15, 0],
+                    [-1, -1],
+                    [19, 14],
+                    [15, 0]
+                ]
+            },
+            'x': {
+                width: 17, points: [
+                    [3, 14],
+                    [14, 0],
+                    [-1, -1],
+                    [14, 14],
+                    [3, 0]
+                ]
+            },
+            'y': {
+                width: 16, points: [
+                    [2, 14],
+                    [8, 0],
+                    [-1, -1],
+                    [14, 14],
+                    [8, 0],
+                    [6, -4],
+                    [4, -6],
+                    [2, -7],
+                    [1, -7]
+                ]
+            },
+            'z': {
+                width: 17, points: [
+                    [14, 14],
+                    [3, 0],
+                    [-1, -1],
+                    [3, 14],
+                    [14, 14],
+                    [-1, -1],
+                    [3, 0],
+                    [14, 0]
+                ]
+            },
+            '{': {
+                width: 14, points: [
+                    [9, 25],
+                    [7, 24],
+                    [6, 23],
+                    [5, 21],
+                    [5, 19],
+                    [6, 17],
+                    [7, 16],
+                    [8, 14],
+                    [8, 12],
+                    [6, 10],
+                    [-1, -1],
+                    [7, 24],
+                    [6, 22],
+                    [6, 20],
+                    [7, 18],
+                    [8, 17],
+                    [9, 15],
+                    [9, 13],
+                    [8, 11],
+                    [4, 9],
+                    [8, 7],
+                    [9, 5],
+                    [9, 3],
+                    [8, 1],
+                    [7, 0],
+                    [6, -2],
+                    [6, -4],
+                    [7, -6],
+                    [-1, -1],
+                    [6, 8],
+                    [8, 6],
+                    [8, 4],
+                    [7, 2],
+                    [6, 1],
+                    [5, -1],
+                    [5, -3],
+                    [6, -5],
+                    [7, -6],
+                    [9, -7]
+                ]
+            },
+            '|': {
+                width: 8, points: [
+                    [4, 25],
+                    [4, -7]
+                ]
+            },
+            '}': {
+                width: 14, points: [
+                    [5, 25],
+                    [7, 24],
+                    [8, 23],
+                    [9, 21],
+                    [9, 19],
+                    [8, 17],
+                    [7, 16],
+                    [6, 14],
+                    [6, 12],
+                    [8, 10],
+                    [-1, -1],
+                    [7, 24],
+                    [8, 22],
+                    [8, 20],
+                    [7, 18],
+                    [6, 17],
+                    [5, 15],
+                    [5, 13],
+                    [6, 11],
+                    [10, 9],
+                    [6, 7],
+                    [5, 5],
+                    [5, 3],
+                    [6, 1],
+                    [7, 0],
+                    [8, -2],
+                    [8, -4],
+                    [7, -6],
+                    [-1, -1],
+                    [8, 8],
+                    [6, 6],
+                    [6, 4],
+                    [7, 2],
+                    [8, 1],
+                    [9, -1],
+                    [9, -3],
+                    [8, -5],
+                    [7, -6],
+                    [5, -7]
+                ]
+            },
+            '~': {
+                width: 24, points: [
+                    [3, 6],
+                    [3, 8],
+                    [4, 11],
+                    [6, 12],
+                    [8, 12],
+                    [10, 11],
+                    [14, 8],
+                    [16, 7],
+                    [18, 7],
+                    [20, 8],
+                    [21, 10],
+                    [-1, -1],
+                    [3, 8],
+                    [4, 10],
+                    [6, 11],
+                    [8, 11],
+                    [10, 10],
+                    [14, 7],
+                    [16, 6],
+                    [18, 6],
+                    [20, 7],
+                    [21, 10],
+                    [21, 12]
+                ]
+            }
+        };
+
+    }
+})();
+;/**
+
+ Helper that visualizes the position and direction of a {{#crossLink "Clip"}}{{/crossLink}}.
+
+ The helper works by tracking updates to the {{#crossLink "Clip"}}{{/crossLink}}'s
+ {{#crossLink "Clip/pos:property"}}{{/crossLink}} and {{#crossLink "Clip/dir:property"}}{{/crossLink}}.
+
+ @class ClipHelper
+ @constructor
+ @param cfg {*} Configuration
+ @param cfg.clip {Clip} A {{#crossLink "Clip"}}{{/crossLink}} to visualize.
+ @param [cfg.visible=true] {Boolean} Indicates whether or not this helper is visible.
+ */
+(function () {
+
+    "use strict";
+
+    xeogl.ClipHelper = xeogl.Component.extend({
+
+        type: "xeogl.ClipHelper",
+
+        _init: function (cfg) {
+
+            var material = new xeogl.PhongMaterial(this, {
+                emissive: [1, 0, 0],
+                diffuse: [0, 0, 0],
+                lineWidth: 4
+            });
+
+            var transform = new xeogl.Quaternion(this, {
+                xyzw: [0, 0, 0, 1],
+                parent: new xeogl.Translate(this, {
+                    xyz: [0, 0, 0]
+                })
+            });
+
+            this._plane = new xeogl.Entity(this, {
+                geometry: new xeogl.Geometry(this, {
+                    primitive: "lines",
+                    positions: [
+                        0.5, 0.5, 0.0, 0.5, -0.5, 0.0, // 0
+                        -0.5, -0.5, 0.0, -0.5, 0.5, 0.0, // 1
+                        0.5, 0.5, -0.0, 0.5, -0.5, -0.0, // 2
+                        -0.5, -0.5, -0.0, -0.5, 0.5, -0.0 // 3
+                    ],
+                    indices: [0, 1, 0, 3, 1, 2, 2, 3]
+                }),
+                material: material,
+                transform: transform,
+                pickable: false,
+                collidable: true,
+                clippable: false
+            });
+
+            this._arrow = new xeogl.Entity(this, {
+                geometry: new xeogl.Geometry(this, {
+                    primitive: "lines",
+                    positions: [
+                        1.0, 1.0, 1.0, 1.0, -1.0, 1.0
+                    ],
+                    indices: [0, 1]
+                }),
+                material: material,
+                pickable: false,
+                collidable: false,
+                clippable: false
+            });
+
+            this._label = new xeogl.Entity(this, {
+                geometry: new xeogl.VectorTextGeometry(this, {
+                    text: this.id,
+                    size: 0.07,
+                    origin: [0.02, 0.02, 0.0]
+                }),
+                material: new xeogl.PhongMaterial(this, {
+                    emissive: [0.3, 1, 0.3],
+                    lineWidth: 2
+                }),
+                transform: transform, // Shares transform with plane
+                pickable: false,
+                collidable: false,
+                clippable: false,
+                billboard: "spherical"
+            });
+
+            this.clip = cfg.clip;
+            this.visible = cfg.visible;
+        },
+
+        _update: (function () {
+            var positions = new Float32Array(6);
+            var zeroVec = new Float32Array([0, 0, -1]);
+            var quat = new Float32Array(4);
+            return function () {
+
+                var clip = this._attached.clip;
+
+                if (clip) {
+
+                    var pos = clip.pos;
+                    var dir = clip.dir;
+
+                    positions[0] = pos[0];
+                    positions[1] = pos[1];
+                    positions[2] = pos[2];
+                    positions[3] = pos[0] + dir[0];
+                    positions[4] = pos[1] + dir[1];
+                    positions[5] = pos[2] + dir[2];
+
+                    this._arrow.geometry.positions = positions;
+
+                    xeogl.math.vec3PairToQuaternion(zeroVec, dir, quat);
+
+                    this._plane.transform.xyzw = quat;
+                    this._plane.transform.parent.xyz = pos;
+                }
+            };
+        })(),
+
+        _props: {
+
+            /**
+             * The {{#crossLink "Clip"}}Clip{{/crossLink}} attached to this ClipHelper.
+             *
+             * Fires an {{#crossLink "ClipHelper/Clip:event"}}{{/crossLink}} event on change.
+             *
+             * @property clip
+             * @type Clip
+             */
+            clip: {
+
+                set: function (value) {
+
+                    var self = this;
+
+                    this._attach({
+                        name: "clip",
+                        type: "xeogl.Clip",
+                        component: value,
+                        on: {
+                            pos: function (pos) {
+                                self._needUpdate();
+                            },
+                            dir: function (dir) {
+                                self._needUpdate();
+                            },
+                            active: function (active) {
+                                var emissive = active ? [0.3, 1.0, 0.3] : [0.3, 0.3, 0.3];
+                                self._plane.material.emissive = emissive;
+                                self._arrow.material.emissive = emissive;
+                            },
+                            side: function (quadraticAttenuation) {
+                            }
+                        }
+                    });
+
+                    if (this._attached.clip) {
+                        this._label.geometry.text = this._attached.clip.id;
+                    }
+                },
+
+                get: function () {
+                    return this._attached.clip;
+                }
+            },
+
+            /**
+             Indicates whether this ClipHelper is visible or not.
+
+             Fires a {{#crossLink "ClipHelper/active:event"}}{{/crossLink}} event on change.
+
+             @property visible
+             @default true
+             @type Boolean
+             */
+            visible: {
+
+                set: function (value) {
+
+                    value = value !== false;
+
+                    this._plane.visible = value;
+                    this._arrow.visible = value;
+                    this._label.visible = value;
+
+                    /**
+                     Fired whenever this helper's {{#crossLink "ClipHelper/visible:property"}}{{/crossLink}} property changes.
+
+                     @event visible
+                     @param value {Boolean} The property's new value
+                     */
+                    this.fire("visible", this._plane.visible);
+                },
+
+                get: function () {
+                    return this._plane.visible;
+                }
+            }
+        }
+    });
+})();;/**
  A **Pin** is a pinned position on the surface of an {{#crossLink "Entity"}}{{/crossLink}}.
 
  ## Overview
@@ -41303,7 +43469,7 @@ xeogl.version="1.0.0";;/**
  <script>
 
  var model = new xeogl.GLTFModel({
-    src: "models/gltf/2.0/Reciprocating_Saw/PBR-SpecGloss/Reciprocating_Saw.gltf",
+    src: "models/gltf/ReciprocatingSaw/PBR-SpecGloss/Reciprocating_Saw.gltf",
     transform: new xeogl.Rotate({
         xyz: [1, 0, 0],
         angle: 90
@@ -41550,7 +43716,7 @@ xeogl.Annotation = xeogl.Pin.extend({
                 this._titleElement.innerHTML = this._title;
 
                 /**
-                 Fired whenever this Annotation's {{#crossLink "Annotation/look:property"}}{{/crossLink}} property changes.
+                 Fired whenever this Annotation's {{#crossLink "Annotation/title:property"}}{{/crossLink}} property changes.
 
                  @event title
                  @param value {Number} The property's new value
@@ -41707,11 +43873,13 @@ xeogl.Annotation = xeogl.Pin.extend({
         pinShown: {
             set: function (shown) {
 
+                shown = shown !== false;
+
                 if (this._pinShown === shown) {
                     return;
                 }
 
-                this._pinShown = shown !== false;
+                this._pinShown = shown;
                 this._spot.style.visibility = this._pinShown ? "visible" : "hidden";
                 this._spotClickable.style.visibility = this._pinShown ? "visible" : "hidden";
 
@@ -41740,11 +43908,13 @@ xeogl.Annotation = xeogl.Pin.extend({
         labelShown: {
             set: function (shown) {
 
+                shown = shown !== false;
+
                 if (this._labelShown === shown) {
                     return;
                 }
 
-                this._labelShown = shown !== false;
+                this._labelShown = shown;
                 this._label.style.visibility = this._labelShown && this.visible ? "visible" : "hidden";
 
                 /**
@@ -42938,41 +45108,51 @@ xeogl.Annotation = xeogl.Pin.extend({
 ;var xeometry = {};
 
 /**
- * A convenient API for visualizing glTF models on WebGL.
- * @class Viewer
- * @param {Object} [cfg] Configs
- * @param {Function} [cfg.loadModel] Callback fired to load model
- * @param {Function} [cfg.loadedModel] Callback fired when model loaded
- * @param {Function} [cfg.unloadedModel] Callback fired when model unloaded
- * @param {Function} [cfg.contextAttr] WebGL context attributes
- * @example
- *
- * // Create viewer with defaults
- * var viewer = new xeometry.Viewer();
- *
- * // Create viewer that loads via custom loader callback
- * viewer2 = new xeometry.Viewer({
- *     loadModel: function (modelId, src, ok, error) {
- *          var request = new XMLHttpRequest();
- *          request.overrideMimeType("application/json");
- *          request.open('GET', src2, true);
- *          request.onreadystatechange = function () {
- *             if (request.readyState == 4 && // Request finished, response ready
- *                     request.status == "200") { // Status OK
- *                 var json = JSON.parse(request.responseText);
- *                 ok(json, this);
- *             }
- *         };
- *         request.send(null);
- *     },
- *     loadedModel: function(modelId, src, ok) {
- *         console.log("Loaded modelId=" + modelId);
- *         ok(); // Unblock the viewer
- *     },
- *     unloadedModel: function(modelId, src) {
- *         console.log("Unloaded modelId=" + modelId);
- *     }
- * });
+ A JavaScript API for viewing glTF models on WebGL.
+
+ A xeometry Viewer is a single class that wraps [xeogl](http://xeogl.org) in a
+ set of simple data-driven methods focused on loading glTF models and manipulating
+ scene content to create cool presentations.
+
+ @class Viewer
+ @param {Object} [cfg] Configs
+ @param {Function} [cfg.loadModel] Callback fired to load model
+ @param {Function} [cfg.loadedModel] Callback fired when model loaded
+ @param {Function} [cfg.unloadedModel] Callback fired when model unloaded
+ @param {Object} [cfg.contextAttr] WebGL context attributes
+ @example
+
+ // Create viewer with default canvas
+ var viewer1 = new xeometry.Viewer();
+
+ // Create viewer bound to an existing canvas
+ var viewer2 = new xeometry.Viewer({
+    canvas: "theCanvas"
+ });
+
+ // Create viewer that loads via custom loader callback
+ var viewer3 = new xeometry.Viewer({
+    loadModel: function (modelId, src, ok, error) {
+        var request = new XMLHttpRequest();
+        request.overrideMimeType("application/json");
+        request.open('GET', src2, true);
+        request.onreadystatechange = function () {
+            if (request.readyState == 4 && // Request finished, response ready
+                request.status == "200") { // Status OK
+                    var json = JSON.parse(request.responseText);
+                    ok(json, this);
+            }
+        };
+        request.send(null);
+    },
+    loadedModel: function(modelId, src, ok) {
+        console.log("Loaded modelId=" + modelId);
+        ok(); // Unblock the viewer
+    },
+    unloadedModel: function(modelId, src) {
+        console.log("Unloaded modelId=" + modelId);
+    }
+ });
  */
 xeometry.Viewer = function (cfg) {
 
@@ -43002,7 +45182,6 @@ xeometry.Viewer = function (cfg) {
     var objects = {}; // Objects mapped to their IDs
     var annotations = {}; // Annotations mapped to their IDs
     var objectAnnotations = {}; // Annotations for each object
-    //var typeAnnotations = {}; // Annotations for each type
     var eulerAngles = {}; // Euler rotation angles for each model and object
     var rotations = {}; // xeogl.Rotate for each model and object
     var translations = {}; // xeogl.Translate for each model and object
@@ -43011,13 +45190,32 @@ xeometry.Viewer = function (cfg) {
     var transformable = {}; // True for each model and object that has transforms
     var yspin = 0;
     var xspin = 0;
+    var clips = {};
+    var clipHelpers = {};
+    var clipsDirty = true;
 
     var onTick = scene.on("tick", function () {
+
+        // Orbit animation
         if (yspin > 0) {
             view.rotateEyeY(yspin);
         }
         if (xspin > 0) {
             view.rotateEyeX(xspin);
+        }
+
+        // Rebuild user clip planes
+        if (clipsDirty) {
+            var clip;
+            var clipArray = [];
+            for (var id in clips) {
+                if (clips.hasOwnProperty(id)) {
+                    clip = clips[id];
+                    clipArray.push(clip);
+                }
+            }
+            scene.clips.clips = clipArray;
+            clipsDirty = false;
         }
     });
 
@@ -43031,7 +45229,7 @@ xeometry.Viewer = function (cfg) {
         orthographic: new xeogl.Ortho(scene, {
             scale: 1.0,
             near: 0.1,
-            far: 5000
+            far: 10000
         })
     };
 
@@ -43044,9 +45242,9 @@ xeometry.Viewer = function (cfg) {
     //----------------------------------------------------------------------------------------------------
 
     /**
-     * Schedules an asynchronous task for the viewer to run at the next opportunity.
+     * Schedules a task for the viewer to run asynchronously at the next opportunity.
      *
-     * Internally, this pushes the task to a FIFO queue. Within each frame interval, the viewer processes the queue
+     * Internally, this pushes the task to a FIFO queue. Within each frame interval, the viewer pumps the queue
      * for a certain period of time, popping tasks and running them. After each frame interval, tasks that did not
      * get a chance to run during the task are left in the queue to be run next time.
      *
@@ -43065,12 +45263,6 @@ xeometry.Viewer = function (cfg) {
         xeogl.scheduleTask(callback, scope);
         return this;
     };
-
-    //----------------------------------------------------------------------------------------------------
-    // Models
-    //----------------------------------------------------------------------------------------------------
-
-    /** @module models */
 
     /**
      * Gets the viewer's WebGL canvas.
@@ -43092,18 +45284,21 @@ xeometry.Viewer = function (cfg) {
         return scene.canvas.overlay;
     };
 
+    //==================================================================================================================
+    // Models
+    //==================================================================================================================
 
     /**
      * Loads a model into the viewer.
      *
-     * Also assigns the model an ID, which gets prefixed to the IDs of its objects.
+     * Assigns the model an ID, which gets prefixed to the IDs of its objects.
      *
-     * @param {String} id ID to assign to the model.
+     * @param {String} id ID to assign to the model. This gets prefixed to the IDs of the model's objects.
      * @param {String} src Locates the model. This could be a path to a file or an ID within a database.
      * @param {Function} [ok] Callback fired when model loaded.
      * @return {Viewer} this
      * @example
-     * // Load saw model, fit in view, show only two of its objects
+     * // Load saw model, fit in view, show two of its objects
      * viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF/ReciprocatingSaw.gltf", function () {
      *    viewer.viewFit("saw");
      *    viewer.hide();
@@ -43188,7 +45383,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the IDs of the models currently in the viewer.
+     * Gets the models currently in the viewer.
      *
      * @see loadModel
      * @module models
@@ -43216,7 +45411,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the ID of an object's model
+     * Gets a the model an object belongs to.
      *
      * @param {String} id ID of the object.
      * @return {String} ID of the object's model.
@@ -43231,9 +45426,9 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the IDs of objects belonging to the given models and/or types.
+     * Gets the objects belonging to the given models and/or types.
      *
-     * Returns the IDs of all objects in the viewer when no arguments are given.
+     * Returns all objects in the viewer when no arguments are given.
      *
      * @param {String|String[]} [id] ID(s) of model(s) and/or a type(s).
      * @return {String[]} IDs of the objects.
@@ -43242,13 +45437,13 @@ xeometry.Viewer = function (cfg) {
      * // Get all objects currently in the viewer
      * var allObjects = viewer.getObjects();
      *
-     * // Get IDs of all the objects in the gearbox model
+     * // Get all objects in the gearbox model
      * var gearboxObjects = viewer.getObjects("gearbox");
      *
-     * // Get IDs of objects in two models
-     * var sawAndgearboxObjects = viewer.getObjects(["saw", "gearbox"]);
+     * // Get objects belonging to two models
+     * var sawAndGearboxObjects = viewer.getObjects(["saw", "gearbox"]);
      *
-     * // Get IDs of objects in the gearbox model and all objects in viewer that are IFC cable fitting and carriers
+     * // Get objects in the gearbox model, plus all objects in viewer that are IFC cable fittings and carriers
      * var gearboxCableFittings = viewer.getObjects("gearbox", "IfcCableFitting", "IfcCableCarrierFitting"]);
      */
     this.getObjects = function (id) {
@@ -43333,6 +45528,10 @@ xeometry.Viewer = function (cfg) {
         delete models[id];
         delete modelSrcs[id];
         delete eulerAngles[id];
+        delete transformable[id];
+        delete translations[id];
+        delete rotations[id];
+        delete scales[id];
         if (unloadedModel) {
             unloadedModel(id);
         }
@@ -43341,6 +45540,9 @@ xeometry.Viewer = function (cfg) {
 
     /**
      * Unloads all models, annotations and clipping planes.
+     *
+     * Preserves the current camera state.
+     *
      * @return {Viewer} this
      */
     this.clear = function () {
@@ -43350,12 +45552,13 @@ xeometry.Viewer = function (cfg) {
             }
         }
         this.clearAnnotations();
+        this.clearClips();
     };
 
     /**
-     * Assigns a type to the given object.
+     * Assigns a type to an object.
      *
-     * A type can be anything, but when using xeometry as an IFC viewer, it's typically going to be an IFC type.
+     * A type can be anything, but when using xeometry as an IFC viewer, it's typically an IFC type.
      *
      * @param {String} id ID of an object.
      * @param {String} type The type.
@@ -43408,7 +45611,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets all types currently in the viewer.
+     * Gets all the types currently in the viewer.
      *
      * @return {String[]} The types in the viewer.
      */
@@ -43416,12 +45619,12 @@ xeometry.Viewer = function (cfg) {
         return Object.keys(types);
     };
 
-    //----------------------------------------------------------------------------------------------------
+    //==================================================================================================================
     // Geometry
-    //----------------------------------------------------------------------------------------------------
+    //==================================================================================================================
 
     /**
-     * Gets the geometry primitive type of an object.
+     * Gets an object's geometry primitive type.
      *
      * This determines the layout of the indices array of the object's geometry.
      *
@@ -43471,14 +45674,18 @@ xeometry.Viewer = function (cfg) {
         error("Object not found: " + id);
     };
 
-    //----------------------------------------------------------------------------------------------------
+    //==================================================================================================================
     // Transformation
-    //----------------------------------------------------------------------------------------------------
+    //==================================================================================================================
 
     /**
-     * Sets the scale of a model or object.
+     * Sets the scale of a model or an object.
      *
-     * An object's scale is relative to its model's scale.
+     * An object's scale is relative to its model's scale. For example, if an object has a scale
+     * of ````[0.5, 0.5, 0.5]```` and its model also has scale ````[0.5, 0.5, 0.5]````, then the object's
+     * effective scale is ````[0.25, 0.25, 0.25]````.
+     *
+     * A model or object's scale is ````[1.0, 1.0, 1.0]```` by default.
      *
      * @param {String} id ID of a model or object.
      * @param {[Number, Number, Number]} xyz Scale factors for the X, Y and Z axis.
@@ -43502,14 +45709,16 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the scale of a model or object.
+     * Gets the scale of a model or an object.
      *
-     * An object's scale is relative to its model's scale.
+     * An object's scale is relative to its model's scale. For example, if an object has a scale
+     * of ````[0.5, 0.5, 0.5]```` and its model also has scale ````[0.5, 0.5, 0.5]````, then the object's
+     * effective scale is ````[0.25, 0.25, 0.25]````.
      *
-     * Unless previously set with {@link #setScale}, this will be ````[1.0, 1.0, 1.0]```` by default.
+     * A model or object's scale is ````[1.0, 1.0, 1.0]```` by default.
      *
      * @param {String} id ID of a model or object.
-     * @return {[Number, Number, Number]} scale Scale factors for the X, Y and Z axis.
+     * @return {[Number, Number, Number]} Scale factors for the X, Y and Z axis.
      * @example
      * var sawScale = viewer.getScale("saw");
      * var sawCoverScale = viewer.getScale("saw#1.1");
@@ -43528,9 +45737,15 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Sets the rotation of a model or object.
+     * Sets the rotation of a model or an object.
      *
-     * An object's rotation is relative to its model's rotation.
+     * An object's rotation is relative to its model's rotation. For example, if an object has a rotation
+     * of ````45```` degrees about the Y axis, and its model also has a rotation of ````45```` degrees about
+     * Y, then the object's effective rotation is ````90```` degrees about Y.
+     *
+     * Rotations are in order of X, Y then Z.
+     *
+     * The rotation angles of each model or object are ````[0, 0, 0]```` by default.
      *
      * @param {String} id ID of a model or object.
      * @param {[Number, Number, Number]} xyz Rotation angles, in degrees, for the X, Y and Z axis.
@@ -43560,14 +45775,19 @@ xeometry.Viewer = function (cfg) {
     })();
 
     /**
-     * Gets the rotation of a model or object.
+     * Gets the rotation of a model or an object.
      *
-     * An object's rotation is relative to its model's rotation.
+     * An object's rotation is relative to its model's rotation. For example, if an object has a rotation
+     * of ````45```` degrees about the Y axis, and its model also has a rotation of ````45```` degrees about
+     * Y, then the object's effective rotation is ````90```` degrees about Y.
      *
-     * Unless previously set with {@link #setRotate}, this will be ````[0.0, 0.0, 0.0]```` by default.
+     * The rotation angles of each model or object are ````[0, 0, 0]```` by default.
+     *
+     * Rotations are in order of X, Y then Z.
      *
      * @param {String} id ID of a model or object.
      * @return {[Number, Number, Number]} Rotation angles, in degrees, for the X, Y and Z axis.
+     * @example
      * var sawRotate = viewer.getRotate("saw");
      * var sawCoverRotate = viewer.getRotate("saw#1.1");
      */
@@ -43582,9 +45802,13 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Sets the translation of a model or object.
+     * Sets the translation of a model or an object.
      *
-     * An object's translation is relative to its model's translation.
+     * An object's translation is relative to that of its model. For example, if an object has a translation
+     * of ````[100, 0, 0]```` and its model has a translation of ````[50, 50, 50]```` , then the object's effective
+     * translation is ````[150, 50, 50]````.
+     *
+     * The translation of each model or object is ````[0, 0, 0]```` by default.
      *
      * @param {String} id ID of a model or object.
      * @param {[Number, Number, Number]} xyz World-space translation vector.
@@ -43608,9 +45832,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Increments the translation of a model or object.
-     *
-     * An object's translation is relative to its model's translation.
+     * Increments or decrements the translation of a model or an object.
      *
      * @param {String} id ID of a model or object.
      * @param {[Number, Number, Number]} xyz World-space translation vector.
@@ -43630,17 +45852,22 @@ xeometry.Viewer = function (cfg) {
             translation = translations[id];
         }
         var xyzOld = translation.xyz;
-        translation.xyz = [xyzOld[0] + xyz[0], xyzOld[1] + xyz[1], xyzOld[2] + xyz[2]]
+        translation.xyz = [xyzOld[0] + xyz[0], xyzOld[1] + xyz[1], xyzOld[2] + xyz[2]];
         return this;
     };
 
     /**
-     * Gets the translation of a model or object.
+     * Gets the translation of a model or an object.
      *
-     * An object's translation is relative to its model's translation.
+     * An object's translation is relative to that of its model. For example, if an object has a translation
+     * of ````[100, 0, 0]```` and its model has a translation of ````[50, 50, 50]```` , then the object's effective
+     * translation is ````[150, 50, 50]````.
      *
-     * @param {String} id ID of a model or object.
+     * The translation of each model or object is ````[0, 0, 0]```` by default.
+     *
+     * @param {String} id ID of a model or an object.
      * @return {[Number, Number, Number]} World-space translation vector.
+     * @example
      * var sawTranslate = viewer.getTranslate("saw");
      * var sawCoverTranslate = viewer.getTranslate("saw#1.1");
      */
@@ -43742,21 +45969,33 @@ xeometry.Viewer = function (cfg) {
         };
     })();
 
-    //----------------------------------------------------------------------------------------------------
+    //==================================================================================================================
     // Visibility
-    //----------------------------------------------------------------------------------------------------
+    //==================================================================================================================
 
     /**
-     * Shows model(s) and/or object(s).
+     * Shows model(s), object(s) and/or types(s).
      *
      * Shows all objects in the viewer when no arguments are given.
+     *
+     * Objects are visible by default.
      *
      * @example viewer.show(); // Show all objects in the viewer
      * @param {String|String[]} [ids] IDs of model(s) and/or object(s).
      * @returns {Viewer} this
      * @example
-     * viewer.show(["saw", "gearbox"]); // Show all objects in models "saw" and "gearbox"
-     * viewer.show(["saw#0.1", "saw#0.2", "gearbox"]); // Show two objects in model "saw", plus all objects in model "gearbox"
+     *
+     * // Show all objects in the viewer
+     * viewer.show();
+     *
+     * // Show all objects in models "saw" and "gearbox"
+     * viewer.show(["saw", "gearbox"]);
+     *
+     * // Show two objects in model "saw", plus all objects in model "gearbox"
+     * viewer.show(["saw#0.1", "saw#0.2", "gearbox"]);
+     *
+     * // Show objects in the model "gearbox", plus all objects in viewer that are IFC cable fittings and carriers
+     * viewer.show("gearbox", "IfcCableFitting", "IfcCableCarrierFitting"]);
      */
     this.show = function (ids) {
         setVisible(ids, true);
@@ -43764,15 +46003,27 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Hides model(s) and/or object(s).
+     * Hides model(s), object(s) and/or types(s).
      *
      * Hides all objects in the viewer when no arguments are given.
+     *
+     * Objects are visible by default.
      *
      * @param {String|String[]} ids IDs of model(s) and/or object(s).
      * @returns {Viewer} this
      * @example
-     * viewer.hide(["saw", "gearbox"]); // Hide all objects in models "saw" and "gearbox"
-     * viewer.hide(["saw#0.1", "saw#0.2", "gearbox"]); // Hide two objects in model "saw", plus all objects in model "gearbox"
+     *
+     * // Hide all objects in the viewer
+     * viewer.hide();
+     *
+     * // Hide all objects in models "saw" and "gearbox"
+     * viewer.hide(["saw", "gearbox"]);
+     *
+     * // Hide two objects in model "saw", plus all objects in model "gearbox"
+     * viewer.hide(["saw#0.1", "saw#0.2", "gearbox"]);
+     *
+     * // Hide objects in the model "gearbox", plus all objects in viewer that are IFC cable fittings and carriers
+     * viewer.hide("gearbox", "IfcCableFitting", "IfcCableCarrierFitting"]);
      */
     this.hide = function (ids) {
         setVisible(ids, false);
@@ -43813,15 +46064,15 @@ xeometry.Viewer = function (cfg) {
         }
     }
 
-    //----------------------------------------------------------------------------------------------------
+    //==================================================================================================================
     // Opacity
-    //----------------------------------------------------------------------------------------------------
+    //==================================================================================================================
 
     /**
-     * Sets opacity of model(s), object(s) or type(s).
+     * Sets the opacity of model(s), object(s) and/or type(s).
      *
-     * @param {String|String[]} ids IDs of models, objects or types. Shows all objects by default.
-     * @param {Number} opacity Degree of opacity in range [0..1].
+     * @param {String|String[]} ids IDs of models, objects or types. Sets opacity of all objects when this is null or undefined.
+     * @param {Number} opacity Degree of opacity in range ````[0..1]````.
      * @returns {Viewer} this
      * @example
      * // Create an X-ray view of two objects in the "saw" model
@@ -43884,19 +46135,22 @@ xeometry.Viewer = function (cfg) {
         return object.material.alpha;
     };
 
-    //----------------------------------------------------------------------------------------------------
+    //==================================================================================================================
     // Color
-    //----------------------------------------------------------------------------------------------------
+    //==================================================================================================================
 
     /**
-     * Sets the color of model(s), object(s) or type(s).
+     * Sets the albedo color of model(s), object(s) and/or types(s).
      *
-     * @param {String|String[]} ids IDs of models, objects or types. Applies to all objects by default.
+     * @param {String|String[]} ids IDs of models, objects or types. Applies to all objects when this is null or undefined.
      * @param {[Number, Number, Number]} color The RGB color, with each element in range [0..1].
      * @returns {Viewer} this
      * @example
-     * viewer.setColor("saw", [1,0,0]); // Set all objects in saw model red
-     * viewer.setColor(["saw#0.1", "saw#0.2"], [0,1,0]); // Set two objects in saw model green
+     *  // Set all objects in saw model red
+     * viewer.setColor("saw", [1,0,0]);
+     *
+     *  // Set two objects in saw model green
+     * viewer.setColor(["saw#0.1", "saw#0.2"], [0,1,0]);
      */
     this.setColor = function (ids, color) {
         if (color === null || color === undefined) {
@@ -43960,49 +46214,105 @@ xeometry.Viewer = function (cfg) {
         return color.slice();
     };
 
+    //==================================================================================================================
+    // Clippability
+    //==================================================================================================================
+
+    /**
+     * Makes model(s), object(s) and/or type(s) clippable.
+     *
+     * Makes all objects in the viewer clippable when no arguments are given.
+     *
+     * Objects are clippable by default.
+     *
+     * @param {String|String[]} [ids] IDs of model(s) and/or object(s).
+     * @returns {Viewer} this
+     * @example
+     *
+     * // Make all objects in the viewer clippable
+     * viewer.setClippable();
+     *
+     * // Make all objects in models "saw" and "gearbox" clippable
+     * viewer.setClippable(["saw", "gearbox"]);
+     *
+     * // Make two objects in model "saw" clippable, plus all objects in model "gearbox"
+     * viewer.setClippable(["saw#0.1", "saw#0.2", "gearbox"]);
+     *
+     * // Make objects in the model "gearbox" clippable, plus all objects in viewer that are IFC cable fittings and carriers
+     * viewer.setClippable("gearbox", "IfcCableFitting", "IfcCableCarrierFitting"]);
+     */
+    this.setClippable = function (ids) {
+        setClippable(ids, true);
+        return this;
+    };
+
+    /**
+     *  Makes model(s), object(s) and/or type(s) unclippable.
+     *
+     * These objects will then remain fully visible when they would otherwise be clipped by clipping planes.
+     *
+     * Makes all objects in the viewer unclippable when no arguments are given.
+     *
+     * Objects are clippable by default.
+     *
+     * @param {String|String[]} ids IDs of model(s) and/or object(s).
+     * @returns {Viewer} this
+     * @example
+     *
+     * // Make all objects in the viewer unclippable
+     * viewer.setUnclippable();
+     *
+     * // Make all objects in models "saw" and "gearbox" unclippable
+     * viewer.setUnclippable(["saw", "gearbox"]);
+     *
+     * // Make two objects in model "saw" unclippable, plus all objects in model "gearbox"
+     * viewer.setUnclippable(["saw#0.1", "saw#0.2", "gearbox"]);
+     *
+     * // Make all objects in the model "gearbox" unclippable, plus all objects in viewer that are IFC cable fittings and carriers
+     * viewer.setUnclippable("gearbox", "IfcCableFitting", "IfcCableCarrierFitting"]);
+     */
+    this.setUnclippable = function (ids) {
+        setClippable(ids, false);
+        return this;
+    };
+
+    function setClippable(ids, clippable) {
+        if (ids === undefined || ids === null) {
+            setClippable(self.getObjects(), clippable);
+            return;
+        }
+        if (xeogl._isString(ids)) {
+            var id = ids;
+            var object = objects[id];
+            if (object) {
+                object.clippable = clippable;
+                return;
+            }
+            var model = models[id];
+            if (!model) {
+                var objectsOfType = types[id];
+                if (objectsOfType) {
+                    var typeIds = Object.keys(objectsOfType);
+                    if (typeIds.length === 0) {
+                        return;
+                    }
+                    setClippable(typeIds, clippable);
+                    return
+                }
+                error("Model, object or type not found: " + id);
+                return;
+            }
+            setClippable(self.getObjects(id), clippable);
+            return;
+        }
+        for (var i = 0, len = ids.length; i < len; i++) {
+            setClippable(ids[i], clippable);
+        }
+    }
+
     //----------------------------------------------------------------------------------------------------
     // Outlines
     //----------------------------------------------------------------------------------------------------
-
-    /**
-     * Sets the current outline thickness.
-     * @param {Number} thickness Thickness in pixels.
-     * @returns {Viewer} this
-     * @example
-     * viewer.setOutlineThickness(3);
-     */
-    this.setOutlineThickness = function (thickness) {
-        scene.outline.thickness = thickness;
-        return this;
-    };
-
-    /**
-     * Gets the current outline thickness.
-     * @return {Number} Thickness in pixels.
-     */
-    this.getOutlineThickness = function () {
-        return scene.outline.thickness;
-    };
-
-    /**
-     * Sets the current outline color.
-     * @param {[Number, Number, Number]} color RGB color as a value per channel, in range [0..1].
-     * @returns {Viewer} this
-     * @example
-     * viewer.setOutlineColor([1,0,0]);
-     */
-    this.setOutlineColor = function (color) {
-        scene.outline.color = color;
-        return this;
-    };
-
-    /**
-     * Returns the current outline color.
-     * @return {[Number, Number, Number]} RGB color as a value per channel, in range [0..1].
-     */
-    this.getOutlineColor = function () {
-        return scene.outline.color;
-    };
 
     /**
      * Shows outline around model(s), object(s) or type(s).
@@ -44072,6 +46382,46 @@ xeometry.Viewer = function (cfg) {
         }
         return this;
     }
+
+    /**
+     * Sets the current outline thickness.
+     * @param {Number} thickness Thickness in pixels.
+     * @returns {Viewer} this
+     * @example
+     * viewer.setOutlineThickness(3);
+     */
+    this.setOutlineThickness = function (thickness) {
+        scene.outline.thickness = thickness;
+        return this;
+    };
+
+    /**
+     * Gets the current outline thickness.
+     * @return {Number} Thickness in pixels.
+     */
+    this.getOutlineThickness = function () {
+        return scene.outline.thickness;
+    };
+
+    /**
+     * Sets the current outline color.
+     * @param {[Number, Number, Number]} color RGB color as a value per channel, in range [0..1].
+     * @returns {Viewer} this
+     * @example
+     * viewer.setOutlineColor([1,0,0]);
+     */
+    this.setOutlineColor = function (color) {
+        scene.outline.color = color;
+        return this;
+    };
+
+    /**
+     * Returns the current outline color.
+     * @return {[Number, Number, Number]} RGB color as a value per channel, in range [0..1].
+     */
+    this.getOutlineColor = function () {
+        return scene.outline.color;
+    };
 
     //----------------------------------------------------------------------------------------------------
     // Boundaries
@@ -44342,6 +46692,9 @@ xeometry.Viewer = function (cfg) {
     /**
      * Sets the camera's current projection type.
      *
+     * Options are "perspective" and "ortho". You can set properties for either of these, regardless
+     * of whether they are currently active or not.
+     *
      * @param {String} type Either "perspective" or "ortho".
      * @returns {Viewer} this
      */
@@ -44351,7 +46704,7 @@ xeometry.Viewer = function (cfg) {
         }
         var projection = projections[type];
         if (!projection) {
-            this.error("Unsupported camera projection type: " + type);
+            error("Unsupported camera projection type: " + type);
         } else {
             camera.project = projection;
             projectionType = type;
@@ -44429,7 +46782,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Sets the camera's pose, consisting of position, target and "up" vector.
+     * Sets the camera's pose, which consists of eye position, point-of-interest and "up" vector.
      *
      * @param {[Number, Number, Number]} eye Camera's new viewpoint.
      * @param {[Number, Number, Number]} look Camera's new point-of-interest.
@@ -44443,7 +46796,6 @@ xeometry.Viewer = function (cfg) {
         return this;
     };
 
-
     /**
      * Locks the camera's vertical rotation axis to the World-space Y axis.
      * @returns {Viewer} this
@@ -44454,7 +46806,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Allows camera yaw rotation around the "up" vector.
+     * Allows camera yaw rotation around the camera's "up" vector.
      * @returns {Viewer} this
      */
     this.unlockGimbalY = function () {
@@ -44464,7 +46816,6 @@ xeometry.Viewer = function (cfg) {
 
     /**
      * Rotates the camera's 'eye' position about its 'look' position, around the 'up' vector.
-     *
      * @param {Number} angle Angle of rotation in degrees
      * @returns {Viewer} this
      */
@@ -44474,8 +46825,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Rotates the camera's 'eye' position about its 'look' position, pivoting around the X-axis.
-     *
+     * Rotates the camera's 'eye' position about its 'look' position, pivoting around its X-axis.
      * @param {Number} angle Angle of rotation in degrees
      * @returns {Viewer} this
      */
@@ -44485,9 +46835,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Rotates the camera's 'look' position about its 'eye' position, pivoting around the 'up' vector.
-     *
-     * <p>Applies constraints added with {@link #addConstraint}.</p>
+     * Rotates the camera's 'look' position about its 'eye' position, pivoting around its 'up' vector.
      *
      * @param {Number} angle Angle of rotation in degrees
      * @returns {Viewer} this
@@ -44498,7 +46846,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Rotates the camera's 'eye' position about its 'look' position, pivoting around the X-axis.
+     * Rotates the camera's 'eye' position about its 'look' position, pivoting around its X-axis.
      *
      * @param {Number} angle Angle of rotation in degrees
      * @returns {Viewer} this
@@ -44531,6 +46879,8 @@ xeometry.Viewer = function (cfg) {
     /**
      * Sets the camera's flight duration when fitting elements to view.
      *
+     * Initial default value is ````0.5```` seconds.
+     *
      * A value of zero (default) will cause the camera to instantly jump to each new target .
      *
      * @param {Number} value The new flight duration, in seconds.
@@ -44548,7 +46898,6 @@ xeometry.Viewer = function (cfg) {
      */
     this.getViewFitDuration = function () {
         return cameraFlight.duration;
-        return this;
     };
 
     /**
@@ -44577,7 +46926,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given annotation,  model(s), object(s) or boundary(s) in view.
+     * Moves the camera to fit the given annotation(s), model(s), object(s) and/or boundary(s).
      *
      * Preserves the direction that the camera is currently pointing in.
      *
@@ -44608,7 +46957,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the +X axis.
+     * Moves the camera to fit the given model(s), object(s) and/or boundary(s) in view, while looking along the +X axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
      * @param {Function} [ok] Callback fired when camera has arrived at its target position.
@@ -44620,7 +46969,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the +Z axis.
+     * Moves the camera to fit the given model(s), object(s) and/or boundary(s) in view, while looking along the +Z axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
      * @param {Function} [ok] Callback fired when camera has arrived at its target position.
@@ -44632,7 +46981,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the -X axis.
+     * Moves the camera to fit the given model(s), object(s) and/or boundary(s) in view, while looking along the -X axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
      * @param {Function} [ok] Callback fired when camera has arrived at its target position.
@@ -44644,7 +46993,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the +X axis.
+     * Moves the camera to fit the given model(s), object(s) and/or boundary(s) in view, while looking along the +X axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
      * @param {Function} [ok] Callback fired when camera has arrived at its target position.
@@ -44656,7 +47005,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the -Y axis.
+     * Moves the camera to fit the given model(s), object(s) and/or boundary(s) in view, while looking along the -Y axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
      * @param {Function} [ok] Callback fired when camera has arrived at its target position.
@@ -44668,7 +47017,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) or boundary(s) in view, while looking along the +X axis.
+     * Moves the camera to fit the given model(s), object(s) and/or boundary(s) in view, while looking along the +X axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
      * @param {Function} [ok] Callback fired when camera has arrived at its target position.
@@ -44743,7 +47092,7 @@ xeometry.Viewer = function (cfg) {
     })();
 
     /**
-     * Rotates the camera's 'eye' position about its 'look' position, pivoting
+     * Sets the camera's 'eye' position orbiting its 'look' position, pivoting
      * about the camera's local horizontal axis, by the given increment on each frame.
      *
      * Call with a zero value to stop spinning about this axis.
@@ -44755,7 +47104,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Rotates the camera's 'eye' position about its 'look' position, pivoting
+     * Sets the camera's 'eye' position orbiting about its 'look' position, pivoting
      * about the camera's horizontal axis, by the given  increment on each frame.
      *
      * Call again with a zero value to stop spinning about this axis.
@@ -44771,11 +47120,11 @@ xeometry.Viewer = function (cfg) {
     //----------------------------------------------------------------------------------------------------
 
     /**
-     * Gets the first object that intersects the given ray.
+     * Picks the first object that intersects the given ray.
      *
      * @param {[Number, Number, Number]} origin World-space ray origin.
      * @param {[Number, Number, Number]} dir World-space ray direction vector.
-     * @returns {{id: String}} If object found, a hit record containing the ID of the object.
+     * @returns {{id: String}} If object found, a hit record containing the ID of the object, else null.
      * @example
      * var hit = viewer.rayCastObject([0,0,-5], [0,0,1]);
      * if (hit) {
@@ -44790,12 +47139,14 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the first object that intersects the given ray, along with geometric information about
+     * Picks the first object that intersects the given ray, along with geometric information about
      * the ray-object intersection.
      *
      * @param {[Number, Number, Number]} origin World-space ray origin.
      * @param {[Number, Number, Number]} dir World-space ray direction vector.
-     * @returns {{id: String, worldPos: [number,number,number], primIndex:number, bary: [number,number,number]}} If object found, a hit record containing the ID of object, World-space 3D surface intersection, primitive index and barycentric coordinates.
+     * @returns {{id: String, worldPos: [number,number,number], primIndex:number, bary: [number,number,number]}} If object
+     * found, a hit record containing the ID of object, World-space 3D surface intersection, primitive index and
+     * barycentric coordinates, else null.
      * @example
      * var hit = viewer.rayCastSurface([0,0,-5], [0,0,1]);
      * if (hit) {
@@ -44818,12 +47169,12 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Finds the closest object behind the given canvas coordinates.
+     * Picks the closest object behind the given canvas coordinates.
      *
      * This is equivalent to firing a ray through the canvas, down the negative Z-axis, to find the first entity it hits.
      *
      * @param {[Number, Number]} canvasPos Canvas position.
-     * @returns {{id: String}} If object found, a hit record containing the ID of the object.
+     * @returns {{id: String}} If object found, a hit record containing the ID of the object, else null.
      * @example
      * var hit = viewer.pickObject([234, 567]);
      * if (hit) {
@@ -44838,11 +47189,13 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the closest object behind the given canvas coordinates, along with geometric information about
+     * Picks the closest object behind the given canvas coordinates, along with geometric information about
      * the point on the object's surface that lies right behind those canvas coordinates.
      *
      * @param {[Number, Number]} canvasPos Canvas position.
-     * @returns {{id: String, worldPos: [number,number,number], primIndex:number, bary: [number,number,number]}} If object found, a hit record containing the ID of object, World-space 3D surface intersection, primitive index and barycentric coordinates.
+     * @returns {{id: String, worldPos: [number,number,number], primIndex:number, bary: [number,number,number]}} If object
+     * found, a hit record containing the ID of object, World-space 3D surface intersection, primitive index and
+     * barycentric coordinates, else null.
      * @example
      * var hit = viewer.pickSurface([234, 567]);
      * if (hit) {
@@ -44868,6 +47221,42 @@ xeometry.Viewer = function (cfg) {
     // Annotations
     //----------------------------------------------------------------------------------------------------
 
+    /**
+     * Creates an annotation.
+     *
+     * An annotation is a labeled pin that's attached to the surface of an object.
+     *
+     * An annotation is pinned within a triangle of an object's geometry, at a position given in barycentric
+     * coordinates. A barycentric coordinate is a three-element vector that indicates the position within
+     * the triangle as a weight per vertex, where a value of ````[0.3,0.3,0.3]```` places the annotation
+     * at the center of its triangle.
+     *
+     * An annotation can be configured with an optional camera position from which to view it, given as ````eye````,
+     * ````look```` and ````up```` vectors.
+     *
+     * By default, an annotation will be invisible while occluded by other objects in the 3D view.
+     *
+     * Note that when you pick an object with {@link #.Viewer#rayCastSurface} or {@link #.Viewer#pickSurface}, you'll get
+     * a triangle index and barycentric coordinates in the intersection result. This makes it convenient to
+     * create annotations directly from pick results.
+     *
+     * @param {String} id ID for the new annotation.
+     * @param {Object} cfg Properties for the new annotation.
+     * @param {String} cfg.object ID of an object to pin the annotation to.
+     * @param {String} [cfg.glyph=""] A glyph for the new annotation. This appears in the annotation's pin and
+     * is typically a short string of 1-2 chars, eg. "a1".
+     * @param {String} [cfg.title=""] Title text for the new annotation.
+     * @param {String} [cfg.desc=""] Description text for the new annotation.
+     * @param {Number} cfg.primIndex Index of a triangle, within the object's geometry indices, to attach the annotation to.
+     * @param {[Number, Number, Number]} cfg.bary Barycentric coordinates within the triangle, at which to position the annotation.
+     * @param {[Number, Number, Number]} [cfg.eye] Eye position for optional camera viewpoint.
+     * @param {[Number, Number, Number]} [cfg.look] Look position for optional camera viewpoint.
+     * @param {[Number, Number, Number]} [cfg.up] Up direction for optional camera viewpoint.
+     * @param {Boolean} [cfg.occludable=true] Whether or not the annotation dissappears while occluded by something else in the 3D view.
+     * @param {Boolean} [cfg.pinShown=true] Whether or not the annotation's pin is initially shown.
+     * @param {Boolean} [cfg.labelShown=true] Whether or not the annotation's label is initially shown.
+     * @returns {Viewer} this
+     */
     this.createAnnotation = function (id, cfg) {
         if (scene.components[id]) {
             error("Component with this ID already exists: " + id);
@@ -44913,6 +47302,14 @@ xeometry.Viewer = function (cfg) {
         return this;
     };
 
+    /**
+     * Gets the IDs of the annotations within a model, object or a type.
+     *
+     * When no argument is given, returns the IDs of all annotations.
+     *
+     * @param {String|String[]} id ID of a model, object or IFC type.
+     * @return {String[]} IDs of the annotations.
+     */
     this.getAnnotations = function (id) {
         //if (id !== undefined || id === null) {
         //    var objectsOfType = types[id];
@@ -44933,6 +47330,12 @@ xeometry.Viewer = function (cfg) {
         return Object.keys(annotations);
     };
 
+    /**
+     * Destroys an annotation.
+     *
+     * @param {String} id ID of the annotation.
+     * @return {Viewer} This viewer
+     */
     this.destroyAnnotation = function (id) {
         var annotation = annotations[id];
         if (!annotation) {
@@ -44947,6 +47350,11 @@ xeometry.Viewer = function (cfg) {
 
     };
 
+    /**
+     * Destroys all annotations.
+     *
+     * @return {Viewer} This viewer
+     */
     this.clearAnnotations = function () {
         for (var ids = Object.keys(annotations), i = 0; i < ids.length; i++) {
             this.destroyAnnotation(ids[i]);
@@ -44954,245 +47362,430 @@ xeometry.Viewer = function (cfg) {
         return this;
     };
 
+    /**
+     * Sets the triangle that an annotation is pinned to.
+     *
+     * The triangle is indicated by the position of the first of the triangle's vertex indices within
+     * the object's geometry indices array.
+     *
+     * @param {String} id ID of the annotation.
+     * @param {Number} primIndex The index of the triangle's first element within the geometry's
+     * indices array.
+     * @returns {Viewer} This viewer
+     */
     this.setAnnotationPrimIndex = function (id, primIndex) {
         var annotation = annotations[id];
         if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
+            error("Annotation not found: \"" + id + "\"");
             return this;
         }
         annotation.primIndex = primIndex;
         return this;
     };
 
+    /**
+     * Gets the triangle that an annotation is pinned to.
+     *
+     * The triangle is indicated by the position of the first of the triangle's vertex indices within
+     * the object's geometry indices array.
+     *
+     * @param {String} id ID of the annotation.
+     * @returns {Number} The index of the triangle's first element within the geometry's indices array.
+     */
     this.getAnnotationPrimIndex = function (id) {
         var annotation = annotations[id];
         if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
+            error("Annotation not found: \"" + id + "\"");
             return;
         }
         return annotation.primIndex;
     };
 
-    this.setAnnotationTitle = function (id, title) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return this;
-        }
-        annotation.title = title;
-        return this;
-    };
-
-    this.getAnnotationTitle = function (id) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return;
-        }
-        return annotation.title;
-    };
-
-    this.setAnnotationDesc = function (id, desc) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return this;
-        }
-        annotation.desc = desc;
-        return this;
-    };
-
-    this.getAnnotationDesc = function (id) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return;
-        }
-        return annotation.desc;
-    };
-
-    this.setAnnotationBary = function (id, bary) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return this;
-        }
-        annotation.bary = bary;
-        return this;
-    };
-
-    this.getAnnotationBary = function (id) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return;
-        }
-        return annotation.bary;
-    };
-
-    this.setAnnotationObject = function (id, objectId) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return this;
-        }
-        var object = objects[objectId];
-        if (!object) {
-            this.error("Object not found: \"" + objectId + "\"");
-            return this;
-        }
-        annotation.entity = object;
-        return this;
-    };
-
-    this.getAnnotationObject = function (id) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return;
-        }
-        var entity = annotation.entity;
-        return entity ? entity.id : null;
-    };
-
-    this.setAnnotationEye = function (id, eye) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return this;
-        }
-        annotation.eye = eye;
-        return this;
-    };
-
-    this.getAnnotationEye = function (id) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return;
-        }
-        return annotation.eye;
-    };
-
-    this.setAnnotationLook = function (id, look) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return this;
-        }
-        annotation.look = look;
-        return this;
-    };
-
-    this.getAnnotationLook = function (id) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return;
-        }
-        return annotation.look;
-    };
-
-    this.setAnnotationUp = function (id, up) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return this;
-        }
-        annotation.up = up;
-        return this;
-    };
-
-    this.getAnnotationUp = function (id) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return;
-        }
-        return annotation.up;
-    };
-
-    this.setAnnotationOccludable = function (id, occludable) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return this;
-        }
-        annotation.occludable = occludable;
-        return this;
-    };
-
-    this.getAnnotationOccludable = function (id) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return;
-        }
-        return annotation.occludable;
-    };
-
-    this.setAnnotationPinShown = function (id, pinShown) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return this;
-        }
-        annotation.pinShown = pinShown;
-        return this;
-    };
-
-    this.getAnnotationPinShown = function (id) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return;
-        }
-        return annotation.pinShown;
-    };
-
-    this.setAnnotationLabelShown = function (id, labelShown) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return this;
-        }
-        annotation.labelShown = labelShown;
-        return this;
-    };
-
-    this.getAnnotationLabelShown = function (id) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
-            return;
-        }
-        return annotation.labelShown;
-    };
-
+    /**
+     * Sets the text within an annotation's pin.
+     *
+     * In order to fit within the pin, this should be a short string of 1-2 characters.
+     *
+     * @param {String} id ID of the annotation.
+     * @param {String} glyph Pin text.
+     * @returns {Viewer} This
+     */
     this.setAnnotationGlyph = function (id, glyph) {
         var annotation = annotations[id];
         if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
+            error("Annotation not found: \"" + id + "\"");
             return this;
         }
         annotation.glyph = glyph;
         return this;
     };
 
+    /**
+     * Gets the text within an annotation's pin.
+     *
+     * @param {String} id ID of the annotation.
+     * @returns {String} Pin text.
+     */
     this.getAnnotationGlyph = function (id) {
         var annotation = annotations[id];
         if (!annotation) {
-            this.error("Annotation not found: \"" + id + "\"");
+            error("Annotation not found: \"" + id + "\"");
             return;
         }
         return annotation.glyph;
     };
 
+    /**
+     * Sets the title text within an annotation's label.
+     *
+     * @param {String} id ID of the annotation.
+     * @param {String} title Title text.
+     * @returns {Viewer} This
+     */
+    this.setAnnotationTitle = function (id, title) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return this;
+        }
+        annotation.title = title;
+        return this;
+    };
+
+    /**
+     * Gets the title text within an annotation's label.
+     *
+     * @param {String} id ID of the annotation.
+     * @returns {String} Title text.
+     */
+    this.getAnnotationTitle = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.title;
+    };
+
+    /**
+     * Sets the description text within an annotation's label.
+     *
+     * @param {String} id ID of the annotation.
+     * @param {String} title Description text.
+     * @returns {Viewer} This
+     */
+    this.setAnnotationDesc = function (id, desc) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return this;
+        }
+        annotation.desc = desc;
+        return this;
+    };
+
+    /**
+     * Gets the description text within an annotation's label.
+     *
+     * @param {String} id ID of the annotation.
+     * @returns {String} Title text.
+     */
+    this.getAnnotationDesc = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.desc;
+    };
+
+    /**
+     * Sets the barycentric coordinates of an annotation within its triangle.
+     *
+     * A barycentric coordinate is a three-element vector that indicates the position within the triangle as a weight per vertex,
+     * where a value of ````[0.3,0.3,0.3]```` places the annotation at the center of its triangle.
+     *
+     * @param {String} id ID of the annotation.
+     * @param {[Number, Number, Number]} bary The barycentric coordinates.
+     * @returns {Viewer} This
+     */
+    this.setAnnotationBary = function (id, bary) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return this;
+        }
+        annotation.bary = bary;
+        return this;
+    };
+
+    /**
+     * Gets the barycentric coordinates of an annotation within its triangle.
+     *
+     * @param {String} id ID of the annotation.
+     * @returns {[Number, Number, Number]} The barycentric coordinates.
+     */
+    this.getAnnotationBary = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.bary;
+    };
+
+    /**
+     * Sets the object that an annotation is pinned to.
+     *
+     * An annotation must always be pinned to an object.
+     *
+     * @param {String} id ID of the annotation.
+     * @param {String} objectId ID of the object.
+     * @returns {Viewer} This
+     */
+    this.setAnnotationObject = function (id, objectId) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return this;
+        }
+        var object = objects[objectId];
+        if (!object) {
+            error("Object not found: \"" + objectId + "\"");
+            return this;
+        }
+        annotation.entity = object;
+        return this;
+    };
+
+    /**
+     * Gets the object that an annotation is pinned to.
+     *
+     * @param {String} id ID of the annotation.
+     * @returns {String} ID of the object.
+     */
+    this.getAnnotationObject = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        var entity = annotation.entity;
+        return entity ? entity.id : null;
+    };
+
+    /**
+     * Sets the camera ````eye```` position from which to view an annotation.
+     *
+     * @param {String} id ID of the annotation.
+     * @param {[Number, Number, Number]} eye Eye position for camera viewpoint.
+     * @returns {Viewer} This viewer.
+     */
+    this.setAnnotationEye = function (id, eye) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return this;
+        }
+        annotation.eye = eye;
+        return this;
+    };
+
+    /**
+     * Gets the camera ````eye```` position from which to view an annotation.
+     *
+     * @param {String} id ID of the annotation.
+     * @param {[Number, Number, Number]} eye Eye position for camera viewpoint.
+     */
+    this.getAnnotationEye = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.eye;
+    };
+
+    /**
+     * Sets the camera ````look```` position from which to view an annotation.
+     *
+     * @param {String} id ID of the annotation.
+     * @param {[Number, Number, Number]} look Look position for camera viewpoint.
+     * @returns {Viewer} This viewer.
+     */
+    this.setAnnotationLook = function (id, look) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return this;
+        }
+        annotation.look = look;
+        return this;
+    };
+
+    /**
+     * Gets the camera ````look```` position from which to view an annotation.
+     *
+     * @param {String} id ID of the annotation.
+     * @returns {[Number, Number, Number]} Look position for camera viewpoint.
+     */
+    this.getAnnotationLook = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.look;
+    };
+
+    /**
+     * Sets the camera ````up```` vector from which to view an annotation.
+     *
+     * @param {String} id ID of the annotation.
+     * @param {[Number, Number, Number]} up Up vector for camera viewpoint.
+     * @returns {Viewer} This viewer.
+     */
+    this.setAnnotationUp = function (id, up) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return this;
+        }
+        annotation.up = up;
+        return this;
+    };
+
+    /**
+     * Gets the camera ````up```` direction from which to view an annotation.
+     *
+     * @param {String} id ID of the annotation.
+     * @returns {[Number, Number, Number]} Up vector for camera viewpoint.
+     */
+    this.getAnnotationUp = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.up;
+    };
+
+    /**
+     * Sets whether or not an annotation dissappears when occluded by another object.
+     *
+     * @param {String} id ID of the annotation.
+     * @param {Boolean} occludable Whether the annotation dissappears when occluded.
+     * @returns {Viewer} This viewer.
+     */
+    this.setAnnotationOccludable = function (id, occludable) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return this;
+        }
+        annotation.occludable = occludable;
+        return this;
+    };
+
+    /**
+     * Gets whether or not an annotation dissappears when occluded by another object.
+     *
+     * @param {String} id ID of the annotation.
+     * @returns {Boolean} Whether the annotation dissappears when occluded.
+     */
+    this.getAnnotationOccludable = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.occludable;
+    };
+
+    /**
+     * Sets whether an annotation's pin is shown.
+     *
+     * @param {String} id ID of the annotation.
+     * @param {Boolean} pinShown Whether the annotation's pin is shown.
+     * @returns {Viewer} This viewer.
+     */
+    this.setAnnotationPinShown = function (id, pinShown) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return this;
+        }
+        annotation.pinShown = pinShown;
+        return this;
+    };
+
+    /**
+     * Gets whether an annotation's pin is shown.
+     *
+     * @param {String} id ID of the annotation.
+     * @returns {Boolean} Whether the annotation's pin is shown.
+     */
+    this.getAnnotationPinShown = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.pinShown;
+    };
+
+    /**
+     * Sets whether an annotation's label is shown.
+     *
+     * @param {String} id ID of the annotation.
+     * @param {Boolean} labelShown Whether the annotation's label is shown.
+     * @returns {Viewer} This viewer.
+     */
+    this.setAnnotationLabelShown = function (id, labelShown) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return this;
+        }
+        annotation.labelShown = labelShown;
+        return this;
+    };
+
+    /**
+     * Gets whether an annotation's label is shown.
+     *
+     * @param {String} id ID of the annotation.
+     * @returns {Boolean} Whether the annotation's label is shown.
+     */
+    this.getAnnotationLabelShown = function (id) {
+        var annotation = annotations[id];
+        if (!annotation) {
+            error("Annotation not found: \"" + id + "\"");
+            return;
+        }
+        return annotation.labelShown;
+    };
+
     //----------------------------------------------------------------------------------------------------
-    // Arbitrary clipping planes
+    // User clipping planes
     //----------------------------------------------------------------------------------------------------
 
-    this.createclip = function (id, cfg) {
+    /**
+     * Creates a user-defined clipping plane.
+     *
+     * The plane is positioned at a given World-space position, oriented in a given direction, and may be
+     * active or inactive.
+     *
+     * @param {String} id Unique ID to assign to the clipping plane.
+     * @param {Object} cfg Clip plane configuration.
+     * @param {[Number, Number, Number]} [cfg.pos=0,0,0] World-space position of the clip plane.
+     * @param {[Number, Number, Number]} [cfg.dir=[0,0,-1]} Vector indicating the orientation of the clip plane.
+     * @param {Boolean} [cfg.active=true] Whether the clip plane is initially active. Only clips while this is true.
+     * @param {Boolean} [cfg.shown=true] Whether to show a helper object to indicate the clip plane's position and orientation.
+     * the front of the plane (with respect to the plane orientation vector), while ````-1```` discards elements behind the plane.
+     * @returns {Viewer} this
+     */
+    this.createClip = function (id, cfg) {
         if (scene.components[id]) {
             error("Component with this ID already exists: " + id);
             return this;
@@ -45203,54 +47796,54 @@ xeometry.Viewer = function (cfg) {
         }
         var clip = new xeogl.Clip(scene, {
             id: id,
-            entity: object,
-            primIndex: primIndex,
-            bary: cfg.bary,
-            eye: cfg.eye,
-            look: cfg.look,
-            up: cfg.up,
-            occludable: cfg.occludable,
-            glyph: cfg.glyph,
-            title: cfg.title,
-            desc: cfg.desc,
-            pinShown: cfg.pinShown,
-            labelShown: cfg.labelShown
+            pos: cfg.pos,
+            dir: cfg.dir,
+            active: cfg.active
         });
         clips[clip.id] = clip;
-        //scene.clips.clips = scene.clips.clips.push
+        clipHelpers[clip.id] = new xeogl.ClipHelper(scene, {
+            clip: clip
+        });
+        clipsDirty = true;
+        if (cfg.shown) {
+            this.showClip(id);
+        } else {
+            this.hideClip(id);
+        }
         return this;
     };
 
-    this.getclips = function () {
-        //if (id !== undefined || id === null) {
-        //    var objectsOfType = types[id];
-        //    if (objectsOfType) {
-        //    //    return Object.keys(objectsOfType);
-        //    }
-        //    var model = models[id];
-        //    if (!model) {
-        //        error("Model not found: " + id);
-        //        return [];
-        //    }
-        //    var entities = model.types["xeogl.Entity"];
-        //    if (!entities) {
-        //        return [];
-        //    }
-        //    return Object.keys(entities);
-        //}
+    /**
+     * Gets the IDs of the clip planes currently in the viewer.
+     * @return {String[]} IDs of the clip planes.
+     */
+    this.getClips = function () {
         return Object.keys(clips);
     };
 
+    /**
+     * Removes a clip plane from this viewer.
+     * @param {String} id ID of the clip plane to remove.
+     * @returns {Viewer} this
+     */
     this.destroyClip = function (id) {
         var clip = clips[id];
         if (!clip) {
             return this;
         }
+        this.hideClip(id);
         clip.destroy();
         delete clips[id];
+        clipHelpers[id].destroy();
+        delete clipHelpers[id];
+        clipsDirty = true;
         return this;
     };
 
+    /**
+     * Removes all clip planes from this viewer.
+     * @returns {Viewer} this
+     */
     this.clearClips = function () {
         for (var ids = Object.keys(clips), i = 0; i < ids.length; i++) {
             this.destroyClip(ids[i]);
@@ -45258,39 +47851,121 @@ xeometry.Viewer = function (cfg) {
         return this;
     };
 
+    /**
+     * Shows a helper object to indicate the position and orientation of a clipping plane.
+     * @param {String} id ID of the clip plane to show.
+     * @returns {Viewer}
+     */
+    this.showClip = function (id) {
+        var clipHelper = clipHelpers[id];
+        if (!clipHelper) {
+            error("Clip not found: \"" + id + "\"");
+            return this;
+        }
+        clipHelper.visible = true;
+        return this;
+    };
+
+    /**
+     * Hides the helper object that indicates the position and orientation of the given clipping plane.
+     * @param {String} id ID of the clip plane to hide.
+     * @returns {Viewer}
+     */
+    this.hideClip = function (id) {
+        var clipHelper = clipHelpers[id];
+        if (!clipHelper) {
+            error("Clip not found: \"" + id + "\"");
+            return this;
+        }
+        clipHelper.visible = false;
+        return this;
+    };
+
+    /**
+     * Enables a clipping plane.
+     * @param {String} id ID of the clip plane to enable.
+     * @returns {Viewer}
+     */
+    this.enableClip = function (id) {
+        var clip = clips[id];
+        if (!clip) {
+            error("Clip not found: \"" + id + "\"");
+            return this;
+        }
+        clip.active = true;
+        return this;
+    };
+
+    /**
+     * Disables a clipping plane.
+     * @param {String} id ID of the clip plane to disable.
+     * @returns {Viewer}
+     */
+    this.disableClip = function (id) {
+        var clip = clips[id];
+        if (!clip) {
+            error("Clip not found: \"" + id + "\"");
+            return this;
+        }
+        clip.active = false;
+        return this;
+    };
+
+    /**
+     * Sets the position of the given clip plane.
+     * @param {String} id ID of the clip plane to remove.
+     * @param {[Number, Number, Number]} [pos=0,0,0] World-space position of the clip plane.
+     * @returns {Viewer}
+     */
     this.setClipPos = function (id, pos) {
         var clip = clips[id];
         if (!clip) {
-            this.error("Clip not found: \"" + id + "\"");
+            error("Clip not found: \"" + id + "\"");
             return this;
         }
         clip.pos = pos;
         return this;
     };
 
+    /**
+     * Gets the position of the given clip plane.
+     * @param {String} id ID of the clip plane.
+     * @returns {[Number, Number, Number]} World-space position of the plane.
+     */
     this.getClipPos = function (id) {
         var clip = getclip(id);
         if (!clip) {
-            this.error("Clip not found: \"" + id + "\"");
+            error("Clip not found: \"" + id + "\"");
             return;
         }
         return clip.pos;
     };
 
+    /**
+     * Sets the orientation of the given clip plane.
+     * @param {String} id ID of the clip plane.
+     * @param {[Number, Number, Number]} [dir=0,0,1] Orientation vector.
+     * @returns {Viewer} this
+     */
     this.setClipDir = function (id, dir) {
         var clip = clips[id];
         if (!clip) {
-            this.error("Clip not found: \"" + id + "\"");
+            error("Clip not found: \"" + id + "\"");
             return this;
         }
         clip.dir = dir;
         return this;
     };
 
+    /**
+     * Gets the orientation of the given clip plane.
+     * @param {String} id ID of the clip plane.
+     * @returns {[Number, Number, Number]} Orientation vector.
+     */
     this.getClipDir = function (id) {
-        var clip = clips(id);
+        var clip = clips[id];
         if (!clip) {
-            this.error("Clip not found: \"" + id + "\"");
+            error("Clip not found: \"" + id + "\"");
             return;
         }
         return clip.dir;
@@ -45305,9 +47980,15 @@ xeometry.Viewer = function (cfg) {
      *
      * The viewer can then be restored to the bookmark at any time using {@link #setBookmark}.
      *
+     * For compactness, a bookmark only contains state that has non-default values.
+     *
      * @return {Object} A JSON bookmark.
      */
     this.getBookmark = (function () {
+
+        // This method optimizes bookmark size by storing values only when they override default
+        // values, many of which are baked into xeogl. This method will therefore break if those
+        // default values happen to change within xeogl.
 
         var vecToArray = math.vecToArray;
 
@@ -45340,7 +48021,13 @@ xeometry.Viewer = function (cfg) {
             }
         }
 
+        function getSrc(id) {
+            var src = modelSrcs[id];
+            return xeogl._isString(src) ? src : xeogl._copy(src);
+        }
+
         return function () {
+
             var bookmark = {};
             var id;
             var model;
@@ -45348,13 +48035,16 @@ xeometry.Viewer = function (cfg) {
             var translate;
             var scale;
             var rotate;
-            bookmark.models = [];
+
+            // Serialize models
+
+            var modelStates = [];
             for (id in models) {
                 if (models.hasOwnProperty(id)) {
                     model = models[id];
                     modelData = {
                         id: id,
-                        src: modelSrcs[id]
+                        src: getSrc(id)
                     };
                     translate = getTranslate(id);
                     if (translate) {
@@ -45368,58 +48058,99 @@ xeometry.Viewer = function (cfg) {
                     if (rotate) {
                         modelData.rotate = rotate;
                     }
-                    bookmark.models.push(modelData);
+                    modelStates.push(modelData);
                 }
             }
-            bookmark.objects = {};
+            if (modelStates.length > 0) {
+                bookmark.models = modelStates;
+            }
+
+            // Serialize object states
+
+            var objectStates = [];
+            var object;
+            var objectState;
             for (id in objects) {
-                var object;
-                var objectState;
                 if (objects.hasOwnProperty(id)) {
                     object = objects[id];
                     objectState = null;
                     translate = getTranslate(id);
                     if (translate) {
-                        objectState = objectState || (bookmark.objects[id] = {});
+                        objectState = objectState || {id: id};
                         objectState.translate = translate;
                     }
                     scale = getScale(id);
                     if (scale) {
-                        objectState = objectState || (bookmark.objects[id] = {});
+                        objectState = objectState || {id: id};
                         objectState.scale = scale;
                     }
                     rotate = getRotate(id);
                     if (rotate) {
-                        objectState = objectState || (bookmark.objects[id] = {});
+                        objectState = objectState || {id: id};
                         objectState.rotate = rotate;
                     }
-                    if (object.visible) {
-                        objectState = objectState || (bookmark.objects[id] = {});
-                        objectState.visible = true;
-                    } else if (objectState) {
+                    if (!object.visible) {
+                        objectState = objectState || {id: id};
                         objectState.visible = false;
                     }
                     if (object.material.alphaMode === "blend") {
-                        objectState = objectState || (bookmark.objects[id] = {});
-                        objectState.opacity = object.material.alpha;
+                        if (object.material.alpha < 1.0) {
+                            objectState = objectState || {id: id};
+                            objectState.opacity = object.material.alpha;
+                        }
+                    }
+                    if (object.outlined) {
+                        objectState = objectState || {id: id};
+                        objectState.outlined = true;
+                    }
+                    if (!object.clippable) {
+                        objectState = objectState || {id: id};
+                        objectState.clippable = false;
+                    }
+                    if (!object.pickable) {
+                        objectState = objectState || {id: id};
+                        objectState.pickable = false;
+                    }
+                    if (objectState) {
+                        objectStates.push(objectState);
                     }
                 }
             }
+            if (objectStates.length > 0) {
+                bookmark.objects = objectStates;
+            }
+
+            // Serialize annotations
+
+            var annotationStates = [];
+            var annotation;
+            var annotationState;
             for (id in annotations) {
-                var annotation;
-                var annotationState;
                 if (annotations.hasOwnProperty(id)) {
                     annotation = annotations[id];
                     annotationState = {
+                        id: id,
                         primIndex: annotation.primIndex,
-                        bary: vecToArray(annotation.bary),
-                        glyph: annotation.glyph,
-                        title: annotation.title,
-                        desc: annotation.desc,
-                        pinShown: annotation.pinShown,
-                        labelShown: annotation.labelShown,
-                        occludable: annotation.occludable
+                        bary: vecToArray(annotation.bary)
                     };
+                    if (annotation.glyph !== "") {
+                        annotationState.glyph = annotation.glyph;
+                    }
+                    if (annotation.title !== "") {
+                        annotationState.title = annotation.title;
+                    }
+                    if (annotation.desc !== "") {
+                        annotationState.desc = annotation.desc;
+                    }
+                    if (!annotation.pinShown) {
+                        annotationState.pinShown = annotation.pinShown;
+                    }
+                    if (!annotation.labelShown) {
+                        annotationState.labelShown = annotation.labelShown;
+                    }
+                    if (!annotation.occludable) {
+                        annotationState.occludable = annotation.occludable;
+                    }
                     if (annotation.entity) {
                         annotationState.object = annotation.entity.id;
                     }
@@ -45435,9 +48166,37 @@ xeometry.Viewer = function (cfg) {
                     if (!bookmark.annotations) {
                         bookmark.annotations = {};
                     }
-                    bookmark.annotations[id] = annotationState;
+                    annotationStates.push(annotationState);
                 }
             }
+            if (annotationStates.length > 0) {
+                bookmark.annotations = annotationStates;
+            }
+
+            // Serialize clips
+
+            var clipStates = [];
+            var clip;
+            var clipState;
+            for (id in clips) {
+                if (clips.hasOwnProperty(id)) {
+                    clip = clips[id];
+                    clipState = {
+                        id: id,
+                        pos: vecToArray(clip.pos),
+                        dir: vecToArray(clip.dir)
+                    };
+                    if (!clip.active) {
+                        clipState.active = clip.active;
+                    }
+                    clipStates.push(clipState);
+                }
+            }
+            if (clipStates.length > 0) {
+                bookmark.clips = clipStates;
+            }
+
+            // Serialize camera position
 
             bookmark.lookat = {
                 eye: vecToArray(view.eye),
@@ -45445,15 +48204,56 @@ xeometry.Viewer = function (cfg) {
                 up: vecToArray(view.up)
             };
 
-            bookmark.projection = projectionType;
+            // Serialize all other viewer properties, when they have non-default values
 
-            bookmark.perspectiveNear = projections.perspective.near;
-            bookmark.perspectiveFar = projections.perspective.far;
-            bookmark.perspectiveFOV = projections.perspective.fovy;
+            if (view.gimbalLockY !== true) {
+                bookmark.gimbalLockY = view.gimbalLockY;
+            }
 
-            bookmark.orthoNear = projections.orthographic.near;
-            bookmark.orthoFar = projections.orthographic.far;
-            bookmark.orthoScale = projections.orthographic.scale;
+            if (cameraFlight.fitFOV !== 45) {
+                bookmark.viewFitFOV = cameraFlight.fitFOV;
+            }
+
+            if (cameraFlight.duration !== 0.5) {
+                bookmark.viewFitDuration = cameraFlight.duration;
+            }
+
+            if (projectionType !== "perspective") {
+                bookmark.projection = projectionType;
+            }
+
+            if (projections.perspective.near !== 0.1) {
+                bookmark.perspectiveNear = projections.perspective.near;
+            }
+
+            if (projections.perspective.far !== 10000.0) {
+                bookmark.perspectiveFar = projections.perspective.far;
+            }
+
+            if (projections.perspective.fovy !== 60.0) {
+                bookmark.perspectiveFOV = projections.perspective.fovy;
+            }
+
+            if (projections.orthographic.near !== 0.1) {
+                bookmark.orthoNear = projections.orthographic.near;
+            }
+
+            if (projections.orthographic.far !== 10000.0) {
+                bookmark.orthoFar = projections.orthographic.far;
+            }
+
+            if (projections.orthographic.scale !== 1.0) {
+                bookmark.orthoScale = projections.orthographic.scale;
+            }
+
+            if (scene.outline.thickness !== 15) {
+                bookmark.outlineThickness = scene.outline.thickness;
+            }
+
+            var outlineColor = scene.outline.color;
+            if (outlineColor[0] !== 1 || outlineColor[1] !== 1 || outlineColor[2] !== 0) {
+                bookmark.outlineColor = outlineColor;
+            }
 
             return bookmark;
         };
@@ -45463,9 +48263,11 @@ xeometry.Viewer = function (cfg) {
      * Sets viewer state to the snapshot contained in given JSON bookmark.
      *
      * A bookmark is a complete snapshot of the viewer's state, which was
-     * captured earlier with {@link #getBookmark}.
+     * captured earlier with {@link #getBookmark}. Setting a bookmark will
+     * clear everything in the viewer first.
      *
      * @param {Object} bookmark JSON bookmark.
+     * @param {Function} [ok] Callback fired once the bookmark has been set.
      * @returns {Viewer} this
      */
     this.setBookmark = (function () {
@@ -45491,22 +48293,32 @@ xeometry.Viewer = function (cfg) {
             });
         }
 
-        return function (bookmark) {
+        return function (bookmark, ok) {
+
+            this.clear();
+
             if (!bookmark.models || bookmark.models.length === 0) {
+                if (ok) {
+                    ok();
+                }
                 return;
             }
-            self.clearAnnotations();
-            // TODO: unload models that are not in bookmark
+
             loadModels(bookmark.models, 0, function () {
+
+                var i;
+                var len;
                 var id;
                 var objectStates = bookmark.objects;
-                var objectState;
-                var visible = [];
-                for (id in objectStates) {
-                    if (objectStates.hasOwnProperty(id)) {
-                        objectState = objectStates[id];
-                        if (objectState.visible) {
-                            visible.push(id);
+                var invisible = [];
+
+                if (objectStates) {
+                    var objectState;
+                    for (i = 0, len = objectStates.length; i < len; i++) {
+                        objectState = objectStates[i];
+                        id = objectState.id;
+                        if (objectState.visible === false) {
+                            invisible.push(id);
                         }
                         if (objectState.translate) {
                             self.setTranslate(id, objectState.translate);
@@ -45518,26 +48330,55 @@ xeometry.Viewer = function (cfg) {
                             self.setRotate(id, objectState.rotate);
                         }
                         if (objectState.opacity !== undefined) {
-                            self.setOpacity(id, objectState.opacity); // FIXME: what if objects already loaded and transparent, but no opacity value here?
+                            self.setOpacity(id, objectState.opacity);
+                        }
+                        if (!!objectState.outlined) {
+                            self.showOutline(id);
+                        }
+                        if (objectState.clippable !== undefined) {
+                            self.setClippable(id, objectState.clippable);
                         }
                     }
                 }
-                var annotationStates = bookmark.annotations;
-                for (id in annotationStates) {
-                    if (annotationStates.hasOwnProperty(id)) {
-                        self.createAnnotation(id, annotationStates[id]);
+
+                var clipStates = bookmark.clips;
+                if (clipStates) {
+                    var clipState;
+                    for (i = 0, len = clipStates.length; i < len; i++) {
+                        clipState = clipStates[i];
+                        self.createClip(clipState.id, clipState);
                     }
                 }
-                self.hide();
-                self.show(visible);
+
+                var annotationStates = bookmark.annotations;
+                if (annotationStates) {
+                    var annotationState;
+                    for (i = 0, len = annotationStates.length; i < len; i++) {
+                        annotationState = annotationStates[i];
+                        self.createAnnotation(annotationState.id, annotationState);
+                    }
+                }
+
+                if (invisible.length > 0) {
+                    self.hide(invisible);
+                }
                 self.setEyeLookUp(bookmark.lookat.eye, bookmark.lookat.look, bookmark.lookat.up);
-                self.setProjection(bookmark.projection);
-                self.setPerspectiveNear(bookmark.perspectiveNear);
-                self.setPerspectiveFar(bookmark.perspectiveFar);
-                self.setPerspectiveFOV(bookmark.perspectiveFOV);
-                self.setOrthoNear(bookmark.orthoNear);
-                self.setOrthoFar(bookmark.orthoFar);
-                self.setOrthoScale(bookmark.orthoScale);
+                (bookmark.lockGimbalY === false) ? self.lockGimbalY() : self.unlockGimbalY();
+                self.setProjection(bookmark.projection || "perspective");
+                self.setViewFitFOV(bookmark.viewFitFOV || 45);
+                self.setViewFitDuration(bookmark.viewFitDuration !== undefined ? bookmark.viewFitDuration : 0.5);
+                self.setPerspectiveNear(bookmark.perspectiveNear !== undefined ? bookmark.perspectiveNear : 0.1);
+                self.setPerspectiveFar(bookmark.perspectiveFar != undefined ? bookmark.perspectiveFar : 10000.0);
+                self.setPerspectiveFOV(bookmark.perspectiveFOV || 60);
+                self.setOrthoNear(bookmark.orthoNear != undefined ? bookmark.orthoNear : 0.1);
+                self.setOrthoFar(bookmark.orthoFar != undefined ? bookmark.orthoFar : 10000);
+                self.setOrthoScale(bookmark.orthoScale != undefined ? bookmark.orthoScale : 1.0);
+                self.setOutlineThickness(bookmark.outlineThickness != undefined ? bookmark.outlineThickness : 15);
+                self.setOutlineColor(bookmark.outlineColor != undefined ? bookmark.outlineColor : [1, 1, 0]);
+
+                if (ok) {
+                    ok();
+                }
             });
         };
     })();
@@ -45545,45 +48386,28 @@ xeometry.Viewer = function (cfg) {
     /**
      * Captures a snapshot image of the viewer's canvas.
      *
-     * When a callback is given, this method will capture the snapshot asynchronously, on the next animation frame
-     * and return it via the callback.
-     *
-     * When no callback is given, this method captures and returns the snapshot immediately. Note that is only
-     * possible when you have configured the viewer to preserve the WebGL drawing buffer (which incurs a
-     * performance overhead).
-     *
      * @param {*} [params] Capture options.
      * @param {Number} [params.width] Desired width of result in pixels - defaults to width of canvas.
      * @param {Number} [params.height] Desired height of result in pixels - defaults to height of canvas.
      * @param {String} [params.format="jpeg"] Desired format; "jpeg", "png" or "bmp".
-     * @param {Function} [ok] Callback to return the image data when taking a snapshot asynchronously.
+     * @param {Function} ok Callback to return the image data.
      * @returns {String} String-encoded image data when taking the snapshot synchronously. Returns null when the ````ok```` callback is given.
      * @example
-     * // Get snapshot asynchronously
      * viewer.getSnapshot({
-     *     width: 500, // Defaults to size of canvas
+     *     width: 500,
      *     height: 500,
-     *     format: "png" // Options are "jpeg" (default), "png" and "bmp"
+     *     format: "png"
      * }, function(imageDataURL) {
      *     imageElement.src = imageDataURL;
-     * });
-*
-     * // Get snapshot synchronously, requires that viewer be
-     * // configured with preserveDrawingBuffer; true
-     * imageElement.src = viewer.getSnapshot({
-     *     width: 500, // Defaults to size of canvas
-     *     height: 500,
-     *     format: "png" // Options are "jpeg" (default), "png" and "bmp"
      * });
      */
     this.getSnapshot = function (params, ok) {
         params = params || {};
-        var src = scene.canvas.getSnapshot({
+        scene.canvas.getSnapshot({
             width: params.width, // Defaults to size of canvas
             height: params.height,
             format: params.format || "png" // Options are "jpeg" (default), "png" and "bmp"
         }, ok);
-        return ok ? null : src;
     };
 
     /**
@@ -45603,13 +48427,14 @@ xeometry.Viewer = function (cfg) {
         scales = {};
         annotations = {};
         objectAnnotations = {};
+        clips = {};
+        clipHelpers = {};
         return this;
     };
 
     function error(msg) {
-        console.log(msg);
+        console.error("[xeometry] " + msg);
     }
 
     this.setBookmark(cfg);
-};
-xeometry.version="1.0.0";
+};xeometry.version="1.0.0";

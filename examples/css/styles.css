@@ -63,6 +63,7 @@ body {
     height: auto;
     text-align: left;
     /*border: solid 1px #bdbcbc;*/
+    pointer-events: none;
 }
 
 
@@ -162,8 +163,38 @@ body {
     padding: 0px;
 }
 
+#info li a {
+    text-decoration: none;
+    pointer-events: all;
+}
+
+#info a.code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+    font-size: 14px;
+    /*border: #4b4b68 1px solid;*/
+}
+
+#info li a:hover {
+    text-decoration: underline;
+}
+
+#info pre {
+    margin: 0px;
+    padding: 0;
+    font-size: 11pt;
+    color: white;
+}
+
+#info span.broken{
+    color: red;
+}
+
+#info span.todo{
+    color: orange;
+}
+
 #info h1 {
-    color: #329632;
+    color: #78ce73;
     margin-top: 10px;
     margin-bottom: 10px;
     font-size: 25px;
@@ -233,7 +264,7 @@ a:hover {
 
 a.button {
     font-weight: bold;
-    font-size: 15px;
+    font-size: 14px;
     background: #98fb98;
     padding: 5px;
     border: 1px grey solid;
@@ -277,13 +308,13 @@ h1 a {
 h2 {
     font-size: 18px;
     line-height: 1.2;
-    padding-top: 0;
+    padding-top: 15px;
     padding-left: 0px;
     margin-top: 0px;
-    padding-bottom: 0px;
+    padding-bottom: 10px;
     margin-bottom: 0;
     letter-spacing: 0px;
-    color: #696969;
+    color: #78ce73;
 }
 
 h3 {

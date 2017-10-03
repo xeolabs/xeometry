@@ -67,7 +67,7 @@
  <script>
 
  var model = new xeogl.GLTFModel({
-    src: "models/gltf/2.0/Reciprocating_Saw/PBR-SpecGloss/Reciprocating_Saw.gltf",
+    src: "models/gltf/ReciprocatingSaw/PBR-SpecGloss/Reciprocating_Saw.gltf",
     transform: new xeogl.Rotate({
         xyz: [1, 0, 0],
         angle: 90
@@ -314,7 +314,7 @@ xeogl.Annotation = xeogl.Pin.extend({
                 this._titleElement.innerHTML = this._title;
 
                 /**
-                 Fired whenever this Annotation's {{#crossLink "Annotation/look:property"}}{{/crossLink}} property changes.
+                 Fired whenever this Annotation's {{#crossLink "Annotation/title:property"}}{{/crossLink}} property changes.
 
                  @event title
                  @param value {Number} The property's new value
@@ -471,11 +471,13 @@ xeogl.Annotation = xeogl.Pin.extend({
         pinShown: {
             set: function (shown) {
 
+                shown = shown !== false;
+
                 if (this._pinShown === shown) {
                     return;
                 }
 
-                this._pinShown = shown !== false;
+                this._pinShown = shown;
                 this._spot.style.visibility = this._pinShown ? "visible" : "hidden";
                 this._spotClickable.style.visibility = this._pinShown ? "visible" : "hidden";
 
@@ -504,11 +506,13 @@ xeogl.Annotation = xeogl.Pin.extend({
         labelShown: {
             set: function (shown) {
 
+                shown = shown !== false;
+
                 if (this._labelShown === shown) {
                     return;
                 }
 
-                this._labelShown = shown !== false;
+                this._labelShown = shown;
                 this._label.style.visibility = this._labelShown && this.visible ? "visible" : "hidden";
 
                 /**

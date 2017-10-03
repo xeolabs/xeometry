@@ -32,7 +32,7 @@
 <body>
 
 <div id="info">
-    <h1>taking a snapshot of a viewer canvas once per second, asynchronously</h1>
+    <h1>taking a snapshot of a viewer canvas, once per second</h1>
 </div>
 
 <!-- Viewer canvas -->
@@ -66,11 +66,6 @@
     var snapshotImage = document.getElementById("snapshotImage");
 
     window.setInterval(function () {
-
-        // Get a snapshot asynchronously, within the next RAF.
-        // Note that a synchronous snapshot is not possible here,
-        // because we didn't configure the Scene to preserve the
-        // drawing buffer.
 
         viewer.getSnapshot({
             width: 500, // Defaults to size of canvas

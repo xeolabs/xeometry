@@ -10,21 +10,42 @@
 <body>
 
 <div id="info">
-    <h1>opacity</h1>
+    <h1>transforming</h1>
 
-    <h2>set opacity of models and objects</h2>
+    <h2>rotate model</h2>
     <ul>
-        <li><a href='javascript:viewer.setRotate("saw", [0,0,0])'><pre>setRotate("saw", [0,0,0]</pre></a></li>
-        <li><a href='javascript:viewer.setRotate("saw", [90,0,0])'><pre>setRotate("saw", [90,0,0]</pre></a></li>
-        <li><a href='javascript:viewer.setRotate("saw", [0,90,0])'><pre>setRotate("saw", [0,90,0]</pre></a></li>
+    <li><a href='javascript:viewer.setRotate("saw", [0,0,0])'>setRotate("saw", [0,0,0])</a></li>
+    <li><a href='javascript:viewer.setRotate("saw", [90,0,0])'>setRotate("saw", [90,0,0])</a></li>
+    </ul>
 
-        <li><a href='javascript:viewer.setOpacity("saw", 0.4)'><pre>setOpacity("saw", 0.4)</pre></a></li>
-        <li><a href='javascript:viewer.setOpacity("saw", 0.6)'><pre>setOpacity("saw", 0.6)</pre></a></li>
-        <li><a href='javascript:viewer.setOpacity("saw", 1.0)'><pre>setOpacity("saw", 1.0)</pre></a></li>
-        <li><a href='javascript:viewer.setOpacity(["saw#1.1", "saw#1.2"], 0.2)'><pre>setOpacity(["saw#1.1", "saw#1.2"], 0.2)</pre></a></li>
-        <li><a href='javascript:viewer.setOpacity(["saw#1.1", "saw#1.2"], 0.4)'><pre>setOpacity(["saw#1.1", "saw#1.2"], 0.4)</pre></a></li>
-        <li><a href='javascript:viewer.setOpacity(["saw#1.1", "saw#1.2"], 0.6)'><pre>setOpacity(["saw#1.1", "saw#1.2"], 0.6)</pre></a></li>
-        <li><a href='javascript:viewer.setOpacity(["saw#1.1", "saw#1.2"], 1.0)'><pre>setOpacity(["saw#1.1", "saw#1.2"], 1.0)</pre></a></li>
+    <h2>translate model</h2>
+    <ul>
+    <li><a href='javascript:viewer.setTranslate("saw", [0,0,0])'>setTranslate("saw", [0,0,0])</a></li>
+    <li><a href='javascript:viewer.setTranslate("saw", [0,0,-70])'>setTranslate("saw", [0,0,-70])</a></li>
+    </ul>
+
+    <h2>scale model</h2>
+    <ul>
+    <li><a href='javascript:viewer.setScale("saw", [1,1,1])'>setScale("saw", [1,1,1])</a></li>
+    <li><a href='javascript:viewer.setScale("saw", [0.5,0.5,0.5])'>setScale("saw", [0.5,0.5,0.5])</a></li>
+    </ul>
+
+    <h2>translate object</h2>
+    <ul>
+    <li><a href='javascript:viewer.setTranslate("saw#1.1", [0,0,0])'>setTranslate("saw#1.1", [0,0,0])</a></li>
+    <li><a href='javascript:viewer.setTranslate("saw#1.1", [0,80,-50])'>setTranslate("saw#1.1", [0,80,-50])</a></li>
+    </ul>
+
+    <h2>rotate object</h2>
+    <ul>
+    <li><a href='javascript:viewer.setRotate("saw#1.1", [-90,0,0])'>setRotate("saw#1.1", [-90,0,0])</a></li>
+    <li><a href='javascript:viewer.setRotate("saw#1.1", [0,0,0])'>setRotate("saw#1.1", [0,0,0])</a></li>
+    </ul>
+
+    <h2>scale object</h2>
+    <ul>
+    <li><a href='javascript:viewer.setScale("saw#1.1", [1,1,1])'>setScale("saw#1.1", [1,1,1])</a></li>
+    <li><a href='javascript:viewer.setScale("saw#1.1", [0.5,0.5,0.5])'>setScale("saw#1.1", [0.5,0.5,0.5])</a></li>
     </ul>
 </div>
 

@@ -4,7 +4,7 @@
  * A WebGL-based 3D visualization engine from xeoLabs
  * http://xeogl.org/
  *
- * Built on 2017-09-10
+ * Built on 2017-09-21
  *
  * MIT License
  * Copyright 2017, Lindsay Kay
@@ -5290,7 +5290,7 @@ var Canvas2Image = (function () {
         // Shadow->Object lookup
         this._shadowObjectLists = {};
 
-        // Render states 
+        // Render states
 
         this.lights = null;
         this.material = null;
@@ -5304,7 +5304,7 @@ var Canvas2Image = (function () {
         this.xray = null;
         this.modes = null;
 
-        // Dirty flags 
+        // Dirty flags
 
         this.objectListDirty = true;
         this.stateOrderDirty = true;
@@ -5392,17 +5392,18 @@ var Canvas2Image = (function () {
         }
 
         this._setChunk(object, 0, "program", object.program); // Must be first
-        this._setChunk(object, 1, "modelTransform", this.modelTransform);
-        this._setChunk(object, 2, "viewTransform", this.viewTransform);
-        this._setChunk(object, 3, "projTransform", this.projTransform);
-        this._setChunk(object, 4, "lights", this.lights);
-        this._setChunk(object, 5, this.material.type, this.material); // Supports different material systems
-        this._setChunk(object, 6, "clips", this.clips);
-        this._setChunk(object, 7, "viewport", this.viewport);
-        this._setChunk(object, 8, "outline", this.outline);
-        this._setChunk(object, 9, "xray", this.xray);
-        this._setChunk(object, 10, "geometry", this.geometry);
-        this._setChunk(object, 11, "draw", this.geometry, true); // Must be last
+        this._setChunk(object, 1, "modes", this.modes);
+        this._setChunk(object, 2, "modelTransform", this.modelTransform);
+        this._setChunk(object, 3, "viewTransform", this.viewTransform);
+        this._setChunk(object, 4, "projTransform", this.projTransform);
+        this._setChunk(object, 5, "lights", this.lights);
+        this._setChunk(object, 6, this.material.type, this.material); // Supports different material systems
+        this._setChunk(object, 7, "clips", this.clips);
+        this._setChunk(object, 8, "viewport", this.viewport);
+        this._setChunk(object, 9, "outline", this.outline);
+        this._setChunk(object, 10, "xray", this.xray);
+        this._setChunk(object, 11, "geometry", this.geometry);
+        this._setChunk(object, 12, "draw", this.geometry, true); // Must be last
 
         // Ambient light is global across everything in display, and
         // can never be disabled, so grab it now because we want to
@@ -5525,9 +5526,10 @@ var Canvas2Image = (function () {
                 this._objectList[this._objectListLen++] = this.objects[objectId];
             }
         }
-        for (var i = this._objectListLen, len = this._objectList.length; i < len; i) {
+        for (var i = this._objectListLen, len = this._objectList.length; i < len; i++) {
             this._objectList[i] = null; // Release memory
         }
+        this._objectList.length = this._objectListLen;
     };
 
     xeogl.renderer.Renderer.prototype._makeStateSortKeys = function () {
@@ -5841,11 +5843,12 @@ var Canvas2Image = (function () {
 
             if (numTransparentObjects > 0) {
 
+                gl.enable(gl.CULL_FACE);
                 gl.enable(gl.BLEND);
-                gl.depthMask(false);
+             //   gl.depthMask(false);
                 gl.blendEquation(gl.FUNC_ADD);
-                gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-                //gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+               // gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+                gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
                 gl.colorMask(true, true, true, true);
 
@@ -8429,15 +8432,7 @@ var Canvas2Image = (function () {
         var reflectivityFresnel;
         var emissiveFresnel;
         var receiveShadow;
-
-        var vertexPickObjectSrc;
-        var fragmentPickObjectSrc;
-        var vertexPickPrimSrc;
-        var fragmentPickPrimSrc;
-        var vertexShadowSrc;
-        var fragmentShadowSrc;
-        var vertexOutlineSrc;
-        var fragmentOutlineSrc;
+        var clipping;
 
         /**
          * Get source code for a program to render the given states.
@@ -8457,6 +8452,7 @@ var Canvas2Image = (function () {
             texturing = hasTextures();
             normals = hasNormals();
             normalMapping = hasNormalMap();
+            clipping = states.clips.clips.length > 0;
             phongMaterial = (states.material.type === "phongMaterial");
             MetallicMaterial = (states.material.type === "MetallicMaterial");
             SpecularMaterial = (states.material.type === "SpecularMaterial");
@@ -8559,9 +8555,6 @@ var Canvas2Image = (function () {
         // composed from state, in the same manner as the draw shaders.
 
         function vertexPickObject() {
-            if (vertexPickObjectSrc) {
-                return vertexPickObjectSrc;
-            }
             begin();
             add("// Object picking vertex shader");
             add("attribute vec3 position;");
@@ -8570,72 +8563,109 @@ var Canvas2Image = (function () {
             add("uniform mat4 viewNormalMatrix;");
             add("uniform mat4 projMatrix;");
             add("varying vec4 vViewPosition;");
+            if (clipping) {
+                add("varying vec4 vWorldPosition;");
+            }
             add("void main(void) {");
             add("   vec4 tmpVertex = vec4(position, 1.0); ");
-            add("   vViewPosition = viewMatrix * modelMatrix * tmpVertex;");
+            add("   vec4 worldPosition = modelMatrix * tmpVertex;");
+            add("   vViewPosition = viewMatrix * worldPosition;");
+            if (clipping) {
+                add("   vWorldPosition = worldPosition;");
+            }
             add("   gl_Position = projMatrix * vViewPosition;");
             add("}");
-            return vertexPickObjectSrc = end();
+            return end();
         }
 
         function fragmentPickObject() {
-            if (fragmentPickObjectSrc) {
-                return fragmentPickObjectSrc;
-            }
             begin();
             add("// Object picking fragment shader");
             add("precision " + getFSFloatPrecision(states.gl) + " float;");
             add("uniform vec4 pickColor;");
+            if (clipping) {
+                add("uniform bool clippable;");
+                add("varying vec4 vWorldPosition;");
+                for (var i = 0; i < states.clips.clips.length; i++) {
+                    add("uniform bool clipActive" + i + ";");
+                    add("uniform vec3 clipPos" + i + ";");
+                    add("uniform vec3 clipDir" + i + ";");
+                }
+            }
             add("void main(void) {");
+            if (clipping) {
+                add("if (clippable) {");
+                add("  float dist = 0.0;");
+                for (var i = 0; i < states.clips.clips.length; i++) {
+                    add("if (clipActive" + i + ") {");
+                    add("   dist += clamp(dot(-clipDir" + i + ".xyz, vWorldPosition.xyz - clipPos" + i + ".xyz), 0.0, 1000.0);");
+                    add("}");
+                }
+                add("  if (dist > 0.0) { discard; }");
+                add("}");
+            }
             add("   gl_FragColor = pickColor; ");
             add("}");
-            return fragmentPickObjectSrc = end();
+            return end();
         }
 
         function vertexPickPrimitive() {
-
-            if (vertexPickPrimSrc) {
-                return vertexPickPrimSrc;
-            }
-
             begin();
-
             add("// Triangle picking vertex shader");
-
             add("attribute vec3 position;");
             add("attribute vec4 color;");
-
             add("uniform vec3 pickColor;");
             add("uniform mat4 modelMatrix;");
             add("uniform mat4 viewMatrix;");
             add("uniform mat4 projMatrix;");
-
             add("varying vec4 vViewPosition;");
             add("varying vec4 vColor;");
-
+            if (clipping) {
+                add("varying vec4 vWorldPosition;");
+            }
             add("void main(void) {");
             add("   vec4 tmpVertex = vec4(position, 1.0); ");
             add("   vec4 worldPosition = modelMatrix * tmpVertex; ");
             add("   vec4 viewPosition = viewMatrix * worldPosition;");
+            if (clipping) {
+                add("   vWorldPosition = worldPosition;");
+            }
             add("   vColor = color;");
             add("   gl_Position = projMatrix * viewPosition;");
             add("}");
 
-            return vertexPickPrimSrc = end();
+            return end();
         }
 
         function fragmentPickPrimitive() {
-            if (fragmentPickPrimSrc) {
-                return fragmentPickPrimSrc;
-            }
             begin();
             add("// Triangle picking fragment shader");
             add("precision " + getFSFloatPrecision(states.gl) + " float;");
             add("varying vec4 vColor;");
+            if (clipping) {
+                add("uniform bool clippable;");
+                add("varying vec4 vWorldPosition;");
+                for (var i = 0; i < states.clips.clips.length; i++) {
+                    add("uniform bool clipActive" + i + ";");
+                    add("uniform vec3 clipPos" + i + ";");
+                    add("uniform vec3 clipDir" + i + ";");
+                }
+            }
             add("void main(void) {");
+            if (clipping) {
+                add("if (clippable) {");
+                add("  float dist = 0.0;");
+                for (var i = 0; i < states.clips.clips.length; i++) {
+                    add("if (clipActive" + i + ") {");
+                    add("   dist += clamp(dot(-clipDir" + i + ".xyz, vWorldPosition.xyz - clipPos" + i + ".xyz), 0.0, 1000.0);");
+                    add("}");
+                }
+                add("  if (dist > 0.0) { discard; }");
+                add("}");
+            }
             add("   gl_FragColor = vColor;");
             add("}");
-            return fragmentPickPrimSrc = end();
+            return end();
         }
 
         /// NOTE: Shadow shaders will become more complex and will eventually be
@@ -8648,21 +8678,47 @@ var Canvas2Image = (function () {
             add("uniform mat4 modelMatrix;");
             add("uniform mat4 shadowViewMatrix;");
             add("uniform mat4 shadowProjMatrix;");
+            if (clipping) {
+                add("varying vec4 vWorldPosition;");
+            }
             add("void main(void) {");
-            add("   gl_Position = shadowProjMatrix * (shadowViewMatrix * (modelMatrix * (vec4(position, 1.0))));");
+            add("   vec4 worldPosition = modelMatrix * (vec4(position, 1.0));");
+            if (clipping) {
+                add("   vWorldPosition = worldPosition;");
+            }
+            add("   gl_Position = shadowProjMatrix * (shadowViewMatrix * (worldPosition));");
             add("}");
-            return vertexShadowSrc = end();
+            return end();
         }
 
         function fragmentShadow() {
             begin();
             add("// Shadow map fragment shader");
             add("precision " + getFSFloatPrecision(states.gl) + " float;");
+            if (clipping) {
+                add("varying vec4 vWorldPosition;");
+                add("uniform bool clippable;");
+                for (var i = 0; i < states.clips.clips.length; i++) {
+                    add("uniform bool clipActive" + i + ";");
+                    add("uniform vec3 clipPos" + i + ";");
+                    add("uniform vec3 clipDir" + i + ";");
+                }
+            }
             add("void main(void) {");
+            if (clipping) {
+                add("if (clippable) {");
+                add("  float dist = 0.0;");
+                for (var i = 0; i < states.clips.clips.length; i++) {
+                    add("if (clipActive" + i + ") {");
+                    add("   dist += clamp(dot(-clipDir" + i + ".xyz, vWorldPosition.xyz - clipPos" + i + ".xyz), 0.0, 1000.0);");
+                    add("}");
+                }
+                add("  if (dist > 0.0) { discard; }");
+                add("}");
+            }
             add("   gl_FragColor = vec4(gl_FragCoord.z, 0.0, 0.0, 0.0);");
-            //     add("   gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);");
             add("}");
-            return fragmentShadowSrc = end();
+            return end();
         }
 
         function vertexOutline() {
@@ -8672,13 +8728,10 @@ var Canvas2Image = (function () {
             add("uniform mat4 viewMatrix;");
             add("uniform mat4 projMatrix;");
             add("uniform float thickness;");
-
             if (normals) {
                 add("attribute vec3 normal;");
             }
-
             var billboard = states.modes.billboard;
-
             if (billboard === "spherical" || billboard === "cylindrical") {
                 add("void billboard(inout mat4 mat) {");
                 add("   mat[0][0] = 1.0;");
@@ -8694,46 +8747,63 @@ var Canvas2Image = (function () {
                 add("   mat[2][2] =1.0;");
                 add("}");
             }
-
+            if (clipping) {
+                add("varying vec4 vWorldPosition;");
+            }
             add("void main(void) {");
-
             add("mat4 viewMatrix2 = viewMatrix;");
             add("mat4 modelMatrix2 = modelMatrix;");
-
             if (states.modes.stationary) {
                 add("viewMatrix2[3][0] = viewMatrix2[3][1] = viewMatrix2[3][2] = 0.0;")
             }
-
             if (billboard === "spherical" || billboard === "cylindrical") {
                 add("billboard(modelMatrix2);");
                 add("billboard(viewMatrix2);");
             }
-
             // Displacement
-
             if (normals) {
                 add("vec4 projPos = projMatrix * viewMatrix2 * modelMatrix2 * vec4(position.xyz, 1.0); ");
                 add("  vec3 offset = (normalize(normal) * (thickness * 0.0005 * (projPos.z/1.0)));");
             } else {
                 add("  vec3 offset = vec3(0.0, 0.0, 0.0);");
             }
-
-            add("vec4 worldVertex = modelMatrix * vec4(position.xyz + offset, 1.0); ");
-
-            add("  gl_Position = projMatrix * (viewMatrix * worldVertex);");
+            add("vec4 worldPosition = modelMatrix * vec4(position.xyz + offset, 1.0); ");
+            if (clipping) {
+                add("   vWorldPosition = worldPosition;");
+            }
+            add("  gl_Position = projMatrix * (viewMatrix * worldPosition);");
             add("}");
-            return vertexOutlineSrc = end();
+            return end();
         }
 
         function fragmentOutline() {
             begin();
             add("precision " + getFSFloatPrecision(states.gl) + " float;");
             add("uniform vec3  color;");
+            if (clipping) {
+                add("uniform bool clippable;");
+                add("varying vec4 vWorldPosition;");
+                for (var i = 0; i < states.clips.clips.length; i++) {
+                    add("uniform bool clipActive" + i + ";");
+                    add("uniform vec3 clipPos" + i + ";");
+                    add("uniform vec3 clipDir" + i + ";");
+                }
+            }
             add("void main(void) {");
+            if (clipping) {
+                add("if (clippable) {");
+                add("  float dist = 0.0;");
+                for (var i = 0; i < states.clips.clips.length; i++) {
+                    add("if (clipActive" + i + ") {");
+                    add("   dist += clamp(dot(-clipDir" + i + ".xyz, vWorldPosition.xyz - clipPos" + i + ".xyz), 0.0, 1000.0);");
+                    add("}");
+                }
+                add("  if (dist > 0.0) { discard; }");
+                add("}");
+            }
             add("   gl_FragColor = vec4(color, 1.0);");
             add("}");
-
-            return fragmentOutlineSrc = end();
+            return end();
         }
 
         function vertexDraw() {
@@ -8753,6 +8823,10 @@ var Canvas2Image = (function () {
             add("uniform    mat4 projMatrix;");
 
             add("varying    vec3 vViewPosition;");
+
+            if (clipping) {
+                add("varying vec4 vWorldPosition;");
+            }
 
             if (states.lights.lightMap) {
                 add("varying    vec3 vWorldNormal;");
@@ -8957,7 +9031,13 @@ var Canvas2Image = (function () {
             if (states.geometry.primitiveName === "points") {
                 add("gl_PointSize = pointSize;");
             }
+
+            if (clipping) {
+                add("vWorldPosition = worldPosition;");
+            }
+
             add("   vViewPosition = viewPosition.xyz;");
+
             add("   gl_Position = projMatrix * viewPosition;");
 
             if (receiveShadow) {
@@ -8998,240 +9078,258 @@ var Canvas2Image = (function () {
             add("precision " + getFSFloatPrecision(states.gl) + " float;");
 
             //--------------------------------------------------------------------------------
-            // LIGHT AND REFLECTION MAP INPUTS
-            // Define here so available globally to shader functions
+            // USER CLIP PLANES
             //--------------------------------------------------------------------------------
 
-            if (states.lights.lightMap) {
-                add("uniform samplerCube lightMap;");
-                add("uniform mat4 viewNormalMatrix;");
-            }
-
-            if (states.lights.reflectionMap) {
-                add("uniform samplerCube reflectionMap;");
-            }
-
-            if (states.lights.lightMap || states.lights.reflectionMap) {
-                add("uniform mat4 viewMatrix;");
-            }
-
-
-            //--------------------------------------------------------------------------------
-            // SHADING FUNCTIONS
-            //--------------------------------------------------------------------------------
-
-            // CONSTANT DEFINITIONS
-
-            add("#define PI 3.14159265359");
-            add("#define RECIPROCAL_PI 0.31830988618");
-            add("#define RECIPROCAL_PI2 0.15915494");
-            add("#define EPSILON 1e-6");
-
-            add("#define saturate(a) clamp( a, 0.0, 1.0 )");
-
-            // UTILITY DEFINITIONS
-
-            add("float pow2(const in float x) {");
-            add("   return x*x;");
-            add("}");
-
-            add("vec3 inverseTransformDirection(in vec3 dir, in mat4 matrix) {");
-            add("   return normalize( ( vec4( dir, 0.0 ) * matrix ).xyz );");
-            add("}");
-
-            // STRUCTURES
-
-            add("struct IncidentLight {");
-            add("   vec3 color;");
-            add("   vec3 direction;");
-            add("};");
-
-            add("struct ReflectedLight {");
-            add("   vec3 diffuse;");
-            add("   vec3 specular;");
-            add("};");
-
-            add("struct Geometry {");
-            add("   vec3 position;");
-            add("   vec3 viewNormal;");
-            add("   vec3 worldNormal;");
-            add("   vec3 viewEyeDir;");
-            add("};");
-
-            add("struct Material {");
-            add("   vec3    diffuseColor;");
-            add("   float   specularRoughness;");
-            add("   vec3    specularColor;");
-            add("   float   shine;"); // Only used for Phong
-            add("};");
-
-            // DIFFUSE BRDF EVALUATION
-
-            add("vec3 BRDF_Diffuse_Lambert(const in vec3 diffuseColor) {");
-            add("   return RECIPROCAL_PI * diffuseColor;");
-            add("}");
-
-            // COMMON UTILS
-
-            add("vec4 LinearTosRGB( in vec4 value ) {");
-            add("   return vec4(mix(pow(value.rgb,vec3(0.41666))*1.055-vec3(0.055), value.rgb*12.92, vec3(lessThanEqual(value.rgb,vec3(0.0031308)))),value.w);");
-            add("}");
-
-            if (phongMaterial) {
-
-                if (states.lights.lightMap || states.lights.reflectionMap) {
-
-                    add("void computePhongLightMapping(const in Geometry geometry, const in Material material, inout ReflectedLight reflectedLight) {");
-
-                    if (states.lights.lightMap) {
-                        add("   vec3 irradiance = textureCube(lightMap, geometry.worldNormal).rgb;");
-                        add("   irradiance *= PI;");
-                        add("   vec3 diffuseBRDFContrib = BRDF_Diffuse_Lambert(material.diffuseColor);");
-                        add("   reflectedLight.diffuse += irradiance * diffuseBRDFContrib;");
-                    }
-
-                    if (states.lights.reflectionMap) {
-                        //     add("   vec3 reflectVec             = reflect(-geometry.viewEyeDir, geometry.worldNormal);");
-                        //   //  add("   reflectVec                  = inverseTransformDirection(reflectVec, viewMatrix);");
-                        //     add("   vec3 radiance               = textureCube(reflectionMap, geometry.worldNormal).rgb;");
-                        ////     add("   radiance *= PI;");
-                        //     add("   reflectedLight.specular     += radiance;");
-                    }
-
-                    add("}");
+            if (clipping) {
+                add("varying vec4 vWorldPosition;");
+                add("uniform bool clippable;");
+                for (var i = 0; i < states.clips.clips.length; i++) {
+                    add("uniform bool clipActive" + i + ";");
+                    add("uniform vec3 clipPos" + i + ";");
+                    add("uniform vec3 clipDir" + i + ";");
                 }
-
-                add("void computePhongLighting(const in IncidentLight directLight, const in Geometry geometry, const in Material material, inout ReflectedLight reflectedLight) {");
-                add("   float dotNL     = saturate(dot(geometry.viewNormal, directLight.direction));");
-                add("   vec3 irradiance = dotNL * directLight.color * PI;");
-                add("   reflectedLight.diffuse  += irradiance * BRDF_Diffuse_Lambert(material.diffuseColor);");
-                add("   reflectedLight.specular += directLight.color * material.specularColor * pow(max(dot(reflect(-directLight.direction, -geometry.viewNormal), geometry.viewEyeDir), 0.0), material.shine);");
-                add("}");
             }
 
-            if (pbrMetalRough || pbrSpecGloss) {
+            if (geometry.normals) {
 
-                // IRRADIANCE EVALUATION
+                //--------------------------------------------------------------------------------
+                // LIGHT AND REFLECTION MAP INPUTS
+                // Define here so available globally to shader functions
+                //--------------------------------------------------------------------------------
 
-                //add("vec3 sample_reflectMapEquirect(const in vec3 reflect, const in float mipLevel) {");
-                //add("   vec2 sampleUV;");
-                //add("   sampleUV.y = saturate(reflect.y * 0.5 + 0.5);");
-                //add("   sampleUV.x = atan(reflect.z, reflect.x) * RECIPROCAL_PI2 + 0.5;");
-                //add("   vec4 texColor = texture2D(reflectionMap, sampleUV, mipLevel);");
-                //add("   return texColor.rgb;"); // assumed to be linear
-                //add("}");
-
-                add("float GGXRoughnessToBlinnExponent(const in float ggxRoughness) {");
-                add("   return (2.0 / pow2(ggxRoughness + 0.0001) - 2.0);");
-                add("}");
-
-                add("float getSpecularMIPLevel(const in float blinnShininessExponent, const in int maxMIPLevel) {");
-                add("   float maxMIPLevelScalar = float( maxMIPLevel );");
-                add("   float desiredMIPLevel = maxMIPLevelScalar - 0.79248 - 0.5 * log2( pow2( blinnShininessExponent ) + 1.0 );");
-                add("   return clamp( desiredMIPLevel, 0.0, maxMIPLevelScalar );");
-                add("}");
-
-                //add("vec3 getLightProbeIndirectRadiance(const in mat4 viewMatrix, const in Geometry geometry, const in float blinnShininessExponent, const in int maxMIPLevel) {");
-                //add("   vec3 reflectVec = reflect(geometry.viewEyeDir, geometry.viewNormal);");
-                //add("   reflectVec = inverseTransformDirection(reflectVec, viewMatrix);");
-                //add("   float mipLevel = getSpecularMIPLevel( blinnShininessExponent, maxMIPLevel );");
-                //add("   vec3 reflectionMapColor = sample_reflectMapEquirect(reflectVec, float(mipLevel));");
-                //add("   return reflectionMapColor;");
-                //add("}");
-
+                if (states.lights.lightMap) {
+                    add("uniform samplerCube lightMap;");
+                    add("uniform mat4 viewNormalMatrix;");
+                }
 
                 if (states.lights.reflectionMap) {
-                    add("vec3 getLightProbeIndirectRadiance(const in vec3 reflectVec, const in float blinnShininessExponent, const in int maxMIPLevel) {");
-                    add("   float mipLevel = 0.5 * getSpecularMIPLevel(blinnShininessExponent, maxMIPLevel);"); //TODO: a random factor - fix this
-                    add("   vec3 envMapColor = textureCube(reflectionMap, reflectVec, mipLevel).rgb;");
-                    add("   return envMapColor;");
-                    add("}");
+                    add("uniform samplerCube reflectionMap;");
                 }
-
-                // SPECULAR BRDF EVALUATION
-
-                add("vec3 F_Schlick(const in vec3 specularColor, const in float dotLH) {");
-                add("   float fresnel = exp2( ( -5.55473 * dotLH - 6.98316 ) * dotLH );");
-                add("   return ( 1.0 - specularColor ) * fresnel + specularColor;");
-                add("}");
-
-                add("float G_GGX_Smith(const in float alpha, const in float dotNL, const in float dotNV) {");
-                add("   float a2 = pow2( alpha );");
-                add("   float gl = dotNL + sqrt( a2 + ( 1.0 - a2 ) * pow2( dotNL ) );");
-                add("   float gv = dotNV + sqrt( a2 + ( 1.0 - a2 ) * pow2( dotNV ) );");
-                add("   return 1.0 / ( gl * gv );");
-                add("}");
-
-                add("float G_GGX_SmithCorrelated(const in float alpha, const in float dotNL, const in float dotNV) {");
-                add("   float a2 = pow2( alpha );");
-                add("   float gv = dotNL * sqrt( a2 + ( 1.0 - a2 ) * pow2( dotNV ) );");
-                add("   float gl = dotNV * sqrt( a2 + ( 1.0 - a2 ) * pow2( dotNL ) );");
-                add("   return 0.5 / max( gv + gl, EPSILON );");
-                add("}");
-
-                add("float D_GGX(const in float alpha, const in float dotNH) {");
-                add("   float a2 = pow2( alpha );");
-                add("   float denom = pow2( dotNH ) * ( a2 - 1.0 ) + 1.0;");
-                add("   return RECIPROCAL_PI * a2 / pow2( denom );");
-                add("}");
-
-                add("vec3 BRDF_Specular_GGX(const in IncidentLight incidentLight, const in Geometry geometry, const in vec3 specularColor, const in float roughness) {");
-                add("   float alpha = pow2( roughness );");
-                add("   vec3 halfDir = normalize( incidentLight.direction + geometry.viewEyeDir );");
-                add("   float dotNL = saturate( dot( geometry.viewNormal, incidentLight.direction ) );");
-                add("   float dotNV = saturate( dot( geometry.viewNormal, geometry.viewEyeDir ) );");
-                add("   float dotNH = saturate( dot( geometry.viewNormal, halfDir ) );");
-                add("   float dotLH = saturate( dot( incidentLight.direction, halfDir ) );");
-                add("   vec3  F = F_Schlick( specularColor, dotLH );");
-                add("   float G = G_GGX_SmithCorrelated( alpha, dotNL, dotNV );");
-                add("   float D = D_GGX( alpha, dotNH );");
-                add("   return F * (G * D);");
-                add("}");
-
-                add("vec3 BRDF_Specular_GGX_Environment(const in Geometry geometry, const in vec3 specularColor, const in float roughness) {");
-                add("   float dotNV = saturate(dot(geometry.viewNormal, geometry.viewEyeDir));");
-                add("   const vec4 c0 = vec4( -1, -0.0275, -0.572,  0.022);");
-                add("   const vec4 c1 = vec4(  1,  0.0425,   1.04, -0.04);");
-                add("   vec4 r = roughness * c0 + c1;");
-                add("   float a004 = min(r.x * r.x, exp2(-9.28 * dotNV)) * r.x + r.y;");
-                add("   vec2 AB    = vec2(-1.04, 1.04) * a004 + r.zw;");
-                add("   return specularColor * AB.x + AB.y;");
-                add("}");
-
 
                 if (states.lights.lightMap || states.lights.reflectionMap) {
+                    add("uniform mat4 viewMatrix;");
+                }
 
-                    add("void computePBRLightMapping(const in Geometry geometry, const in Material material, inout ReflectedLight reflectedLight) {");
+                //--------------------------------------------------------------------------------
+                // SHADING FUNCTIONS
+                //--------------------------------------------------------------------------------
 
-                    if (states.lights.lightMap) {
-                        add("   vec3 irradiance = textureCube(lightMap, geometry.worldNormal).rgb;");
-                        add("   irradiance *= PI;");
-                        add("   vec3 diffuseBRDFContrib = BRDF_Diffuse_Lambert(material.diffuseColor);");
-                        add("   reflectedLight.diffuse += irradiance * diffuseBRDFContrib;");
-                        //   add("   reflectedLight.diffuse = vec3(1.0, 0.0, 0.0);");
+                // CONSTANT DEFINITIONS
+
+                add("#define PI 3.14159265359");
+                add("#define RECIPROCAL_PI 0.31830988618");
+                add("#define RECIPROCAL_PI2 0.15915494");
+                add("#define EPSILON 1e-6");
+
+                add("#define saturate(a) clamp( a, 0.0, 1.0 )");
+
+                // UTILITY DEFINITIONS
+
+                add("float pow2(const in float x) {");
+                add("   return x*x;");
+                add("}");
+
+                add("vec3 inverseTransformDirection(in vec3 dir, in mat4 matrix) {");
+                add("   return normalize( ( vec4( dir, 0.0 ) * matrix ).xyz );");
+                add("}");
+
+                // STRUCTURES
+
+                add("struct IncidentLight {");
+                add("   vec3 color;");
+                add("   vec3 direction;");
+                add("};");
+
+                add("struct ReflectedLight {");
+                add("   vec3 diffuse;");
+                add("   vec3 specular;");
+                add("};");
+
+                add("struct Geometry {");
+                add("   vec3 position;");
+                add("   vec3 viewNormal;");
+                add("   vec3 worldNormal;");
+                add("   vec3 viewEyeDir;");
+                add("};");
+
+                add("struct Material {");
+                add("   vec3    diffuseColor;");
+                add("   float   specularRoughness;");
+                add("   vec3    specularColor;");
+                add("   float   shine;"); // Only used for Phong
+                add("};");
+
+                // DIFFUSE BRDF EVALUATION
+
+                add("vec3 BRDF_Diffuse_Lambert(const in vec3 diffuseColor) {");
+                add("   return RECIPROCAL_PI * diffuseColor;");
+                add("}");
+
+                // COMMON UTILS
+
+                add("vec4 LinearTosRGB( in vec4 value ) {");
+                add("   return vec4(mix(pow(value.rgb,vec3(0.41666))*1.055-vec3(0.055), value.rgb*12.92, vec3(lessThanEqual(value.rgb,vec3(0.0031308)))),value.w);");
+                add("}");
+
+                if (phongMaterial) {
+
+                    if (states.lights.lightMap || states.lights.reflectionMap) {
+
+                        add("void computePhongLightMapping(const in Geometry geometry, const in Material material, inout ReflectedLight reflectedLight) {");
+
+                        if (states.lights.lightMap) {
+                            add("   vec3 irradiance = textureCube(lightMap, geometry.worldNormal).rgb;");
+                            add("   irradiance *= PI;");
+                            add("   vec3 diffuseBRDFContrib = BRDF_Diffuse_Lambert(material.diffuseColor);");
+                            add("   reflectedLight.diffuse += irradiance * diffuseBRDFContrib;");
+                        }
+
+                        if (states.lights.reflectionMap) {
+                            //     add("   vec3 reflectVec             = reflect(-geometry.viewEyeDir, geometry.worldNormal);");
+                            //   //  add("   reflectVec                  = inverseTransformDirection(reflectVec, viewMatrix);");
+                            //     add("   vec3 radiance               = textureCube(reflectionMap, geometry.worldNormal).rgb;");
+                            ////     add("   radiance *= PI;");
+                            //     add("   reflectedLight.specular     += radiance;");
+                        }
+
+                        add("}");
                     }
 
-                    if (states.lights.reflectionMap) {
-                        add("   vec3 reflectVec             = reflect(-geometry.viewEyeDir, geometry.viewNormal);");
-                        add("   reflectVec                  = inverseTransformDirection(reflectVec, viewMatrix);");
-                        add("   float blinnExpFromRoughness = GGXRoughnessToBlinnExponent(material.specularRoughness);");
-                        add("   vec3 radiance               = getLightProbeIndirectRadiance(reflectVec, blinnExpFromRoughness, 8);");
-                        add("   vec3 specularBRDFContrib    = BRDF_Specular_GGX_Environment(geometry, material.specularColor, material.specularRoughness);");
-                        add("   reflectedLight.specular     += radiance * specularBRDFContrib;");
-                    }
-
+                    add("void computePhongLighting(const in IncidentLight directLight, const in Geometry geometry, const in Material material, inout ReflectedLight reflectedLight) {");
+                    add("   float dotNL     = saturate(dot(geometry.viewNormal, directLight.direction));");
+                    add("   vec3 irradiance = dotNL * directLight.color * PI;");
+                    add("   reflectedLight.diffuse  += irradiance * BRDF_Diffuse_Lambert(material.diffuseColor);");
+                    add("   reflectedLight.specular += directLight.color * material.specularColor * pow(max(dot(reflect(-directLight.direction, -geometry.viewNormal), geometry.viewEyeDir), 0.0), material.shine);");
                     add("}");
                 }
 
-                // MAIN LIGHTING COMPUTATION FUNCTION
+                if (pbrMetalRough || pbrSpecGloss) {
 
-                add("void computePBRLighting(const in IncidentLight incidentLight, const in Geometry geometry, const in Material material, inout ReflectedLight reflectedLight) {");
-                add("   float dotNL     = saturate(dot(geometry.viewNormal, incidentLight.direction));");
-                add("   vec3 irradiance = dotNL * incidentLight.color * PI;");
-                add("   reflectedLight.diffuse  += irradiance * BRDF_Diffuse_Lambert(material.diffuseColor);");
-                add("   reflectedLight.specular += irradiance * BRDF_Specular_GGX(incidentLight, geometry, material.specularColor, material.specularRoughness);");
-                add("}");
-            }
+                    // IRRADIANCE EVALUATION
+
+                    //add("vec3 sample_reflectMapEquirect(const in vec3 reflect, const in float mipLevel) {");
+                    //add("   vec2 sampleUV;");
+                    //add("   sampleUV.y = saturate(reflect.y * 0.5 + 0.5);");
+                    //add("   sampleUV.x = atan(reflect.z, reflect.x) * RECIPROCAL_PI2 + 0.5;");
+                    //add("   vec4 texColor = texture2D(reflectionMap, sampleUV, mipLevel);");
+                    //add("   return texColor.rgb;"); // assumed to be linear
+                    //add("}");
+
+                    add("float GGXRoughnessToBlinnExponent(const in float ggxRoughness) {");
+                    add("   return (2.0 / pow2(ggxRoughness + 0.0001) - 2.0);");
+                    add("}");
+
+                    add("float getSpecularMIPLevel(const in float blinnShininessExponent, const in int maxMIPLevel) {");
+                    add("   float maxMIPLevelScalar = float( maxMIPLevel );");
+                    add("   float desiredMIPLevel = maxMIPLevelScalar - 0.79248 - 0.5 * log2( pow2( blinnShininessExponent ) + 1.0 );");
+                    add("   return clamp( desiredMIPLevel, 0.0, maxMIPLevelScalar );");
+                    add("}");
+
+                    //add("vec3 getLightProbeIndirectRadiance(const in mat4 viewMatrix, const in Geometry geometry, const in float blinnShininessExponent, const in int maxMIPLevel) {");
+                    //add("   vec3 reflectVec = reflect(geometry.viewEyeDir, geometry.viewNormal);");
+                    //add("   reflectVec = inverseTransformDirection(reflectVec, viewMatrix);");
+                    //add("   float mipLevel = getSpecularMIPLevel( blinnShininessExponent, maxMIPLevel );");
+                    //add("   vec3 reflectionMapColor = sample_reflectMapEquirect(reflectVec, float(mipLevel));");
+                    //add("   return reflectionMapColor;");
+                    //add("}");
+
+
+                    if (states.lights.reflectionMap) {
+                        add("vec3 getLightProbeIndirectRadiance(const in vec3 reflectVec, const in float blinnShininessExponent, const in int maxMIPLevel) {");
+                        add("   float mipLevel = 0.5 * getSpecularMIPLevel(blinnShininessExponent, maxMIPLevel);"); //TODO: a random factor - fix this
+                        add("   vec3 envMapColor = textureCube(reflectionMap, reflectVec, mipLevel).rgb;");
+                        add("   return envMapColor;");
+                        add("}");
+                    }
+
+                    // SPECULAR BRDF EVALUATION
+
+                    add("vec3 F_Schlick(const in vec3 specularColor, const in float dotLH) {");
+                    add("   float fresnel = exp2( ( -5.55473 * dotLH - 6.98316 ) * dotLH );");
+                    add("   return ( 1.0 - specularColor ) * fresnel + specularColor;");
+                    add("}");
+
+                    add("float G_GGX_Smith(const in float alpha, const in float dotNL, const in float dotNV) {");
+                    add("   float a2 = pow2( alpha );");
+                    add("   float gl = dotNL + sqrt( a2 + ( 1.0 - a2 ) * pow2( dotNL ) );");
+                    add("   float gv = dotNV + sqrt( a2 + ( 1.0 - a2 ) * pow2( dotNV ) );");
+                    add("   return 1.0 / ( gl * gv );");
+                    add("}");
+
+                    add("float G_GGX_SmithCorrelated(const in float alpha, const in float dotNL, const in float dotNV) {");
+                    add("   float a2 = pow2( alpha );");
+                    add("   float gv = dotNL * sqrt( a2 + ( 1.0 - a2 ) * pow2( dotNV ) );");
+                    add("   float gl = dotNV * sqrt( a2 + ( 1.0 - a2 ) * pow2( dotNL ) );");
+                    add("   return 0.5 / max( gv + gl, EPSILON );");
+                    add("}");
+
+                    add("float D_GGX(const in float alpha, const in float dotNH) {");
+                    add("   float a2 = pow2( alpha );");
+                    add("   float denom = pow2( dotNH ) * ( a2 - 1.0 ) + 1.0;");
+                    add("   return RECIPROCAL_PI * a2 / pow2( denom );");
+                    add("}");
+
+                    add("vec3 BRDF_Specular_GGX(const in IncidentLight incidentLight, const in Geometry geometry, const in vec3 specularColor, const in float roughness) {");
+                    add("   float alpha = pow2( roughness );");
+                    add("   vec3 halfDir = normalize( incidentLight.direction + geometry.viewEyeDir );");
+                    add("   float dotNL = saturate( dot( geometry.viewNormal, incidentLight.direction ) );");
+                    add("   float dotNV = saturate( dot( geometry.viewNormal, geometry.viewEyeDir ) );");
+                    add("   float dotNH = saturate( dot( geometry.viewNormal, halfDir ) );");
+                    add("   float dotLH = saturate( dot( incidentLight.direction, halfDir ) );");
+                    add("   vec3  F = F_Schlick( specularColor, dotLH );");
+                    add("   float G = G_GGX_SmithCorrelated( alpha, dotNL, dotNV );");
+                    add("   float D = D_GGX( alpha, dotNH );");
+                    add("   return F * (G * D);");
+                    add("}");
+
+                    add("vec3 BRDF_Specular_GGX_Environment(const in Geometry geometry, const in vec3 specularColor, const in float roughness) {");
+                    add("   float dotNV = saturate(dot(geometry.viewNormal, geometry.viewEyeDir));");
+                    add("   const vec4 c0 = vec4( -1, -0.0275, -0.572,  0.022);");
+                    add("   const vec4 c1 = vec4(  1,  0.0425,   1.04, -0.04);");
+                    add("   vec4 r = roughness * c0 + c1;");
+                    add("   float a004 = min(r.x * r.x, exp2(-9.28 * dotNV)) * r.x + r.y;");
+                    add("   vec2 AB    = vec2(-1.04, 1.04) * a004 + r.zw;");
+                    add("   return specularColor * AB.x + AB.y;");
+                    add("}");
+
+
+                    if (states.lights.lightMap || states.lights.reflectionMap) {
+
+                        add("void computePBRLightMapping(const in Geometry geometry, const in Material material, inout ReflectedLight reflectedLight) {");
+
+                        if (states.lights.lightMap) {
+                            add("   vec3 irradiance = textureCube(lightMap, geometry.worldNormal).rgb;");
+                            add("   irradiance *= PI;");
+                            add("   vec3 diffuseBRDFContrib = BRDF_Diffuse_Lambert(material.diffuseColor);");
+                            add("   reflectedLight.diffuse += irradiance * diffuseBRDFContrib;");
+                            //   add("   reflectedLight.diffuse = vec3(1.0, 0.0, 0.0);");
+                        }
+
+                        if (states.lights.reflectionMap) {
+                            add("   vec3 reflectVec             = reflect(-geometry.viewEyeDir, geometry.viewNormal);");
+                            add("   reflectVec                  = inverseTransformDirection(reflectVec, viewMatrix);");
+                            add("   float blinnExpFromRoughness = GGXRoughnessToBlinnExponent(material.specularRoughness);");
+                            add("   vec3 radiance               = getLightProbeIndirectRadiance(reflectVec, blinnExpFromRoughness, 8);");
+                            add("   vec3 specularBRDFContrib    = BRDF_Specular_GGX_Environment(geometry, material.specularColor, material.specularRoughness);");
+                            add("   reflectedLight.specular     += radiance * specularBRDFContrib;");
+                        }
+
+                        add("}");
+                    }
+
+                    // MAIN LIGHTING COMPUTATION FUNCTION
+
+                    add("void computePBRLighting(const in IncidentLight incidentLight, const in Geometry geometry, const in Material material, inout ReflectedLight reflectedLight) {");
+                    add("   float dotNL     = saturate(dot(geometry.viewNormal, incidentLight.direction));");
+                    add("   vec3 irradiance = dotNL * incidentLight.color * PI;");
+                    add("   reflectedLight.diffuse  += irradiance * BRDF_Diffuse_Lambert(material.diffuseColor);");
+                    add("   reflectedLight.specular += irradiance * BRDF_Specular_GGX(incidentLight, geometry, material.specularColor, material.specularRoughness);");
+                    add("}");
+
+                } // (pbrMetalRough || pbrSpecGloss)
+
+            } // geometry.normals
 
             //--------------------------------------------------------------------------------
             // GEOMETRY INPUTS
@@ -9519,6 +9617,18 @@ var Canvas2Image = (function () {
             //================================================================================
 
             add("void main(void) {");
+
+            if (clipping) {
+                add("if (clippable) {");
+                add("  float dist = 0.0;");
+                for (var i = 0; i < states.clips.clips.length; i++) {
+                    add("if (clipActive" + i + ") {");
+                    add("   dist += clamp(dot(-clipDir" + i + ".xyz, vWorldPosition.xyz - clipPos" + i + ".xyz), 0.0, 1000.0);");
+                    add("}");
+                }
+                add("  if (dist > 0.0) { discard; }");
+                add("}");
+            }
 
             if (geometry.primitiveName === "points") {
                 add("vec2 cxy = 2.0 * gl_PointCoord - 1.0;");
@@ -9902,7 +10012,7 @@ var Canvas2Image = (function () {
             }
 
             add("gl_FragColor = vec4(outgoingLight, alpha);");
-             //    add("gl_FragColor = LinearTosRGB(gl_FragColor);");  // Gamma correction
+            //    add("gl_FragColor = LinearTosRGB(gl_FragColor);");  // Gamma correction
 
             add("}");
 
@@ -10140,85 +10250,89 @@ var Canvas2Image = (function () {
 
     "use strict";
 
-    /**
-     * Create display state chunk type for draw and pick render of user clipping planes
-     */
     xeogl.renderer.ChunkFactory.createChunkType({
 
         type: "clips",
 
         build: function () {
 
+            var type;
             var i;
             var len;
-
-            this._uClipModeDraw = this._uClipModeDraw || [];
-            this._uClipPlaneDraw = this._uClipPlaneDraw || [];
-
-            var draw = this.program.draw;
-
-            for (i = 0, len = this.state.clips.length; i < len; i++) {
-                this._uClipModeDraw[i] = draw.getUniform("xeo_uClipMode" + i);
-                this._uClipPlaneDraw[i] = draw.getUniform("xeo_uClipPlane" + i)
-            }
-
-            this._uClipModePick = this._uClipModePick || [];
-            this._uClipPlanePick = this._uClipPlanePick || [];
-
-            var pick = this.program.pick;
-
-            for (i = 0, len = this.state.clips.length; i < len; i++) {
-                this._uClipModePick[i] = pick.getUniform("xeo_uClipMode" + i);
-                this._uClipPlanePick[i] = pick.getUniform("xeo_uClipPlane" + i)
-            }
-        },
-
-        drawPick: function (frameCtx) {
-
-            return;
-
-            var uClipMode = (frameCtx.pick) ? this._uClipModePick : this._uClipModeDraw;
-            var uClipPlane = (frameCtx.pick) ? this._uClipPlanePick : this._uClipPlaneDraw;
-
-            var mode;
-            var plane;
+            var uniforms;
+            var program;
             var clips = this.state.clips;
-            var clip;
+            var clipUniforms;
 
-            for (var i = 0, len = clips.length; i < len; i++) {
+            this._uniforms = {
+                draw: [],
+                pickObject: [],
+                pickPrimitive: [],
+                outline: []
+            };
 
-                mode = uClipMode[i];
-                plane = uClipPlane[i];
-
-                if (mode && plane) {
-
-                    clip = clips[i];
-
-                    if (clip.mode === "inside") {
-
-                        mode.setValue(2);
-                        plane.setValue(clip.plane);
-
-                    } else if (clip.mode === "outside") {
-
-                        mode.setValue(1);
-                        plane.setValue(clip.plane);
-
-                    } else {
-
-                        // Disabled
-
-                        mode.setValue(0);
+            for (type in this._uniforms) {
+                if (this._uniforms.hasOwnProperty(type)) {
+                    uniforms = this._uniforms[type];
+                    program = this.program[type];
+                    for (i = 0, len = clips.length; i < len; i++) {
+                        clipUniforms = {
+                            active: program.getUniform("clipActive" + i),
+                            pos: program.getUniform("clipPos" + i),
+                            dir: program.getUniform("clipDir" + i)
+                        };
+                        uniforms.push(clipUniforms);
                     }
                 }
             }
         },
 
-        outline: function(frameCtx) {
-            this.drawPick(frameCtx);
+        _drawAndPick: function (frameCtx, type) {
+            var clips = this.state.clips;
+            var clip;
+            var uniforms = this._uniforms[type];
+            var clipUniforms;
+            var uClipActive;
+            var uClipPos;
+            var uClipDir;
+            for (var i = 0, len = uniforms.length; i < len; i++) {
+                clip = clips[i];
+                clipUniforms = uniforms[i];
+                uClipActive = clipUniforms.active;
+                if (uClipActive) {
+                    uClipActive.setValue(clip.active);
+                }
+                uClipPos = clipUniforms.pos;
+                if (uClipPos) {
+                    clipUniforms.pos.setValue(clip.pos);
+                }
+                uClipDir = clipUniforms.dir;
+                if (uClipDir) {
+                    clipUniforms.dir.setValue(clip.dir);
+                }
+            }
+        },
+
+        draw: function (frameCtx) {
+            this._drawAndPick(frameCtx, "draw");
+        },
+
+        shadow: function (frameCtx) {
+            this._drawAndPick(frameCtx, "shadow");
+        },
+
+        pickObject: function (frameCtx) {
+            this._drawAndPick(frameCtx, "pickObject");
+        },
+
+        pickPrimitive: function (frameCtx) {
+            this._drawAndPick(frameCtx, "pickPrimitive");
+        },
+
+        outline: function (frameCtx) {
+            this._drawAndPick(frameCtx, "outline");
         }
     });
-
 })();;(function () {
 
     "use strict";
@@ -10245,6 +10359,9 @@ var Canvas2Image = (function () {
             if (state.indices) {
                 gl.drawElements(state.primitive, state.indices.numItems, state.indices.itemType, 0);
                 frameCtx.drawElements++;
+
+            } else if (state.positions) {
+                gl.drawArrays(gl.TRIANGLES, 0, state.positions.numItems);
             }
         },
 
@@ -10255,6 +10372,9 @@ var Canvas2Image = (function () {
             if (state.indices) {
                 gl.drawElements(state.primitive, state.indices.numItems, state.indices.itemType, 0);
                 frameCtx.drawElements++;
+
+            } else if (state.positions) {
+                gl.drawArrays(state.primitive, 0, state.positions.numItems);
             }
         },
 
@@ -10276,6 +10396,9 @@ var Canvas2Image = (function () {
 
             if (state.indices) {
                 gl.drawElements(state.primitive, state.indices.numItems, state.indices.itemType, 0);
+
+            } else if (state.positions) {
+                gl.drawArrays(state.primitive, 0, state.positions.numItems);
             }
         },
 
@@ -10287,7 +10410,7 @@ var Canvas2Image = (function () {
             var pickPositions = state.getPickPositions();
 
             if (pickPositions) {
-                gl.drawArrays(state.primitive, 0, pickPositions.numItems / 3);
+                gl.drawArrays(state.primitive, 0, pickPositions.numItems);
             }
         },
 
@@ -10661,38 +10784,35 @@ var Canvas2Image = (function () {
         type: "modes",
 
         build: function () {
+
+            this._clippableDraw = this.program.draw.getUniform("clippable");
+            this._clippableShadow = this.program.shadow.getUniform("clippable");
+            this._clippablePickObject = this.program.pickObject.getUniform("clippable");
+            this._clippablePickPrimitive = this.program.pickPrimitive.getUniform("clippable");
         },
 
         draw: function (frameCtx) {
-
-            var state = this.state;
-            var gl = this.program.gl;
-
-            //..?
+            if (this._clippableDraw) {
+                this._clippableDraw.setValue(this.state.clippable);
+            }
         },
 
         shadow: function (frameCtx) {
-
-            var state = this.state;
-            var gl = this.program.gl;
-
-            //..?
+            if (this._clippableShadow) {
+                this._clippableShadow.setValue(this.state.clippable);
+            }
         },
 
         pickObject: function (frameCtx) {
-
-            var state = this.state;
-            var gl = this.program.gl;
-
-            //..?
+            if (this._clippablePickObject) {
+                this._clippablePickObject.setValue(this.state.clippable);
+            }
         },
 
         pickPrimitive: function (frameCtx) {
-
-            var state = this.state;
-            var gl = this.program.gl;
-
-            //..?
+            if (this._clippablePickPrimitive) {
+                this._clippablePickPrimitive.setValue(this.state.clippable);
+            }
         }
     });
 })();
@@ -12792,7 +12912,8 @@ var Canvas2Image = (function () {
          * The method is given a component type, configuration and optional instance ID, like so:
          *
          * ````javascript
-         * var material = myComponent.create(xeogl.PhongMaterial, {
+         * var material = myComponent.create({
+         *      type: "xeogl.PhongMaterial",
          *      diffuse: [1,0,0],
          *      specular: [1,1,0]
          * }, "myMaterial");
@@ -12802,19 +12923,17 @@ var Canvas2Image = (function () {
          * {{#crossLink "PhongMaterial"}}{{/crossLink}}, passing the given  attributes to the component's constructor.
          *
          * If you call this method again, specifying the same ````type```` and ````instanceId````, the method will return the same
-         * component instance that it returned the first time, and will ignore the configuration:
+         * component instance that it returned the first time, and will ignore the new configuration:
          *
          * ````javascript
-         * var material2 = component.create(xeogl.PhongMaterial, { specular: [1,1,0] }, "myMaterial");
+         * var material2 = component.create({ type: "xeogl.PhongMaterial", specular: [1,1,0] }, "myMaterial");
          * ````
          *
          * So in this example, our {{#crossLink "PhongMaterial"}}{{/crossLink}} will continue to have the red specular
          * and diffuse color that we specified the first time.
          *
          * Each time you call this method with the same ````type```` and ````instanceId````, the Scene will internally increment a
-         * reference count for the component instance. You can release the shared component instance with a call to
-         * {{#crossLink "Scene/putSharedComponent:method"}}{{/crossLink}}, and once you have released it as many
-         * times as you got it, the Scene will destroy the component.
+         * reference count for the component instance.
          *
          * @method create
          * @param {*} [cfg] Configuration for the component instance - only used if this is the first time you are getting
@@ -14061,7 +14180,8 @@ var Canvas2Image = (function () {
                     return this.components["default.material"] ||
                         new xeogl.PhongMaterial(this, {
                             id: "default.material",
-                            isDefault: true
+                            isDefault: true,
+                            emissive: [0.4, 0.4, 0.4] // Visible by default on geometry without normals
                         });
                 }
             },
@@ -14416,20 +14536,32 @@ var Canvas2Image = (function () {
                                 var indices = geometry.indices;
                                 var positions = geometry.positions;
 
-                                var ia = indices[i];
-                                var ib = indices[i + 1];
-                                var ic = indices[i + 2];
+                                var ia3;
+                                var ib3;
+                                var ic3;
 
-                                var ia3 = ia * 3;
-                                var ib3 = ib * 3;
-                                var ic3 = ic * 3;
+                                if (indices) {
 
-                                //
-                                triangleVertices[0] = ia;
-                                triangleVertices[1] = ib;
-                                triangleVertices[2] = ic;
+                                    var ia = indices[i];
+                                    var ib = indices[i + 1];
+                                    var ic = indices[i + 2];
 
-                                hit.indices = triangleVertices;
+                                    triangleVertices[0] = ia;
+                                    triangleVertices[1] = ib;
+                                    triangleVertices[2] = ic;
+
+                                    hit.indices = triangleVertices;
+
+                                    ia3 = ia * 3;
+                                    ib3 = ib * 3;
+                                    ic3 = ic * 3;
+
+                                } else {
+
+                                    ia3 = i * 3;
+                                    ib3 = ia3 + 3;
+                                    ic3 = ib3 + 3;
+                                }
 
                                 a[0] = positions[ia3];
                                 a[1] = positions[ia3 + 1];
@@ -14740,7 +14872,7 @@ var Canvas2Image = (function () {
                 if (this._dirtyEntities.hasOwnProperty(id)) {
                     entity = this._dirtyEntities[id];
                     if (entity._valid()) {
-                        entity._compileAsynch();
+                        entity._compileAsynch(); // FIXME: asynch compilation breaks when destroying xeogl.Clip components
                         //entity._compile();
                         delete this._dirtyEntities[id];
                         countCompiledEntities++;
@@ -15274,11 +15406,18 @@ var Canvas2Image = (function () {
 
                 if (aabb) {
 
-                    if (aabb[3] <= aabb[0] || aabb[4] <= aabb[1] || aabb[5] <= aabb[2]) {
+                    if (aabb[3] < aabb[0] || aabb[4] < aabb[1] || aabb[5] < aabb[2]) {
+
+                        // Don't fly to an inverted boundary
+                        return;
+                    }
+
+                    if (aabb[3] === aabb[0] && aabb[4] === aabb[1] && aabb[5] === aabb[2]) {
 
                         // Don't fly to an empty boundary
                         return;
                     }
+
 
                     // Show boundary
 
@@ -16543,7 +16682,7 @@ var Canvas2Image = (function () {
         /**
          Returns a snapshot of this Canvas as a Base64-encoded image.
 
-         When a callback is given, this method will capture the snapshot asynchronously, on the next animation frame
+         When a callback is given, this method will capture the snapshot asynchronously, on the next animation frame,
          and return it via the callback.
 
          When no callback is given, this method captures and returns the snapshot immediately. Note that is only
@@ -16565,9 +16704,9 @@ var Canvas2Image = (function () {
          // Get snapshot synchronously, requires that Scene be
          // configured with preserveDrawingBuffer; true
          imageElement.src = myScene.canvas.getSnapshot({
-             width: 500, // Defaults to size of canvas
+             width: 500,
              height: 500,
-             format: "png" // Options are "jpeg" (default), "png" and "bmp"
+             format: "png"
          });
          ````
          @method getSnapshot
@@ -17150,76 +17289,69 @@ var Canvas2Image = (function () {
  * @module xeogl
  * @submodule clipping
  */;/**
- A **Clip** is an arbitrarily-aligned World-space clipping plane used to create
- cross-section views of associated {{#crossLink "Entity"}}Entities{{/crossLink}}.
+ A **Clip** is an arbitrarily-aligned World-space clipping plane.
+
+ <a href="../../examples/#clipping_userClipPlanes"><img src="../../../assets/images/screenshots/Clips.png"></img></a>
 
  ## Overview
 
- * These are grouped within {{#crossLink "Clips"}}Clips{{/crossLink}} components, which are attached to
- {{#crossLink "Entity"}}Entities{{/crossLink}}. See the {{#crossLink "Clips"}}Clips{{/crossLink}} documentation
- for more info.
- * A Clip is specified in World-space, as being perpendicular to a vector {{#crossLink "Clip/dir:property"}}{{/crossLink}}
- that emanates from the origin, offset at a distance {{#crossLink "Clip/dist:property"}}{{/crossLink}} along that vector.
- * You can move a Clip back and forth along its vector by varying {{#crossLink "Clip/dist:property"}}{{/crossLink}}.
- * Likewise, you can rotate a Clip about the origin by rotating the {{#crossLink "Clip/dir:property"}}{{/crossLink}} vector.
- * A Clip is has a {{#crossLink "Clip/mode:property"}}{{/crossLink}},  which indicates whether it is disabled
- ("disabled"), discarding fragments that fall on the origin-side of the plane ("inside"), or clipping fragments that
- fall on the other side of the plane from the origin ("outside").
- * You can update the {{#crossLink "Clip/mode:property"}}{{/crossLink}} of a Clip to activate or deactivate it, or to
- switch which side it discards fragments from.
- * Clipping may also be enabled or disabled for specific {{#crossLink "Entity"}}Entities{{/crossLink}} via their {{#crossLink "Entity/clippable:property"}}{{/crossLink}} properties.
+ * Used to slice portions off objects, to create cross-section views or reveal interiors.
+ * Is contained within {{#crossLink "Clips"}}{{/crossLink}} components, which are attached to {{#crossLink "Entity"}}Entities{{/crossLink}}.
+ * Has a World-space position in {{#crossLink "Clip/pos:property"}}{{/crossLink}} and a orientation in {{#crossLink "Clip/dir:property"}}{{/crossLink}}.
+ * Discards elements from the half-space in the direction of {{#crossLink "Clip/dir:property"}}{{/crossLink}}.
+ * Can be be enabled or disabled via its {{#crossLink "Clip/active:property"}}{{/crossLink}} property.
 
- <img src="../../../assets/images/Clip.png"></img>
+ <img src="../../../assets/images/Clips.png"></img>
 
  ## Usage
 
-
- * In this example we have an {{#crossLink "Entity"}}{{/crossLink}} that's clipped by a {{#crossLink "Clips"}}{{/crossLink}}
- that contains two {{#crossLink "Clip"}}{{/crossLink}} planes.
- * The first {{#crossLink "Clip"}}{{/crossLink}} plane is on the
- positive diagonal, while the second is on the negative diagonal.
- * The {{#crossLink "Entity"}}Entity's{{/crossLink}}
- {{#crossLink "Geometry"}}{{/crossLink}} is a box, and the planes will clip off two of the box's corners.
-
+ In the example below, we have an {{#crossLink "Entity"}}{{/crossLink}} that's attached by a {{#crossLink "Clips"}}{{/crossLink}}
+ that contains two {{#crossLink "Clip"}}{{/crossLink}} components.  The first {{#crossLink "Clip"}}{{/crossLink}} is on the
+ positive diagonal, while the second is on the negative diagonal. The {{#crossLink "Entity"}}Entity's{{/crossLink}} {{#crossLink "Geometry"}}{{/crossLink}}
+ is a box, which will get two of its corners clipped off.
 
  ````javascript
  // Create a set of Clip planes
  clips = new xeogl.Clip({
-     clips: [
+    clips: [
 
-         // Clip plane on negative diagonal
-         new xeogl.Clip({
-             dir: [-1.0, -1.0, -1.0], // Direction of Clip from World space origin
-             dist: 2.0,               // Distance along direction vector
-             mode: "outside"          // Clip fragments that fall beyond the plane
-         }),
+        // Clip plane on negative diagonal
+        new xeogl.Clip({
+            pos: [1.0, 1.0, 1.0],
+            dir: [-1.0, -1.0, -1.0],
+            active: true
+        }),
 
-         // Clip plane on positive diagonal
-         new xeogl.Clip({
-             dir: [1.0, 1.0, 1.0],
-             dist: 2.0,
-             mode: "outside"
-         })
-     ]
+        // Clip plane on positive diagonal
+        new xeogl.Clip({
+            pos: [-1.0, -1.0, -1.0],
+            dir: [1.0, 1.0, 1.0],
+            active: true
+        })
+    ]
  });
 
  // Create an Entity that's clipped by our Clip planes
  var entity = new xeogl.Entity({
      geometry: new xeogl.BoxGeometry(),
-     clips: clips
+     clips: clips,
+     clippable: true // Enable clipping (default)
  });
  ````
 
- ### Toggling clipping on and off
+ ### Switching clipping on and off for an Entity
 
- An {{#crossLink "Entity"}}{{/crossLink}}is clippable by default. We can toggle its clippability like so:
+ An {{#crossLink "Entity"}}{{/crossLink}}'s {{#crossLink "Entity/clippable:property"}}{{/crossLink}} property indicates
+ whether or not it is affected by Clip components.
+
+ You can switch it at any time, like this:
 
  ```` javascript
  // Disable clipping for the Entity
  entity.clippable = false;
 
  // Enable clipping for the Entity
- entity.clippable = false;
+ entity.clippable = true;
  ````
 
  @class Clip
@@ -17232,10 +17364,9 @@ var Canvas2Image = (function () {
  @param [cfg.id] {String} Optional ID, unique among all components in the parent {{#crossLink "Scene"}}Scene{{/crossLink}}, generated automatically when omitted.
  You only need to supply an ID if you need to be able to find the Clip by ID within the {{#crossLink "Scene"}}Scene{{/crossLink}}.
  @param [cfg.meta] {String:Object} Optional map of user-defined metadata to attach to this Clip.
- @param [cfg.mode="disabled"] {String} Clipping mode - "disabled" to clip nothing, "inside" to reject points inside the plane, "outside" to reject points outside the plane.
- @param [dir= [1, 0, 0]] {Array of Number} The direction of the clipping plane from the World-space origin.
- @param [dist=1.0] {Number} Distance to the clipping plane along the direction vector.
-
+ @param [cfg.active=true] {Boolean} Indicates whether or not this Clip is active.
+ @param [cfg.pos=[0,0,0]] {Array of Number} World-space position of the clipping plane.
+ @param [cfg.dir=[0,0 -1]] {Array of Number} Vector perpendicular to the plane surface, indicating its orientation.
  @extends Component
  */
 (function () {
@@ -17249,73 +17380,95 @@ var Canvas2Image = (function () {
         _init: function (cfg) {
 
             this._state = {
-                mode: "disabled",
-                dir: [1,0,0],
-                dist: 1.0
+                active: true,
+                pos: new Float32Array(3),
+                dir: new Float32Array(3)
             };
 
-            this.mode = cfg.mode;
+            this.active = cfg.active;
+            this.pos = cfg.pos;
             this.dir = cfg.dir;
-            this.dist = cfg.dist;
         },
 
         _props: {
 
             /**
-             The current mode of this Clip.
+             Indicates whether this Clip is active or not.
 
-             Possible states are:
+             Fires a {{#crossLink "Clip/active:event"}}{{/crossLink}} event on change.
 
-
-             * "disabled" - inactive
-             * "inside" - clipping fragments that fall within the half-space on the origin-side of the Clip plane
-             * "outside" - clipping fragments that fall on the other side of the Clip plane from the origin
-
-
-             Fires a {{#crossLink "Clip/mode:event"}}{{/crossLink}} event on change.
-
-             @property mode
-             @default "disabled"
-             @type String
+             @property active
+             @default true
+             @type Boolean
              */
-            mode: {
+            active: {
 
                 set: function (value) {
 
-                    this._state.mode =  value || "disabled";
-
-                    this._renderer.imageDirty = true;
+                    this._state.active = value !== false;
 
                     /**
-                     Fired whenever this Clip's {{#crossLink "Clip/mode:property"}}{{/crossLink}} property changes.
+                     Fired whenever this Clip's {{#crossLink "Clip/active:property"}}{{/crossLink}} property changes.
 
-                     @event mode
-                     @param value {String} The property's new value
+                     @event active
+                     @param value {Boolean} The property's new value
                      */
-                    this.fire("mode", this._state.mode);
+                    this.fire("active", this._state.active);
                 },
 
                 get: function () {
-                    return this._state.mode;
+                    return this._state.active;
                 }
             },
 
             /**
-             A vector emanating from the World-space origin that indicates the orientation of this Clip plane.
+             The World-space position of this Clip's plane.
 
-             The Clip plane will be oriented perpendicular to this vector.
+             Fires a {{#crossLink "Clip/pos:event"}}{{/crossLink}} event on change.
+
+             @property pos
+             @default [0, 0, 0]
+             @type Float32Array
+             */
+            pos: {
+
+                set: function (value) {
+
+                    this._state.pos.set(value || [0, 0, 0]);
+
+                    this._renderer.imageDirty = true;
+
+                    /**
+                     Fired whenever this Clip's {{#crossLink "Clip/pos:property"}}{{/crossLink}} property changes.
+
+                     @event pos
+                     @param value Float32Array The property's new value
+                     */
+                    this.fire("pos", this._state.pos);
+                },
+
+                get: function () {
+                    return this._state.pos;
+                }
+            },
+
+            /**
+             Vector indicating the orientation of this Clip plane.
+
+             The vector originates at {{#crossLink "Clip/pos:property"}}{{/crossLink}}. Elements on the
+             same side of the vector are clipped.
 
              Fires a {{#crossLink "Clip/dir:event"}}{{/crossLink}} event on change.
 
              @property dir
-             @default [1.0, 1.0, 1.0]
+             @default [0, 0, -1]
              @type Float32Array
              */
             dir: {
 
                 set: function (value) {
 
-                    this._state.dir =  value || xeogl.math.vec3([1, 0, 0]);
+                    this._state.dir.set(value || [0, 0, -1]);
 
                     this._renderer.imageDirty = true;
 
@@ -17323,7 +17476,7 @@ var Canvas2Image = (function () {
                      Fired whenever this Clip's {{#crossLink "Clip/dir:property"}}{{/crossLink}} property changes.
 
                      @event dir
-                     @param  value  {Float32Array} The property's new value
+                     @param value {Float32Array} The property's new value
                      */
                     this.fire("dir", this._state.dir);
                 },
@@ -17331,77 +17484,22 @@ var Canvas2Image = (function () {
                 get: function () {
                     return this._state.dir;
                 }
-            },
-
-            /**
-             The position of this Clip along the vector indicated by {{#crossLink "Clip/dir:property"}}{{/crossLink}}.
-
-             This is the distance of the Clip plane from the World-space origin.
-
-             Fires a {{#crossLink "Clip/dist:event"}}{{/crossLink}} event on change.
-
-             @property dist
-             @default 1.0
-             @type Number
-             */
-            dist: {
-
-                set: function (value) {
-
-                    this._state.dist = value !== undefined ? value : 1.0;
-
-                    this._renderer.imageDirty = true;
-
-                    /**
-                     Fired whenever this Clip's {{#crossLink "Clip/dist:property"}}{{/crossLink}} property changes.
-
-                     @event dist
-                     @param  value Number The property's new value
-                     */
-                    this.fire("dist", this._state.dist);
-                },
-
-                get: function () {
-                    return this._state.dist;
-                }
             }
         },
 
         _getJSON: function () {
             return {
-                mode: this._state.mode,
+                active: this._state.active,
                 dir: xeogl.math.vecToArray(this._state.dir),
-                dist: this._state.dist
+                pos: xeogl.math.vecToArray(this._state.pos)
             };
         }
     });
-
 })();
 ;/**
+ A **Clips** applies a set of {{#crossLink "Clip"}}{{/crossLink}} planes to attached {{#crossLink "Entity"}}Entities{{/crossLink}}.
 
- A **Clips** is a group of arbitrarily-aligned World-space {{#crossLink "Clip"}}Clip{{/crossLink}} planes, which may be used to create
- cross-section views of attached {{#crossLink "Entity"}}Entities{{/crossLink}}.
-
- ## Overview
-
-
- * Each {{#crossLink "Clip"}}Clip{{/crossLink}} is specified in World-space, as being perpendicular to a vector
- {{#crossLink "Clip/dir:property"}}{{/crossLink}} that emanates from the origin, offset at a
- distance {{#crossLink "Clip/dist:property"}}{{/crossLink}} along that vector.
- * You can move each {{#crossLink "Clip"}}Clip{{/crossLink}} back and forth along its vector by varying
- its {{#crossLink "Clip/dist:property"}}{{/crossLink}}.
- * Likewise, you can rotate each {{#crossLink "Clip"}}Clip{{/crossLink}} about the origin by rotating
- its {{#crossLink "Clip/dir:property"}}{{/crossLink}} vector.
- * Each {{#crossLink "Clip"}}Clip{{/crossLink}} is has a {{#crossLink "Clip/mode:property"}}{{/crossLink}}, which indicates whether it is disabled ("disabled"), discarding fragments that fall on the origin-side of the plane ("inside"), or clipping fragments that fall on the other side of the plane from the origin ("outside").
- * You can update each {{#crossLink "Clip"}}Clip{{/crossLink}}'s {{#crossLink "Clip/mode:property"}}{{/crossLink}} to
- activate or deactivate it, or to switch which side it discards fragments from.
- * Clipping may also be enabled or disabled for specific {{#crossLink "Entity"}}Entities{{/crossLink}} via their {{#crossLink "Entity/clippable:property"}}{{/crossLink}} properties.
-
- <img src="../../../assets/images/Clips.png"></img>
-
- ## Usage
-
- See {{#crossLink "Clip"}}{{/crossLink}} for an example.
+ See {{#crossLink "Clip"}}{{/crossLink}} for more info.
 
  @class Clips
  @module xeogl
@@ -17594,10 +17692,8 @@ var Canvas2Image = (function () {
             var hash = [];
 
             for (var i = 0, len = clips.length; i < len; i++) {
-
                 clip = clips[i];
-
-                hash.push(clip._state.mode);
+                hash.push("cp");
             }
 
             hash.push(";");
@@ -37305,7 +37401,7 @@ TODO
         // Returns true if there is enough on this Entity to render something.
         _valid: function () {
             var geometry = this._attached.geometry;
-            return !this.destroyed && geometry && geometry.positions && geometry.indices;
+            return !this.destroyed && geometry && geometry.positions;
 
         },
 

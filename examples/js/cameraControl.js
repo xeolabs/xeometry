@@ -1,3 +1,15 @@
+/**
+ * Controls the camera of a xeometry.Viewer with the mouse.
+ *
+ * @class CameraControl
+ * @param {Viewer} viewer A Viewer.
+ * @param {Object} [cfg] Configs
+ * @example
+ *
+ * var viewer = new xeometry.Viewer();
+ *
+ * var cameraControl = new xeometry.CameraControl(viewer);
+ */
 xeometry.CameraControl = function (viewer, cfg) {
 
     cfg = cfg || {};

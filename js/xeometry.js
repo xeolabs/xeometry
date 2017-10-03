@@ -1,29 +1,39 @@
 var xeometry = {};
 
 /**
- * A convenient API for visualizing glTF models on WebGL.
+ * A JavaScript API for viewing glTF models on WebGL.
+ *
+ * A xeometry Viewer is a single class that wraps [xeogl](http://xeogl.org) in a
+ * set of simple data-driven methods focused on loading glTF models and manipulating
+ * their objects to create cool presentations.
+ *
  * @class Viewer
  * @param {Object} [cfg] Configs
  * @param {Function} [cfg.loadModel] Callback fired to load model
  * @param {Function} [cfg.loadedModel] Callback fired when model loaded
  * @param {Function} [cfg.unloadedModel] Callback fired when model unloaded
- * @param {Function} [cfg.contextAttr] WebGL context attributes
+ * @param {Object} [cfg.contextAttr] WebGL context attributes
  * @example
  *
- * // Create viewer with defaults
- * var viewer = new xeometry.Viewer();
+ * // Create viewer with default canvas
+ * var viewer1 = new xeometry.Viewer();
+ *
+ * // Create viewer bound to an existing canvas
+ * var viewer2 = new xeometry.Viewer({
+ *     canvas: "theCanvas"
+ * });
  *
  * // Create viewer that loads via custom loader callback
- * viewer2 = new xeometry.Viewer({
+ * var viewer3 = new xeometry.Viewer({
  *     loadModel: function (modelId, src, ok, error) {
- *          var request = new XMLHttpRequest();
- *          request.overrideMimeType("application/json");
- *          request.open('GET', src2, true);
- *          request.onreadystatechange = function () {
+ *         var request = new XMLHttpRequest();
+ *         request.overrideMimeType("application/json");
+ *         request.open('GET', src2, true);
+ *         request.onreadystatechange = function () {
  *             if (request.readyState == 4 && // Request finished, response ready
- *                     request.status == "200") { // Status OK
- *                 var json = JSON.parse(request.responseText);
- *                 ok(json, this);
+ *                 request.status == "200") { // Status OK
+ *                     var json = JSON.parse(request.responseText);
+ *                     ok(json, this);
  *             }
  *         };
  *         request.send(null);
@@ -266,7 +276,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the IDs of the models currently in the viewer.
+     * Gets the models currently in the viewer.
      *
      * @see loadModel
      * @module models
@@ -294,7 +304,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the ID of an object's model.
+     * Gets a the model an object belongs to.
      *
      * @param {String} id ID of the object.
      * @return {String} ID of the object's model.
@@ -309,9 +319,9 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the IDs of the objects belonging to the given models and/or types.
+     * Gets the objects belonging to the given models and/or types.
      *
-     * Returns the IDs of all objects in the viewer when no arguments are given.
+     * Returns all objects in the viewer when no arguments are given.
      *
      * @param {String|String[]} [id] ID(s) of model(s) and/or a type(s).
      * @return {String[]} IDs of the objects.
@@ -320,13 +330,13 @@ xeometry.Viewer = function (cfg) {
      * // Get all objects currently in the viewer
      * var allObjects = viewer.getObjects();
      *
-     * // Get IDs of all the objects in the gearbox model
+     * // Get all objects in the gearbox model
      * var gearboxObjects = viewer.getObjects("gearbox");
      *
-     * // Get IDs of the objects in two models
+     * // Get objects belonging to two models
      * var sawAndGearboxObjects = viewer.getObjects(["saw", "gearbox"]);
      *
-     * // Get IDs of objects in the gearbox model, plus all objects in viewer that are IFC cable fittings and carriers
+     * // Get objects in the gearbox model, plus all objects in viewer that are IFC cable fittings and carriers
      * var gearboxCableFittings = viewer.getObjects("gearbox", "IfcCableFitting", "IfcCableCarrierFitting"]);
      */
     this.getObjects = function (id) {
@@ -388,23 +398,23 @@ xeometry.Viewer = function (cfg) {
         var entities = model.types["xeogl.Entity"];
         var entity;
         var meta;
-        for (var entityId in entities) {
-            if (entities.hasOwnProperty(entityId)) {
-                entity = entities[entityId];
+        for (var objectId in entities) {
+            if (entities.hasOwnProperty(objectId)) {
+                entity = entities[objectId];
                 // Deregister for type
                 meta = entity.meta;
                 var type = meta && meta.type ? meta.type : "DEFAULT";
                 var objectsOfType = types[type];
                 if (objectsOfType) {
-                    delete objectsOfType[entityId];
+                    delete objectsOfType[objectId];
                 }
-                delete objects[entityId];
-                delete objectModels[entityId];
-                delete eulerAngles[entityId];
-                delete transformable[entityId];
-                delete translations[entityId];
-                delete rotations[entityId];
-                delete scales[entityId];
+                delete objects[objectId];
+                delete objectModels[objectId];
+                delete eulerAngles[objectId];
+                delete transformable[objectId];
+                delete translations[objectId];
+                delete rotations[objectId];
+                delete scales[objectId];
             }
         }
         model.destroy();
@@ -507,7 +517,7 @@ xeometry.Viewer = function (cfg) {
     //==================================================================================================================
 
     /**
-     * Gets the geometry primitive type of an object.
+     * Gets an object's geometry primitive type.
      *
      * This determines the layout of the indices array of the object's geometry.
      *
@@ -857,7 +867,7 @@ xeometry.Viewer = function (cfg) {
     //==================================================================================================================
 
     /**
-     * Shows model(s) and/or object(s).
+     * Shows model(s), object(s) and/or types(s).
      *
      * Shows all objects in the viewer when no arguments are given.
      *
@@ -886,7 +896,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Hides model(s) and/or object(s).
+     * Hides model(s), object(s) and/or types(s).
      *
      * Hides all objects in the viewer when no arguments are given.
      *
@@ -1023,14 +1033,17 @@ xeometry.Viewer = function (cfg) {
     //==================================================================================================================
 
     /**
-     * Sets the albedo color of model(s) and/or object(s).
+     * Sets the albedo color of model(s), object(s) and/or types(s).
      *
      * @param {String|String[]} ids IDs of models, objects or types. Applies to all objects when this is null or undefined.
      * @param {[Number, Number, Number]} color The RGB color, with each element in range [0..1].
      * @returns {Viewer} this
      * @example
-     * viewer.setColor("saw", [1,0,0]); // Set all objects in saw model red
-     * viewer.setColor(["saw#0.1", "saw#0.2"], [0,1,0]); // Set two objects in saw model green
+     *  // Set all objects in saw model red
+     * viewer.setColor("saw", [1,0,0]);
+     *
+     *  // Set two objects in saw model green
+     * viewer.setColor(["saw#0.1", "saw#0.2"], [0,1,0]);
      */
     this.setColor = function (ids, color) {
         if (color === null || color === undefined) {
@@ -1099,7 +1112,7 @@ xeometry.Viewer = function (cfg) {
     //==================================================================================================================
 
     /**
-     * Makes model(s) and/or object(s) clippable.
+     * Makes model(s), object(s) and/or type(s) clippable.
      *
      * Makes all objects in the viewer clippable when no arguments are given.
      *
@@ -1127,7 +1140,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Makes model(s) and/or object(s) unclippable.
+     *  Makes model(s), object(s) and/or type(s) unclippable.
      *
      * These objects will then remain fully visible when they would otherwise be clipped by clipping planes.
      *
@@ -1193,46 +1206,6 @@ xeometry.Viewer = function (cfg) {
     //----------------------------------------------------------------------------------------------------
     // Outlines
     //----------------------------------------------------------------------------------------------------
-
-    /**
-     * Sets the current outline thickness.
-     * @param {Number} thickness Thickness in pixels.
-     * @returns {Viewer} this
-     * @example
-     * viewer.setOutlineThickness(3);
-     */
-    this.setOutlineThickness = function (thickness) {
-        scene.outline.thickness = thickness;
-        return this;
-    };
-
-    /**
-     * Gets the current outline thickness.
-     * @return {Number} Thickness in pixels.
-     */
-    this.getOutlineThickness = function () {
-        return scene.outline.thickness;
-    };
-
-    /**
-     * Sets the current outline color.
-     * @param {[Number, Number, Number]} color RGB color as a value per channel, in range [0..1].
-     * @returns {Viewer} this
-     * @example
-     * viewer.setOutlineColor([1,0,0]);
-     */
-    this.setOutlineColor = function (color) {
-        scene.outline.color = color;
-        return this;
-    };
-
-    /**
-     * Returns the current outline color.
-     * @return {[Number, Number, Number]} RGB color as a value per channel, in range [0..1].
-     */
-    this.getOutlineColor = function () {
-        return scene.outline.color;
-    };
 
     /**
      * Shows outline around model(s), object(s) or type(s).
@@ -1302,6 +1275,46 @@ xeometry.Viewer = function (cfg) {
         }
         return this;
     }
+
+    /**
+     * Sets the current outline thickness.
+     * @param {Number} thickness Thickness in pixels.
+     * @returns {Viewer} this
+     * @example
+     * viewer.setOutlineThickness(3);
+     */
+    this.setOutlineThickness = function (thickness) {
+        scene.outline.thickness = thickness;
+        return this;
+    };
+
+    /**
+     * Gets the current outline thickness.
+     * @return {Number} Thickness in pixels.
+     */
+    this.getOutlineThickness = function () {
+        return scene.outline.thickness;
+    };
+
+    /**
+     * Sets the current outline color.
+     * @param {[Number, Number, Number]} color RGB color as a value per channel, in range [0..1].
+     * @returns {Viewer} this
+     * @example
+     * viewer.setOutlineColor([1,0,0]);
+     */
+    this.setOutlineColor = function (color) {
+        scene.outline.color = color;
+        return this;
+    };
+
+    /**
+     * Returns the current outline color.
+     * @return {[Number, Number, Number]} RGB color as a value per channel, in range [0..1].
+     */
+    this.getOutlineColor = function () {
+        return scene.outline.color;
+    };
 
     //----------------------------------------------------------------------------------------------------
     // Boundaries

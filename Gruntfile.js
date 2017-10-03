@@ -56,10 +56,12 @@ module.exports = function (grunt) {
                 files: [{
                     "expand": true,
                     "cwd": "js",
-                    "src": ["**/*.js"]
+                    "src": ["**/*.js", "examples/js/*.js"]
                 }],
                 options: {
-                    destination: "docs"
+                    destination: "docs",
+                    name: "xeometry",
+                    version: "V1.0.0"
                 }
             }
         },
@@ -82,13 +84,8 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-documentation');
 
-    // Builds snapshot libs within build/latest
-    // Run this when testing examples locally against your changes before committing them
-    grunt.registerTask("snapshot", ["concat",  "uglify"]);
-
-    // Build a package within ./build
-    // Assigns the package the current version number that's defined in package.json
-    grunt.registerTask("build", ["snapshot", "yuidoc", "copy"]);
-
-    grunt.registerTask("default", "snapshot");
+    grunt.registerTask("compile", ["concat", "uglify"]); // Create snapshot libs in ./build
+    grunt.registerTask("docs", ["documentation"]); // Create docs in ./docs
+    grunt.registerTask("build", ["compile", "docs", "copy"]); // Create snapshot, docs and a versioned build in ./build
+    grunt.registerTask("default", "compile"); // Create snapshot libs in ./build
 };

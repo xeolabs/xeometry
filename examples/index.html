@@ -31,44 +31,40 @@
     };
 
     var files = {
-        "Creating viewers": [
+        "Viewers": [
             "viewer_multipleViewers"
         ],
-        "Loading models": [
+        "Models": [
             "loading_loadGearbox",
             "loading_loadHouse",
             "loading_loadTwoModels",
             "loading_sameModelTwice",
             "loading_customLoader"
         ],
-        "Camera control": [
-            "camera_axisViews",
-
-            "cycleThroughObjects"
+        "Camera": [
+            "camera_axisViews"
         ],
         "Interaction": [
             "interaction_objectExplorer",
             "interaction_typeExplorer"
         ],
         "Effects": [
-            "effects_showAndHide",
-            "effects_showEachObject",
-            "effects_moveModel",
-            "effects_moveObjects",
-            "effects_explodeObjects",
-            "effects_outlineObjects",
-            "effects_outlineTypes",
-            "effects_xrayObjects",
-            "effects_xrayTypes",
-            "effects_focusRandomObjects"
+            "effects_visibility",
+            "effects_clipping",
+            "effects_opacity",
+            "effects_outlining",
+            "effects_transforming"
         ],
         "Annotations": [
-            "annotations_createAnnotations",
+            "annotations_creatingAnnotations",
             "annotations_mouseCreateAnnotations"
         ],
-        "Snapshots": [
-            "snapshots_synchronous",
-            "snapshots_asynchronous"
+        "Tools": [
+            "tools_snapshot"
+        ],
+        "Bookmarks": [
+            "bookmarks_loadingBookmarks",
+            "bookmarks_initializingFromBookmark"
         ]
     };
 
@@ -106,7 +102,7 @@
             var file = section[i];
             (function (file) {
                 var name = file.split('_');
-                 name.shift();
+                name.shift();
                 name = name.join(' / ');
                 var div = document.createElement('div');
                 div.className = 'link';
