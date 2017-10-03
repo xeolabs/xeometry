@@ -224,6 +224,18 @@
                       </a></li>
                       
                       <li><a
+                        href='#.Viewer#showOutline'
+                        class='regular pre-open'>
+                        #showOutline
+                      </a></li>
+                      
+                      <li><a
+                        href='#.Viewer#hideOutline'
+                        class='regular pre-open'>
+                        #hideOutline
+                      </a></li>
+                      
+                      <li><a
                         href='#.Viewer#setOutlineThickness'
                         class='regular pre-open'>
                         #setOutlineThickness
@@ -245,18 +257,6 @@
                         href='#.Viewer#getOutlineColor'
                         class='regular pre-open'>
                         #getOutlineColor
-                      </a></li>
-                      
-                      <li><a
-                        href='#.Viewer#showOutline'
-                        class='regular pre-open'>
-                        #showOutline
-                      </a></li>
-                      
-                      <li><a
-                        href='#.Viewer#hideOutline'
-                        class='regular pre-open'>
-                        #hideOutline
                       </a></li>
                       
                       <li><a
@@ -842,7 +842,10 @@
   </div>
   
 
-  <p>A convenient API for visualizing glTF models on WebGL.</p>
+  <p>A JavaScript API for viewing glTF models on WebGL.</p>
+<p>A xeometry Viewer is a single class that wraps <a href="http://xeogl.org">xeogl</a> in a
+set of simple data-driven methods focused on loading glTF models and manipulating
+their objects to create cool presentations.</p>
 
 
   <div class='pre p1 fill-light mt0'>new Viewer(cfg: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>?)</div>
@@ -902,7 +905,7 @@
                 </tr>
               
                 <tr>
-                  <td class='break-word'><span class='code bold'>cfg.contextAttr</span> <code class='quiet'><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">Function</a>?</code>
+                  <td class='break-word'><span class='code bold'>cfg.contextAttr</span> <code class='quiet'><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>?</code>
                   </td>
                   <td class='break-word'><span>WebGL context attributes
 </span></td>
@@ -926,20 +929,25 @@
     <div class='py1 quiet mt1 prose-big'>Example</div>
     
       
-      <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// Create viewer with defaults</span>
-<span class="hljs-keyword">var</span> viewer = <span class="hljs-keyword">new</span> xeometry.Viewer();
+      <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// Create viewer with default canvas</span>
+<span class="hljs-keyword">var</span> viewer1 = <span class="hljs-keyword">new</span> xeometry.Viewer();
+
+<span class="hljs-comment">// Create viewer bound to an existing canvas</span>
+<span class="hljs-keyword">var</span> viewer2 = <span class="hljs-keyword">new</span> xeometry.Viewer({
+    <span class="hljs-attr">canvas</span>: <span class="hljs-string">"theCanvas"</span>
+});
 
 <span class="hljs-comment">// Create viewer that loads via custom loader callback</span>
-viewer2 = <span class="hljs-keyword">new</span> xeometry.Viewer({
+<span class="hljs-keyword">var</span> viewer3 = <span class="hljs-keyword">new</span> xeometry.Viewer({
     <span class="hljs-attr">loadModel</span>: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">modelId, src, ok, error</span>) </span>{
-         <span class="hljs-keyword">var</span> request = <span class="hljs-keyword">new</span> XMLHttpRequest();
-         request.overrideMimeType(<span class="hljs-string">"application/json"</span>);
-         request.open(<span class="hljs-string">'GET'</span>, src2, <span class="hljs-literal">true</span>);
-         request.onreadystatechange = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+        <span class="hljs-keyword">var</span> request = <span class="hljs-keyword">new</span> XMLHttpRequest();
+        request.overrideMimeType(<span class="hljs-string">"application/json"</span>);
+        request.open(<span class="hljs-string">'GET'</span>, src2, <span class="hljs-literal">true</span>);
+        request.onreadystatechange = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
             <span class="hljs-keyword">if</span> (request.readyState == <span class="hljs-number">4</span> &amp;&amp; <span class="hljs-comment">// Request finished, response ready</span>
-                    request.status == <span class="hljs-string">"200"</span>) { <span class="hljs-comment">// Status OK</span>
-                <span class="hljs-keyword">var</span> json = <span class="hljs-built_in">JSON</span>.parse(request.responseText);
-                ok(json, <span class="hljs-keyword">this</span>);
+                request.status == <span class="hljs-string">"200"</span>) { <span class="hljs-comment">// Status OK</span>
+                    <span class="hljs-keyword">var</span> json = <span class="hljs-built_in">JSON</span>.parse(request.responseText);
+                    ok(json, <span class="hljs-keyword">this</span>);
             }
         };
         request.send(<span class="hljs-literal">null</span>);
@@ -1267,7 +1275,7 @@ viewer.loadModel(<span class="hljs-string">"saw"</span>, <span class="hljs-strin
 
   
 
-  <p>Gets the IDs of the models currently in the viewer.</p>
+  <p>Gets the models currently in the viewer.</p>
 
 
   <div class='pre p1 fill-light mt0'>models</div>
@@ -1390,7 +1398,7 @@ viewer.loadModel(<span class="hljs-string">"saw"</span>, <span class="hljs-strin
 
   
 
-  <p>Gets the ID of an object's model.</p>
+  <p>Gets a the model an object belongs to.</p>
 
 
   <div class='pre p1 fill-light mt0'>getModel(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></div>
@@ -1458,8 +1466,8 @@ viewer.loadModel(<span class="hljs-string">"saw"</span>, <span class="hljs-strin
 
   
 
-  <p>Gets the IDs of the objects belonging to the given models and/or types.</p>
-<p>Returns the IDs of all objects in the viewer when no arguments are given.</p>
+  <p>Gets the objects belonging to the given models and/or types.</p>
+<p>Returns all objects in the viewer when no arguments are given.</p>
 
 
   <div class='pre p1 fill-light mt0'>getObjects(id: (<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>>)?): <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>></div>
@@ -1510,13 +1518,13 @@ viewer.loadModel(<span class="hljs-string">"saw"</span>, <span class="hljs-strin
       <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// Get all objects currently in the viewer</span>
 <span class="hljs-keyword">var</span> allObjects = viewer.getObjects();
 
-<span class="hljs-comment">// Get IDs of all the objects in the gearbox model</span>
+<span class="hljs-comment">// Get all objects in the gearbox model</span>
 <span class="hljs-keyword">var</span> gearboxObjects = viewer.getObjects(<span class="hljs-string">"gearbox"</span>);
 
-<span class="hljs-comment">// Get IDs of the objects in two models</span>
+<span class="hljs-comment">// Get objects belonging to two models</span>
 <span class="hljs-keyword">var</span> sawAndGearboxObjects = viewer.getObjects([<span class="hljs-string">"saw"</span>, <span class="hljs-string">"gearbox"</span>]);
 
-<span class="hljs-comment">// Get IDs of objects in the gearbox model, plus all objects in viewer that are IFC cable fittings and carriers</span>
+<span class="hljs-comment">// Get objects in the gearbox model, plus all objects in viewer that are IFC cable fittings and carriers</span>
 <span class="hljs-keyword">var</span> gearboxCableFittings = viewer.getObjects(<span class="hljs-string">"gearbox"</span>, <span class="hljs-string">"IfcCableFitting"</span>, <span class="hljs-string">"IfcCableCarrierFitting"</span>]);</pre>
     
   
@@ -1884,7 +1892,7 @@ viewer.loadModel(<span class="hljs-string">"saw"</span>, <span class="hljs-strin
 
   
 
-  <p>Gets the geometry primitive type of an object.</p>
+  <p>Gets an object's geometry primitive type.</p>
 <p>This determines the layout of the indices array of the object's geometry.</p>
 
 
@@ -2695,7 +2703,7 @@ translation is <code>[150, 50, 50]</code>.</p>
 
   
 
-  <p>Shows model(s) and/or object(s).</p>
+  <p>Shows model(s), object(s) and/or types(s).</p>
 <p>Shows all objects in the viewer when no arguments are given.</p>
 <p>Objects are visible by default.</p>
 
@@ -2784,7 +2792,7 @@ viewer.show(<span class="hljs-string">"gearbox"</span>, <span class="hljs-string
 
   
 
-  <p>Hides model(s) and/or object(s).</p>
+  <p>Hides model(s), object(s) and/or types(s).</p>
 <p>Hides all objects in the viewer when no arguments are given.</p>
 <p>Objects are visible by default.</p>
 
@@ -3035,7 +3043,7 @@ viewer.setOpacity([<span class="hljs-string">"saw#0.1"</span>, <span class="hljs
 
   
 
-  <p>Sets the albedo color of model(s) and/or object(s).</p>
+  <p>Sets the albedo color of model(s), object(s) and/or types(s).</p>
 
 
   <div class='pre p1 fill-light mt0'>setColor(ids: (<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>>), color: [<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>]): Viewer</div>
@@ -3096,8 +3104,11 @@ viewer.setOpacity([<span class="hljs-string">"saw#0.1"</span>, <span class="hljs
     <div class='py1 quiet mt1 prose-big'>Example</div>
     
       
-      <pre class='p1 overflow-auto round fill-light'>viewer.setColor(<span class="hljs-string">"saw"</span>, [<span class="hljs-number">1</span>,<span class="hljs-number">0</span>,<span class="hljs-number">0</span>]); <span class="hljs-comment">// Set all objects in saw model red</span>
-viewer.setColor([<span class="hljs-string">"saw#0.1"</span>, <span class="hljs-string">"saw#0.2"</span>], [<span class="hljs-number">0</span>,<span class="hljs-number">1</span>,<span class="hljs-number">0</span>]); <span class="hljs-comment">// Set two objects in saw model green</span></pre>
+      <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// Set all objects in saw model red</span>
+viewer.setColor(<span class="hljs-string">"saw"</span>, [<span class="hljs-number">1</span>,<span class="hljs-number">0</span>,<span class="hljs-number">0</span>]);
+
+ <span class="hljs-comment">// Set two objects in saw model green</span>
+viewer.setColor([<span class="hljs-string">"saw#0.1"</span>, <span class="hljs-string">"saw#0.2"</span>], [<span class="hljs-number">0</span>,<span class="hljs-number">1</span>,<span class="hljs-number">0</span>]);</pre>
     
   
 
@@ -3201,7 +3212,7 @@ viewer.setColor([<span class="hljs-string">"saw#0.1"</span>, <span class="hljs-s
 
   
 
-  <p>Makes model(s) and/or object(s) clippable.</p>
+  <p>Makes model(s), object(s) and/or type(s) clippable.</p>
 <p>Makes all objects in the viewer clippable when no arguments are given.</p>
 <p>Objects are clippable by default.</p>
 
@@ -3287,7 +3298,7 @@ viewer.setClippable(<span class="hljs-string">"gearbox"</span>, <span class="hlj
 
   
 
-  <p>Makes model(s) and/or object(s) unclippable.</p>
+  <p>Makes model(s), object(s) and/or type(s) unclippable.</p>
 <p>These objects will then remain fully visible when they would otherwise be clipped by clipping planes.</p>
 <p>Makes all objects in the viewer unclippable when no arguments are given.</p>
 <p>Objects are clippable by default.</p>
@@ -3349,6 +3360,160 @@ viewer.setUnclippable([<span class="hljs-string">"saw#0.1"</span>, <span class="
 
 <span class="hljs-comment">// Make all objects in the model "gearbox" unclippable, plus all objects in viewer that are IFC cable fittings and carriers</span>
 viewer.setUnclippable(<span class="hljs-string">"gearbox"</span>, <span class="hljs-string">"IfcCableFitting"</span>, <span class="hljs-string">"IfcCableCarrierFitting"</span>]);</pre>
+    
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='.Viewer#showOutline'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>showOutline(ids)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Shows outline around model(s), object(s) or type(s).</p>
+<p>Outlines all objects in the viewer when no arguments are given.</p>
+
+
+  <div class='pre p1 fill-light mt0'>showOutline(ids: (<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>>)): Viewer</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>ids</span> <code class='quiet'>((<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>>))</code>
+	    IDs of model(s) and/or object(s). Outlines all objects by default.
+
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>Viewer</code>:
+        this
+
+      
+    
+  
+
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Example</div>
+    
+      
+      <pre class='p1 overflow-auto round fill-light'>viewer.showOutline(); <span class="hljs-comment">// Show outline around all objects in viewer</span>
+viewer.showOutline(<span class="hljs-string">"saw"</span>); <span class="hljs-comment">// Show outline around all objects in saw model</span>
+viewer.showOutline([<span class="hljs-string">"saw#0.1"</span>, <span class="hljs-string">"saw#0.2"</span>]); <span class="hljs-comment">// Show outline around two objects in saw model</span></pre>
+    
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='.Viewer#hideOutline'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>hideOutline(ids)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Hides outline around model(s), object(s) or type(s).</p>
+<p>Hides all outlines in the viewer when no arguments are given.</p>
+
+
+  <div class='pre p1 fill-light mt0'>hideOutline(ids: (<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>>)): Viewer</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>ids</span> <code class='quiet'>((<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>>))</code>
+	    IDs of model(s) and/or object(s).
+
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>Viewer</code>:
+        this
+
+      
+    
+  
+
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Example</div>
+    
+      
+      <pre class='p1 overflow-auto round fill-light'>viewer.hideOutline(); <span class="hljs-comment">// Hide outline around all objects in viewer</span>
+viewer.hideOutline(<span class="hljs-string">"saw"</span>); <span class="hljs-comment">// Hide outline around all objects in saw model</span>
+viewer.hideOutline([<span class="hljs-string">"saw#0.1"</span>, <span class="hljs-string">"saw#0.2"</span>]); <span class="hljs-comment">// Hide outline around two objects in saw model</span></pre>
     
   
 
@@ -3614,160 +3779,6 @@ viewer.setUnclippable(<span class="hljs-string">"gearbox"</span>, <span class="h
 
   
 
-  
-
-  
-
-  
-
-  
-</section>
-
-      </div>
-    </div>
-  
-    <div class='border-bottom' id='.Viewer#showOutline'>
-      <div class="clearfix small pointer toggle-sibling">
-        <div class="py1 contain">
-            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
-            <span class='code strong strong truncate'>showOutline(ids)</span>
-        </div>
-      </div>
-      <div class="clearfix display-none toggle-target">
-        <section class='p2 mb2 clearfix bg-white minishadow'>
-
-  
-
-  <p>Shows outline around model(s), object(s) or type(s).</p>
-<p>Outlines all objects in the viewer when no arguments are given.</p>
-
-
-  <div class='pre p1 fill-light mt0'>showOutline(ids: (<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>>)): Viewer</div>
-  
-  
-
-  
-  
-  
-  
-  
-  
-
-  
-    <div class='py1 quiet mt1 prose-big'>Parameters</div>
-    <div class='prose'>
-      
-        <div class='space-bottom0'>
-          <div>
-            <span class='code bold'>ids</span> <code class='quiet'>((<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>>))</code>
-	    IDs of model(s) and/or object(s). Outlines all objects by default.
-
-          </div>
-          
-        </div>
-      
-    </div>
-  
-
-  
-
-  
-    
-      <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code>Viewer</code>:
-        this
-
-      
-    
-  
-
-  
-
-  
-    <div class='py1 quiet mt1 prose-big'>Example</div>
-    
-      
-      <pre class='p1 overflow-auto round fill-light'>viewer.showOutline(); <span class="hljs-comment">// Show outline around all objects in viewer</span>
-viewer.showOutline(<span class="hljs-string">"saw"</span>); <span class="hljs-comment">// Show outline around all objects in saw model</span>
-viewer.showOutline([<span class="hljs-string">"saw#0.1"</span>, <span class="hljs-string">"saw#0.2"</span>]); <span class="hljs-comment">// Show outline around two objects in saw model</span></pre>
-    
-  
-
-  
-
-  
-
-  
-</section>
-
-      </div>
-    </div>
-  
-    <div class='border-bottom' id='.Viewer#hideOutline'>
-      <div class="clearfix small pointer toggle-sibling">
-        <div class="py1 contain">
-            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
-            <span class='code strong strong truncate'>hideOutline(ids)</span>
-        </div>
-      </div>
-      <div class="clearfix display-none toggle-target">
-        <section class='p2 mb2 clearfix bg-white minishadow'>
-
-  
-
-  <p>Hides outline around model(s), object(s) or type(s).</p>
-<p>Hides all outlines in the viewer when no arguments are given.</p>
-
-
-  <div class='pre p1 fill-light mt0'>hideOutline(ids: (<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>>)): Viewer</div>
-  
-  
-
-  
-  
-  
-  
-  
-  
-
-  
-    <div class='py1 quiet mt1 prose-big'>Parameters</div>
-    <div class='prose'>
-      
-        <div class='space-bottom0'>
-          <div>
-            <span class='code bold'>ids</span> <code class='quiet'>((<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>>))</code>
-	    IDs of model(s) and/or object(s).
-
-          </div>
-          
-        </div>
-      
-    </div>
-  
-
-  
-
-  
-    
-      <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code>Viewer</code>:
-        this
-
-      
-    
-  
-
-  
-
-  
-    <div class='py1 quiet mt1 prose-big'>Example</div>
-    
-      
-      <pre class='p1 overflow-auto round fill-light'>viewer.hideOutline(); <span class="hljs-comment">// Hide outline around all objects in viewer</span>
-viewer.hideOutline(<span class="hljs-string">"saw"</span>); <span class="hljs-comment">// Hide outline around all objects in saw model</span>
-viewer.hideOutline([<span class="hljs-string">"saw#0.1"</span>, <span class="hljs-string">"saw#0.2"</span>]); <span class="hljs-comment">// Hide outline around two objects in saw model</span></pre>
-    
   
 
   
@@ -5779,6 +5790,7 @@ of whether they are currently active or not.</p>
   
 
   <p>Sets the camera's flight duration when fitting elements to view.</p>
+<p>Initial default value is <code>0.5</code> seconds.</p>
 <p>A value of zero (default) will cause the camera to instantly jump to each new target .</p>
 
 
@@ -9181,9 +9193,8 @@ where a value of <code>[0.3,0.3,0.3]</code> places the annotation at the center 
   
 
   <p>Creates a user-defined clipping plane.</p>
-<p>The plane is positioned at a given World-space position, oriented in a given direction. The plane
-may be configured to clip elements that fall either in front or behind it, and may be activated
-or deactivated.</p>
+<p>The plane is positioned at a given World-space position, oriented in a given direction, and may be
+active or inactive.</p>
 
 
   <div class='pre p1 fill-light mt0'>createClip(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>, cfg: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>): Viewer</div>
@@ -9254,17 +9265,6 @@ or deactivated.</p>
                     (default <code>true</code>)
                   </td>
                   <td class='break-word'><span>Whether to show a helper object to indicate the clip plane's position and orientation.
-</span></td>
-                </tr>
-              
-                <tr>
-                  <td class='break-word'><span class='code bold'>cfg.side</span> <code class='quiet'><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>?</code>
-                  
-                    (default <code>1</code>)
-                  </td>
-                  <td class='break-word'><span>Which side of the plane to discard elements from. A value of 
-<code>1</code>
- discards from
 the front of the plane (with respect to the plane orientation vector), while 
 <code>-1</code>
  discards elements behind the plane.
@@ -10059,6 +10059,7 @@ the front of the plane (with respect to the plane orientation vector), while
 
   <p>Gets a JSON bookmark of the viewer's current state.</p>
 <p>The viewer can then be restored to the bookmark at any time using <a href="#setBookmark">#setBookmark</a>.</p>
+<p>For compactness, a bookmark only contains state that has non-default values.</p>
 
 
   <div class='pre p1 fill-light mt0'>getBookmark</div>
@@ -10114,7 +10115,8 @@ the front of the plane (with respect to the plane orientation vector), while
 
   <p>Sets viewer state to the snapshot contained in given JSON bookmark.</p>
 <p>A bookmark is a complete snapshot of the viewer's state, which was
-captured earlier with <a href="#getBookmark">#getBookmark</a>.</p>
+captured earlier with <a href="#getBookmark">#getBookmark</a>. Setting a bookmark will
+clear everything in the viewer first.</p>
 
 
   <div class='pre p1 fill-light mt0'>setBookmark</div>
@@ -10136,6 +10138,15 @@ captured earlier with <a href="#getBookmark">#getBookmark</a>.</p>
           <div>
             <span class='code bold'>bookmark</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</code>
 	    JSON bookmark.
+
+          </div>
+          
+        </div>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>ok</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">Function</a>?)</code>
+	    Callback fired once the bookmark has been set.
 
           </div>
           
@@ -10174,7 +10185,7 @@ captured earlier with <a href="#getBookmark">#getBookmark</a>.</p>
       <div class="clearfix small pointer toggle-sibling">
         <div class="py1 contain">
             <a class='icon pin-right py1 dark-link caret-right'>▸</a>
-            <span class='code strong strong truncate'>getSnapshot(params?, ok?)</span>
+            <span class='code strong strong truncate'>getSnapshot(params?, ok)</span>
         </div>
       </div>
       <div class="clearfix display-none toggle-target">
@@ -10183,14 +10194,9 @@ captured earlier with <a href="#getBookmark">#getBookmark</a>.</p>
   
 
   <p>Captures a snapshot image of the viewer's canvas.</p>
-<p>When a callback is given, this method will capture the snapshot asynchronously, on the next animation frame,
-and return it via the callback.</p>
-<p>When no callback is given, this method captures and returns the snapshot immediately. Note that is only
-possible when you have configured the viewer to preserve the WebGL drawing buffer (which incurs a
-performance overhead).</p>
 
 
-  <div class='pre p1 fill-light mt0'>getSnapshot(params: any?, ok: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">Function</a>?): <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></div>
+  <div class='pre p1 fill-light mt0'>getSnapshot(params: any?, ok: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">Function</a>): <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></div>
   
   
 
@@ -10255,8 +10261,8 @@ performance overhead).</p>
       
         <div class='space-bottom0'>
           <div>
-            <span class='code bold'>ok</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">Function</a>?)</code>
-	    Callback to return the image data when taking a snapshot asynchronously.
+            <span class='code bold'>ok</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">Function</a>)</code>
+	    Callback to return the image data.
 
           </div>
           
@@ -10285,21 +10291,12 @@ performance overhead).</p>
     <div class='py1 quiet mt1 prose-big'>Example</div>
     
       
-      <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// Get snapshot asynchronously</span>
-viewer.getSnapshot({
+      <pre class='p1 overflow-auto round fill-light'>viewer.getSnapshot({
     <span class="hljs-attr">width</span>: <span class="hljs-number">500</span>,
     <span class="hljs-attr">height</span>: <span class="hljs-number">500</span>,
     <span class="hljs-attr">format</span>: <span class="hljs-string">"png"</span>
 }, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">imageDataURL</span>) </span>{
     imageElement.src = imageDataURL;
-});
-
-<span class="hljs-comment">// Get snapshot synchronously, requires that viewer be</span>
-<span class="hljs-comment">// configured with preserveDrawingBuffer; true</span>
-imageElement.src = viewer.getSnapshot({
-    <span class="hljs-attr">width</span>: <span class="hljs-number">500</span>,
-    <span class="hljs-attr">height</span>: <span class="hljs-number">500</span>,
-    <span class="hljs-attr">format</span>: <span class="hljs-string">"png"</span>
 });</pre>
     
   
