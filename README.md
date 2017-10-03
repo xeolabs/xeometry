@@ -95,7 +95,7 @@ viewer2.setBookmark(bookmark);
 
 ## Creating a viewer
 
-Your first step is to link to the xeometry library:
+Your first step is to link to the [xeometry library](http://xeolabs.com/xeometry/build/xeometry.min.js):
 ````html
 <script src="xeometry.js"></script>
 ````
