@@ -1,9 +1,10 @@
 # xeometry
 
-xeometry is a JavaScript API for viewing glTF models on WebGL.
+xeometry is an open source JavaScript API for viewing glTF models on WebGL.
 
-* [Examples](http://xeolabs.com/examples)
-* [API Docs](http://xeolabs.com/xeometry)
+* [Downloads](https://github.com/xeolabs/xeometry/releases)
+* [Examples](http://xeolabs.com/xeometry/examples)
+* [API Documentation](http://xeolabs.com/xeometry/docs)
 
 # Contents
 
@@ -17,26 +18,28 @@ xeometry is a JavaScript API for viewing glTF models on WebGL.
     + [Getting boundaries](#getting-boundaries)
     + [Getting object geometries](#getting-object-geometries)
   * [Assigning types to objects](#assigning-types-to-objects)
-  * [Camera control](#camera-control)
+  * [Controlling the camera](#controlling-the-camera)
     + [Fitting things in view](#fitting-things-in-view)
-    + [Panning](#panning)
-    + [Rotating](#rotating)
-    + [Zooming](#zooming)
-    + [Projections](#projections)
+    + [Panning the camera](#panning-the-camera)
+    + [Rotating the camera](#rotating-the-camera)
+    + [Zooming the camera](#zooming-the-camera)
+    + [Camera projections](#camera-projections)
+    + [CameraControl](#cameracontrol)
+  * [Showing and hiding objects](#showing-and-hiding-objects)
   * [Transforming models and objects](#transforming-models-and-objects)
-  * [Showing and hiding models and objects](#showing-and-hiding-models-and-objects)
-  * [Picking objects](#picking-objects)
   * [Outlining objects](#outlining-objects)
   * [Clipping](#clipping)
   * [Annotations](#annotations)
+  * [Picking objects](#picking-objects)
   * [Canvas snapshots](#canvas-snapshots)
   * [Viewer bookmarks](#viewer-bookmarks)
-  * [Building](#building)
+- [Building](#building)
 
 # Introduction
 
-A xeometry [Viewer](http://xeolabs.com/xeometry/docs/#viewer) is a single class that wraps [xeogl](http://xeogl.org) in a
-set of simple data-driven methods focused on loading glTF models and manipulating scene content to create cool presentations.
+A xeometry [Viewer](http://xeolabs.com/xeometry/docs/#viewer) is a single class that wraps a [xeogl](http://xeogl.org)
+3D engine in a set of simple data-driven methods focused on loading glTF models and manipulating scene content to create
+cool presentations.
 
 The example below shows the idea. In this example, we're loading a glTF model of a reciprocating saw, setting some objects
 transparent to reveal the inner workings, then positioning the camera to fit everything in view.
@@ -80,6 +83,7 @@ viewer.setBookmark(bookmark);
 We can also initialize another viewer from a bookmark:
 ```` JavaScript
 var viewer2 = new xeometry.Viewer({ canvasId: "anotherCanvas" });
+viewer2.setBookmark(bookmark);
 ````
 
 # Motivation
@@ -88,7 +92,7 @@ var viewer2 = new xeometry.Viewer({ canvasId: "anotherCanvas" });
 
 ## Creating a viewer
 
-The first step is to link to the xeometry library:
+Your first step is to link to the xeometry library:
 ````html
 <script src="xeometry.js"></script>
 ````
@@ -115,6 +119,8 @@ viewer.destroy();
 ## Loading models
 
 You can load multiple glTF models into a viewer at the same time, as well as multiple copies of the same model.
+
+TODO: info on glTF2 features supported - PBR metal/rough/standard, static geometries, transforms
 
 Loading two separate models into a viewer:
 ````javascript
@@ -156,6 +162,8 @@ Get all objects:
 var objects = viewer.getObjects();
 ````
 
+TODO: note on object IDs
+
 Get all objects in a model:
 ````javascript
 var saw = viewer.getObjects("saw");
@@ -168,8 +176,11 @@ var model = viewer.getModel("saw#23");
 
 ### Getting boundaries
 
-You can dynamically query the boundaries of models and objects in your viewer. A boundary is an axis-aligned
-World-space box, given as an array of values ````[xmin, ymin, zmin, xmax, ymax, zmax]````.
+You can dynamically query the boundaries of models and objects in your viewer.
+
+A boundary is an axis-aligned World-space box, given as an array of values ````[xmin, ymin, zmin, xmax, ymax, zmax]````.
+
+Transforming a model or object will update its boundary.
 
 Get the collective boundary of everything in a viewer:
 ````javascript
@@ -263,9 +274,9 @@ Get all objects of the given type:
 var typeObjects = viewer.getObjects("ifcCurtainWall");
 ````
 
-## Camera control
+## Controlling the camera
 
-A viewer has a single camera that can be moved in "orbit" or first-person mode, directed to fit target
+A viewer has a single camera that can be moved in orbit or first-person mode, directed to fit target
 elements in view, and switched between perspective and orthographic projections.
 
 Getting camera ````eye````, ````look```` and ````up````:
@@ -284,15 +295,14 @@ viewer.setUp([0,1,0]);
 
 ### Fitting things in view
 
-The camera can also be made to fit given models, objects, types or boundaries in view, either by flying or jumping to
-a new position.
+You can fly or jump the camera to fit given models, objects, types or boundaries in view.
 
-Make camera fly for two seconds as it moves to each new target:
+Configure camera to fly for two seconds as it moves to each new target:
 ````javascript
 viewer.setViewFitDuration(2); // Seconds
 ````
 
-When the duration greater than zero, the camera will fly, otherwise it will snap straight to each new target.
+When the duration greater than zero, the camera will fly, otherwise it will jump straight to each new target.
 
 Fly camera to given position:
 ````javascript
@@ -377,7 +387,7 @@ viewer.setViewFitFOV(20); // Degrees
 var fitFOV = viewer.fitFOV();
 ````
 
-### Panning
+### Panning the camera
 
 You can pan the camera incrementally along its local axis.
 
@@ -397,7 +407,7 @@ Pan camera backwards 10 units along the ````eye->look```` vector:
 viewer.panCamera([0, 0, -10]);
 ````
 
-### Rotating
+### Rotating the camera
 
 You can rotate the camera incrementally, either rotating ````eye```` about ````look```` (orbiting),
 or rotating ````look```` about ````eye```` (first-person rotation).
@@ -430,14 +440,21 @@ gimbal locking is enabled, otherwise pivoting around the axis orthogonal to ````
 viewer.rotateLookX(10);
 ````
 
-### Zooming
+### Zooming the camera
 
-You can zoom the camera incrementally, which varies the distance of ````eye```` from ````look````:
+You can zoom the camera incrementally, which changes the distance of ````eye```` from ````look````.
+
+Zoom the ````eye```` towards ````look```` by 12.3 units:
 ````javascript
 viewer.zoom(12.3);
 ````
 
-### Projections
+Zoom the ````eye```` away from ````look```` by 5 units:
+````javascript
+viewer.zoom(-5);
+````
+
+### Camera projections
 
 You can switch the camera between perspective and orthographic projection at any time.
 
@@ -467,6 +484,62 @@ viewer.setPerspectiveFar(10000);
 
 Note that you can get and set properties for each projection at any time, regardless of which one is active.
 
+### CameraControl
+
+TODO
+
+````javascript
+var cameraControl = new xeometry.CameraControl(viewer, {
+    firstPerson: false,
+    mouseOrbitSens : 1.0,
+    mousePanSens : 0.1,
+    mouseZoomSens: 1.0
+});
+````
+
+## Showing and hiding objects
+
+You can independently show and hide each object in your viewer.
+
+Show everything in a viewer:
+````javascript
+viewer.show();
+`````
+
+Hide everything in a viewer:
+````javascript
+viewer.hide();
+````
+
+Show all objects within a model:
+````javascript
+viewer.show("saw");
+````
+
+Hide all objects within a model:
+````javascript
+viewer.hide("saw");
+````
+
+Show given objects:
+````javascript
+viewer.show(["saw#1", "saw#5"]);
+````
+
+Show all objects of the given types:
+````javascript
+viewer.show(["IfcFlowController", "IfcFlowFitting"]);
+````
+
+Show a model and two objects:
+````javascript
+viewer.show(["saw", "saw#1", "saw#5"]);
+````
+
+Hide a model, two objects and all objects of the given type:
+````javascript
+viewer.hide(["saw", "saw#1", "saw#5", "IfcFlowFitting"]);
+````
 
 ## Transforming models and objects
 
@@ -514,49 +587,38 @@ var scale = viewer.setScale("saw");
 var rotate = viewer.setRotate("saw");
 `````
 
-## Showing and hiding models and objects
+## Outlining objects
 
-You can independently show and hide each object in your viewer.
+You can emphasize objects in your viewer by displaying outlines around them.
 
-Show everything in a viewer:
-````javascript
-viewer.show();
-`````
+[![](http://xeolabs.com/xeometry/assets/sawObjects.png)](http://xeogl.org/examples/#presentation_annotations_tronTank)
 
-Hide everything in a viewer:
-````javascript
-viewer.hide();
-````
+## Clipping
 
-Show all objects within a model:
-````javascript
-viewer.show("saw");
-````
+You can create an unlimited number of arbitrarily-positioned clipping planes in your viewer. You can also mask which
+objects in your viewer are clipped by them.
 
-Hide all objects within a model:
-````javascript
-viewer.hide("saw");
-````
+[![](http://xeolabs.com/xeometry/assets/sawObjects.png)](http://xeogl.org/examples/#presentation_annotations_tronTank)
 
-Show given objects:
-````javascript
-viewer.show(["saw#1", "saw#5"]);
-````
+## Annotations
 
-Show all objects of the given types:
-````javascript
-viewer.show(["IfcFlowController", "IfcFlowFitting"]);
-````
+An annotation is a labeled pin that's attached to the surface of an object.
 
-Show a model and two objects:
-````javascript
-viewer.show(["saw", "saw#1", "saw#5"]);
-````
+[![](http://xeolabs.com/xeometry/assets/sawObjects.png)](http://xeogl.org/examples/#presentation_annotations_tronTank)
 
-Hide a model, two objects and all objects of the given type:
-````javascript
-viewer.hide(["saw", "saw#1", "saw#5", "IfcFlowFitting"]);
-````
+An annotation is pinned within a triangle of an object's geometry, at a position given in barycentric coordinates. A
+barycentric coordinate is a three-element vector that indicates the position within the triangle as a weight per vertex,
+where a value of [0.3,0.3,0.3] places the annotation at the center of its triangle.
+
+An annotation can be configured with an optional camera position from which to view it, given as eye, look and up vectors.
+
+By default, an annotation will be invisible while occluded by other objects in the 3D view.
+
+Note that when you pick an object with #.Viewer#rayCastSurface or #.Viewer#pickSurface, you'll get a triangle index and
+barycentric coordinates in the intersection result. This makes it convenient to create annotations directly from pick
+results.
+
+TODO: examples
 
 ## Picking objects
 
@@ -602,42 +664,9 @@ if (hit) {
 }
 ````
 
-## Outlining objects
-
-You can emphasize objects in your viewer by displaying outlines around them.
-
-[![](http://xeolabs.com/xeometry/assets/sawObjects.png)](http://xeogl.org/examples/#presentation_annotations_tronTank)
-
-## Clipping
-
-You can create an unlimited number of arbitrarily-positioned clipping planes in your viewer, as well as specify which
-objects are clipped by them.
-
-[![](http://xeolabs.com/xeometry/assets/sawObjects.png)](http://xeogl.org/examples/#presentation_annotations_tronTank)
-
-## Annotations
-
-An annotation is a labeled pin that's attached to the surface of an object.
-
-[![](http://xeolabs.com/xeometry/assets/sawObjects.png)](http://xeogl.org/examples/#presentation_annotations_tronTank)
-
-An annotation is pinned within a triangle of an object's geometry, at a position given in barycentric coordinates. A
-barycentric coordinate is a three-element vector that indicates the position within the triangle as a weight per vertex,
-where a value of [0.3,0.3,0.3] places the annotation at the center of its triangle.
-
-An annotation can be configured with an optional camera position from which to view it, given as eye, look and up vectors.
-
-By default, an annotation will be invisible while occluded by other objects in the 3D view.
-
-Note that when you pick an object with #.Viewer#rayCastSurface or #.Viewer#pickSurface, you'll get a triangle index and
-barycentric coordinates in the intersection result. This makes it convenient to create annotations directly from pick
-results.
-
-TODO: examples
-
 ## Canvas snapshots
 
-You can grab a snapshot image of your viewer at any time, as a JPEG, PNG or BMP.
+You can take a snapshot of your viewer, as a JPEG, PNG or BMP image.
 
 Snapshots are taken asynchronously.
 
@@ -673,6 +702,6 @@ viewer.reset();
 viewer.setBookmark(json, function() { /* Loaded */ });
 ````
 
-## Building
+# Building
 
 
