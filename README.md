@@ -4,6 +4,7 @@ xeometry is an open source JavaScript API for viewing glTF models on WebGL.
 
 * [Downloads](https://github.com/xeolabs/xeometry/releases)
 * [Examples](http://xeolabs.com/xeometry/examples)
+* [User Guide](https://xeolabs.gitbooks.io/xeometry/content/)
 * [API Documentation](http://xeolabs.com/xeometry/docs)
 
 # Contents
@@ -221,9 +222,9 @@ Get collective boundary of the first five objects within a given model:
 var objectsBoundary2 = viewer.getAABB(viewer.objects("saw").slice(0, 5));
 ````
 
-Get collective boundary of a model and a couple of objects:
+Get collective boundary of a model plus a couple of objects from a different model:
 ````javascript
-var objectsBoundary3 = viewer.getAABB(["saw", "saw#2", "saw#5"]);
+var objectsBoundary3 = viewer.getAABB(["gearbox", "saw#2", "saw#5"]);
 ````
 
 ### Getting object geometries
