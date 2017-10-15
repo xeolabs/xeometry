@@ -19,8 +19,8 @@
         <li><a href='javascript:viewer.show()'>show();</a> <span class="comment">// Show everything</span></li>
         <li><a href='javascript:viewer.hide("saw")'>hide("saw");</a> <span class="comment">// Hide saw</span></li>
         <li><a href='javascript:viewer.show("saw")'>show("saw");</a> <span class="comment">// Show saw</span></li>
-        <li><a href='javascript:viewer.hide(["saw#3.1", "saw#3.2"])'>hide(["saw#3.1", "saw#3.2"])</a> <span class="comment">// Hide saw cover</span></li>
-        <li><a href='javascript:viewer.show(["saw#3.1", "saw#3.2"])'>show(["saw#3.1", "saw#3.2"])</a> <span class="comment">// Hide saw cover</span></li>
+        <li><a href='javascript:viewer.hide(["saw#3.1", "saw#3.2"])'>hide(["saw#3.1", "saw#3.2"]);</a> <span class="comment">// Hide saw cover</span></li>
+        <li><a href='javascript:viewer.show(["saw#3.1", "saw#3.2"])'>show(["saw#3.1", "saw#3.2"]);</a> <span class="comment">// Hide saw cover</span></li>
     </ul>
 </div>
 
@@ -28,8 +28,8 @@
 
     var viewer = new xeometry.Viewer();
 
-    viewer.setEye([-130, 0, 350]);
-    viewer.setLook([-130, 0, 0]);
+    viewer.setEye([-130, -40, 350]);
+    viewer.setLook([-130, -40, 0]);
 
     viewer.setViewFitDuration(1);
 
