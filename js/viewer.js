@@ -65,6 +65,31 @@ xeometry.Viewer = function (cfg) {
         //transparent: true
     });
 
+    scene.lights.lights = [
+        new xeogl.AmbientLight(scene, {
+            color: [1,1,1],
+            intensity: 1
+        }),
+        new xeogl.DirLight(scene, {
+            dir: [0.8, -0.6, -0.8],
+            color: [1.0, 1.0, 1.0],
+            intensity: 1.0,
+            space: "view"
+        }),
+        new xeogl.DirLight(scene, {
+            dir: [-0.8, -0.3, -0.4],
+            color: [0.8, 0.8, 0.8],
+            intensity: 1.0,
+            space: "view"
+        }),
+        new xeogl.DirLight(scene, {
+            dir: [0.4, -0.4, 0.8],
+            color: [0.8, 1.0, 1.0],
+            intensity: 1.0,
+            space: "view"
+        })
+    ];
+
     var math = xeogl.math;
     var camera = scene.camera;
     var view = camera.view;
@@ -90,10 +115,10 @@ xeometry.Viewer = function (cfg) {
     var onTick = scene.on("tick", function () {
 
         // Orbit animation
-        if (yspin > 0) {
+        if (yspin !== 0) {
             view.rotateEyeY(yspin);
         }
-        if (xspin > 0) {
+        if (xspin !== 0) {
             view.rotateEyeX(xspin);
         }
 
@@ -114,7 +139,7 @@ xeometry.Viewer = function (cfg) {
 
     var cameraFlight = new xeogl.CameraFlightAnimation(scene, {
         fitFOV: 45,
-        duration: 0.1
+        duration: 0
     });
 
     var projections = { // Camera projections to switch between
@@ -122,9 +147,11 @@ xeometry.Viewer = function (cfg) {
         orthographic: new xeogl.Ortho(scene, {
             scale: 1.0,
             near: 0.1,
-            far: 10000
+            far: 5000
         })
     };
+
+    projections.perspective.far = 5000;
 
     var projectionType = "perspective";
 
@@ -315,7 +342,12 @@ xeometry.Viewer = function (cfg) {
             error("Object not found: " + id);
             return;
         }
-        return objectModels[id];
+        var model = objectModels[id];
+        if (!model) {
+            error("Model not found for object: " + id); // Should not happen!
+            return;
+        }
+        return model.id;
     };
 
     /**
@@ -1833,7 +1865,7 @@ xeometry.Viewer = function (cfg) {
         if (xeogl._isString(target)) {
             var annotation = annotations[target];
             if (annotation) {
-                if (ok || cameraFlight.duration > 0.1) {
+                if (ok || cameraFlight.duration > 0) {
                     cameraFlight.flyTo({eye: annotation.eye, look: annotation.look, up: annotation.up}, ok);
                 } else {
                     cameraFlight.jumpTo({eye: annotation.eye, look: annotation.look, up: annotation.up});
@@ -1841,7 +1873,7 @@ xeometry.Viewer = function (cfg) {
                 return this;
             }
         }
-        if (ok || cameraFlight.duration > 0.1) {
+        if (ok || cameraFlight.duration > 0) {
             cameraFlight.flyTo({aabb: this.getAABB(target)}, ok);
         } else {
             cameraFlight.jumpTo({aabb: this.getAABB(target)});
@@ -1975,7 +2007,7 @@ xeometry.Viewer = function (cfg) {
                     };
                     break;
             }
-            if (ok || cameraFlight.duration > 0) {
+            if (ok || cameraFlight.duration > 0.1) {
                 cameraFlight.flyTo(cameraTarget, ok);
             } else {
                 cameraFlight.jumpTo(cameraTarget);
@@ -3119,7 +3151,7 @@ xeometry.Viewer = function (cfg) {
                 bookmark.perspectiveNear = projections.perspective.near;
             }
 
-            if (projections.perspective.far !== 10000.0) {
+                if (projections.perspective.far !== 5000.0) {
                 bookmark.perspectiveFar = projections.perspective.far;
             }
 
@@ -3131,7 +3163,7 @@ xeometry.Viewer = function (cfg) {
                 bookmark.orthoNear = projections.orthographic.near;
             }
 
-            if (projections.orthographic.far !== 10000.0) {
+            if (projections.orthographic.far !== 5000.0) {
                 bookmark.orthoFar = projections.orthographic.far;
             }
 
@@ -3261,10 +3293,10 @@ xeometry.Viewer = function (cfg) {
                 self.setViewFitFOV(bookmark.viewFitFOV || 45);
                 self.setViewFitDuration(bookmark.viewFitDuration !== undefined ? bookmark.viewFitDuration : 0.5);
                 self.setPerspectiveNear(bookmark.perspectiveNear !== undefined ? bookmark.perspectiveNear : 0.1);
-                self.setPerspectiveFar(bookmark.perspectiveFar != undefined ? bookmark.perspectiveFar : 10000.0);
+                self.setPerspectiveFar(bookmark.perspectiveFar != undefined ? bookmark.perspectiveFar : 5000.0);
                 self.setPerspectiveFOV(bookmark.perspectiveFOV || 60);
                 self.setOrthoNear(bookmark.orthoNear != undefined ? bookmark.orthoNear : 0.1);
-                self.setOrthoFar(bookmark.orthoFar != undefined ? bookmark.orthoFar : 10000);
+                self.setOrthoFar(bookmark.orthoFar != undefined ? bookmark.orthoFar : 5000);
                 self.setOrthoScale(bookmark.orthoScale != undefined ? bookmark.orthoScale : 1.0);
                 self.setOutlineThickness(bookmark.outlineThickness != undefined ? bookmark.outlineThickness : 15);
                 self.setOutlineColor(bookmark.outlineColor != undefined ? bookmark.outlineColor : [1, 1, 0]);
