@@ -19,11 +19,12 @@
 
     var viewer = new xeometry.Viewer();
 
+    viewer.setEye([-130, -40, 350]);
+    viewer.setLook([-130, -40, 0]);
+
     viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF-MaterialsCommon/ReciprocatingSaw.gltf", function () {
 
-        viewer.xspin(0.05);
-
-        viewer.viewFit();
+        viewer.setRotate("saw", [90, 0, 0]);
 
         var modelCenter = viewer.getCenter("saw");
         var objectId;
@@ -73,7 +74,7 @@
             for (var i = 0; i < objects.length; i++) {
                 id = objects[i];
                 viewer.setTranslate(id, vec3.add(tempVec3, viewer.getTranslate(id), trajectories[i]));
-                viewer.setRotate(id, vec3.add(tempVec3, viewer.getRotate(id), spins[i]));
+                //      viewer.setRotate(id, vec3.add(tempVec3, viewer.getRotate(id), spins[i]));
             }
             requestAnimationFrame(update);
         }
@@ -82,6 +83,11 @@
     });
 
     new xeometry.CameraControl(viewer);
+
+
+    setInterval(function () {
+        viewer.viewFit();
+    }, 6000)
 
 </script>
 </body>
