@@ -4,7 +4,7 @@
  * A WebGL-based 3D visualization engine from xeoLabs
  * http://xeogl.org/
  *
- * Built on 2017-09-21
+ * Built on 2017-10-05
  *
  * MIT License
  * Copyright 2017, Lindsay Kay
@@ -5841,14 +5841,28 @@ var Canvas2Image = (function () {
 
             // Draw transparent objects
 
+            var blendType = true;
+            var transparentDepthMask = false;
+
             if (numTransparentObjects > 0) {
 
                 gl.enable(gl.CULL_FACE);
                 gl.enable(gl.BLEND);
-             //   gl.depthMask(false);
-                gl.blendEquation(gl.FUNC_ADD);
-               // gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-                gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+
+
+                if (!transparentDepthMask) {
+                    gl.depthMask(false);
+                }
+
+                if (blendType) {
+
+                    // Makes glTF windows appear correct
+                     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+                } else {
+
+                    gl.blendEquation(gl.FUNC_ADD);
+                    gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+                }
 
                 gl.colorMask(true, true, true, true);
 
@@ -10012,7 +10026,7 @@ var Canvas2Image = (function () {
             }
 
             add("gl_FragColor = vec4(outgoingLight, alpha);");
-            //    add("gl_FragColor = LinearTosRGB(gl_FragColor);");  // Gamma correction
+                add("gl_FragColor = LinearTosRGB(gl_FragColor);");  // Gamma correction
 
             add("}");
 
@@ -40034,7 +40048,8 @@ TODO
 
                     this._eye.set(value || [0, 0, 10]);
 
-                    this._needUpdate(0); // Ensure matrix built on next "tick"
+                    this._update();
+                    //this._needUpdate(0); // Ensure matrix built on next "tick"
 
                     /**
                      * Fired whenever this Lookat's  {{#crossLink "Lookat/eye:property"}}{{/crossLink}} property changes.
@@ -40065,7 +40080,8 @@ TODO
 
                     this._look.set(value || [0, 0, 0]);
 
-                    this._needUpdate(0); // Ensure matrix built on next "tick";
+                    this._update();
+                    //this._needUpdate(0); // Ensure matrix built on next "tick";
 
                     /**
                      * Fired whenever this Lookat's  {{#crossLink "Lookat/look:property"}}{{/crossLink}} property changes.
@@ -40094,7 +40110,8 @@ TODO
 
                     this._up.set(value || [0, 1, 0]);
 
-                    this._needUpdate(0); // Ensure matrix built on next "tick"
+                    this._update();
+                    //this._needUpdate(0); // Ensure matrix built on next "tick"
 
                     /**
                      * Fired whenever this Lookat's  {{#crossLink "Lookat/up:property"}}{{/crossLink}} property changes.
