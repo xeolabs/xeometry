@@ -17,8 +17,9 @@
 
     var viewer = new xeometry.Viewer();
 
-    viewer.setEye([37.23, 62.45, 301.05]);
-    viewer.setLook([-130, 0, 0]);
+    viewer.setEye([-296.56, 26.78, 300.49]);
+    viewer.setLook([-130, -40, 0]);
+    viewer.getUp([0.09, 0.98, -0.16]);
 
     viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF-MaterialsCommon/ReciprocatingSaw.gltf", function () {
 
