@@ -57,7 +57,7 @@ body {
     float: left;
     left: 0px;
     padding-top: 10px;
-    padding-left: 0px;
+    padding-left: 10px;
     /*border-radius: 0 0 4px 0;*/
     /*border-radius:6px;*/
     height: auto;
@@ -201,7 +201,7 @@ body {
     color: #78ce73;
     margin-top: 10px;
     margin-bottom: 10px;
-    font-size: 25px;
+    font-size: 34px;
     font-weight: normal;
     text-decoration: none !important;
 }
