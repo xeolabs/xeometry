@@ -21,32 +21,32 @@
     <ul>
         <li><a href='javascript:getModels()'>
             viewer.getModels();
-        </a></li>
+         </a> <span class="comment">// </span></li>
         <li><a href='javascript:getObjects()'>
             viewer.getObjects();
-        </a></li>
+         </a> <span class="comment">// </span></li>
         <li><a href='javascript:getObjects("saw")'>
             viewer.getObjects("saw");
-        </a></li>
+         </a> <span class="comment">// </span></li>
         <li><a href='javascript:getObjects(["saw", "gearbox"])'>
             viewer.getObjects(["saw", "gearbox"]);
-        </a></li>
+         </a> <span class="comment">// </span></li>
         <li><a href='javascript:getObjects(["stab","footing","stair"])'>
             viewer.getObjects(["stab","footing","stair"]);
-        </a></li>
+         </a> <span class="comment">// </span></li>
     </ul>
 
     <h2>Query types:</h2>
     <ul>
         <li><a href='javascript:getTypes()'>
             viewer.getTypes()
-        </a></li>
+         </a> <span class="comment">// </span></li>
         <li><a href='javascript:getTypes("saw")'>
             viewer.getTypes("saw")
-        </a></li>
-        <li><a href='javascript:getType("saw#1.1")'>
-            viewer.getType("saw#1.1")
-        </a></li>
+         </a> <span class="comment">// </span></li>
+        <li><a href='javascript:getType("saw#3.1")'>
+            viewer.getType("saw#3.1")
+         </a> <span class="comment">// </span></li>
     </ul>
 
     <h2>Query boundaries:</h2>
@@ -54,32 +54,32 @@
 
         <li><a href='javascript:getAABB()'>
             viewer.getAABB()
-        </a></li>
+         </a> <span class="comment">// </span></li>
         <li><a href='javascript:getAABB("gearbox")'>
             viewer.getAABB("gearbox")
-        </a></li>
+         </a> <span class="comment">// </span></li>
         <li><a href='javascript:getAABB(["gearbox", "saw"])'>
             viewer.getAABB(["gearbox", "saw"])
-        </a></li>
-        <li><a href='javascript:getAABB(["saw#1.1", "saw#1.2"])'>
-            viewer.getAABB(["saw#1.1", "saw#1.2"])
-        </a></li>
+         </a> <span class="comment">// </span></li>
+        <li><a href='javascript:getAABB(["saw#3.1", "saw#3.2"])'>
+            viewer.getAABB(["saw#3.1", "saw#3.2"])
+         </a> <span class="comment">// </span></li>
         <li><a href='javascript:getAABB(["stab", "footing", "stair"])'>
             viewer.getAABB(["stab", "footing", "stair"])
-        </a></li>
+         </a> <span class="comment">// </span></li>
     </ul>
 
     <h2>Querying geometry of objects:</h2>
     <ul>
         <li><a href='javascript:getPrimitive("cassiopea#0jf0rYHfX3RAB3bSQRjmxl")'>
             viewer.getPrimitive("cassiopea#0jf0rYHfX3RAB3bSQRjmxl")
-        </a></li>
+         </a> <span class="comment">// </span></li>
         <li><a href='javascript:getPositions("cassiopea#0jf0rYHfX3RAB3bSQRjmxl")'>
             viewer.getPositions("cassiopea#0jf0rYHfX3RAB3bSQRjmxl")
-        </a></li>
+         </a> <span class="comment">// </span></li>
         <li><a href='javascript:getIndices("cassiopea#0jf0rYHfX3RAB3bSQRjmxl")'>
             viewer.getIndices("cassiopea#0jf0rYHfX3RAB3bSQRjmxl")
-        </a></li>
+         </a> <span class="comment">// </span></li>
     </ul>
 </div>
 <div id="viewer-canvas">
@@ -95,7 +95,7 @@
         viewer.setTranslate("gearbox", [-159.20, -17.02, -3.21]);
     });
 
-    viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF/ReciprocatingSaw.gltf", function () {
+    viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF-MaterialsCommon/ReciprocatingSaw.gltf", function () {
         viewer.setTranslate("saw", [10, 17, 0]);
         viewer.setScale("saw", [.09, .09, .09]);
         viewer.setRotate("saw", [90, 0, 0]);

@@ -12,7 +12,7 @@
 
 <div id="info" class="light">
     <h1>explore objects by ID</h1>
-    <h2>// Load gearbox model, navigate objects by ID, using xray effect for emphasis</h2>
+    <h2>// Load saw model, navigate objects by ID, using xray effect for emphasis</h2>
 </div>
 
 <div id="explorer" class="light">
@@ -22,13 +22,14 @@
 
     var viewer = new xeometry.Viewer();
 
-    viewer.setEyeLookUp([20, 10, 35], [0, 10, 0], [0, 1, 0]);
+    viewer.setEye([-130, 0, 350]);
+    viewer.setLook([-130, 0, 0]);
 
     viewer.setOutlineThickness(1);
     viewer.setOutlineColor([1, 1, 0]);
 
     viewer.setViewFitDuration(1);
-    viewer.setViewFitFOV(20);
+    viewer.setViewFitFOV(10);
 
     var colors = {};
     var opacities = {};
@@ -37,27 +38,18 @@
 
     function focusObject(id) {
         if (lastObject) {
-        ///    viewer.setColor(lastObject, [0.2, 0.2, 0.4]);
-            viewer.setOpacity(lastObject, 0.3);
-            viewer.hideOutline(id);
+            viewer.setOpacity(lastObject, 0.4);
         }
         lastObject = id;
         viewer.setOpacity(id, 1.0);
-        //viewer.setColor(id, colors[id]);
-      //  viewer.setColor(id, [1, 1, 0]);
         viewer.viewFit(id);
-     //       viewer.showOutline(id);
     }
 
-    viewer.loadModel("gearbox", "models/gltf/GearboxAssy/glTF/GearboxAssy.gltf", function () {
+    viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF-MaterialsCommon/ReciprocatingSaw.gltf", function () {
 
-//        viewer.setTranslate("gearbox", [10, 17, 0]);
-//        viewer.setScale("gearbox", [.09, .09, .09]);
-//        viewer.setRotate("gearbox", [90, 0, 0]);
+        viewer.setRotate("saw", [90, 0, 0]);
 
-        viewer.viewFit("gearbox"); // FIXME: xeogl builds transforms/boundary on next tick, not soon enough for this call
-
-        var objects = viewer.getObjects("gearbox");
+        var objects = viewer.getObjects("saw");
         var i = 0;
         var id;
 
@@ -68,9 +60,8 @@
             colors[id] = viewer.getColor(id);
             opacities[id] = viewer.getOpacity(id);
         }
-
-      //  viewer.setColor("gearbox", [0.2, 0.2, 0.4]);
-        viewer.setOpacity("gearbox", 0.3);
+        
+        viewer.setOpacity("saw", 0.4);
 
         // Build menu
 

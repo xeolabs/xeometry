@@ -134,13 +134,10 @@ body {
 
 #info a {
     z-index: 200000;
-    /*text-decoration: none;*/
-    color: #ffffff;
 }
 
 #info a:hover {
-    color: #ffffff;
-    /*text-decoration: underline;*/
+    text-decoration: underline;
 }
 
 #info p {
@@ -163,9 +160,16 @@ body {
     padding: 0px;
 }
 
-#info li a {
+#info span.comment {
+    color: #b6b4b7;
+    font-style:italic;
+}
+
+#info a {
     text-decoration: none;
     pointer-events: all;
+    color: rgba(0, 102, 204, .75);
+    font-size: 15px;
 }
 
 #info a.code {
@@ -174,7 +178,7 @@ body {
     /*border: #4b4b68 1px solid;*/
 }
 
-#info li a:hover {
+#info a:hover {
     text-decoration: underline;
 }
 

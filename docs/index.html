@@ -852,7 +852,7 @@
   </div>
   
 
-  <p>Controls the camera of a xeometry.Viewer with the mouse.</p>
+  <p>Controls the camera of a <a href="xeometry.Viewer">xeometry.Viewer</a> with the mouse.</p>
 <p>This is xeometry's bundled, default camera control.</p>
 
 
@@ -1333,7 +1333,7 @@ viewer.scheduleTask(<span class="hljs-function"><span class="hljs-keyword">funct
     
       
       <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// Load saw model, fit in view, show two of its objects</span>
-viewer.loadModel(<span class="hljs-string">"saw"</span>, <span class="hljs-string">"models/gltf/ReciprocatingSaw/glTF/ReciprocatingSaw.gltf"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+viewer.loadModel(<span class="hljs-string">"saw"</span>, <span class="hljs-string">"models/gltf/ReciprocatingSaw/glTF-MaterialsCommon/ReciprocatingSaw.gltf"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
    viewer.viewFit(<span class="hljs-string">"saw"</span>);
    viewer.hide();
    viewer.show([<span class="hljs-string">"saw#0.1"</span>, <span class="hljs-string">"saw#0.2"</span>]);
@@ -1826,7 +1826,7 @@ viewer.loadModel(<span class="hljs-string">"saw"</span>, <span class="hljs-strin
     <div class='py1 quiet mt1 prose-big'>Example</div>
     
       
-      <pre class='p1 overflow-auto round fill-light'>viewer.setType(<span class="hljs-string">"saw#1.1"</span>, <span class="hljs-string">"cover"</span>);</pre>
+      <pre class='p1 overflow-auto round fill-light'>viewer.setType(<span class="hljs-string">"saw#3.1"</span>, <span class="hljs-string">"cover"</span>);</pre>
     
   
 
@@ -1900,7 +1900,7 @@ viewer.loadModel(<span class="hljs-string">"saw"</span>, <span class="hljs-strin
     <div class='py1 quiet mt1 prose-big'>Example</div>
     
       
-      <pre class='p1 overflow-auto round fill-light'><span class="hljs-keyword">var</span> type = viewer.getType(<span class="hljs-string">"saw#1.1"</span>);</pre>
+      <pre class='p1 overflow-auto round fill-light'><span class="hljs-keyword">var</span> type = viewer.getType(<span class="hljs-string">"saw#3.1"</span>);</pre>
     
   
 
@@ -2030,7 +2030,7 @@ viewer.loadModel(<span class="hljs-string">"saw"</span>, <span class="hljs-strin
     <div class='py1 quiet mt1 prose-big'>Example</div>
     
       
-      <pre class='p1 overflow-auto round fill-light'><span class="hljs-keyword">var</span> prim = viewer.getPrimitive(<span class="hljs-string">"saw#1.1"</span>);</pre>
+      <pre class='p1 overflow-auto round fill-light'><span class="hljs-keyword">var</span> prim = viewer.getPrimitive(<span class="hljs-string">"saw#3.1"</span>);</pre>
     
   
 
@@ -2104,7 +2104,7 @@ viewer.loadModel(<span class="hljs-string">"saw"</span>, <span class="hljs-strin
     <div class='py1 quiet mt1 prose-big'>Example</div>
     
       
-      <pre class='p1 overflow-auto round fill-light'><span class="hljs-keyword">var</span> positions = viewer.getPositions(<span class="hljs-string">"saw#1.1"</span>);</pre>
+      <pre class='p1 overflow-auto round fill-light'><span class="hljs-keyword">var</span> positions = viewer.getPositions(<span class="hljs-string">"saw#3.1"</span>);</pre>
     
   
 
@@ -2178,7 +2178,7 @@ viewer.loadModel(<span class="hljs-string">"saw"</span>, <span class="hljs-strin
     <div class='py1 quiet mt1 prose-big'>Example</div>
     
       
-      <pre class='p1 overflow-auto round fill-light'><span class="hljs-keyword">var</span> indices = viewer.getIndices(<span class="hljs-string">"saw#1.1"</span>);</pre>
+      <pre class='p1 overflow-auto round fill-light'><span class="hljs-keyword">var</span> indices = viewer.getIndices(<span class="hljs-string">"saw#3.1"</span>);</pre>
     
   
 
@@ -2266,7 +2266,7 @@ effective scale is <code>[0.25, 0.25, 0.25]</code>.</p>
     
       
       <pre class='p1 overflow-auto round fill-light'>viewer.setScale(<span class="hljs-string">"saw"</span>, [<span class="hljs-number">1.5</span>, <span class="hljs-number">1.5</span>, <span class="hljs-number">1.5</span>]);
-viewer.setScale(<span class="hljs-string">"saw#1.1"</span>, [<span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>]);</pre>
+viewer.setScale(<span class="hljs-string">"saw#3.1"</span>, [<span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>]);</pre>
     
   
 
@@ -2345,7 +2345,7 @@ effective scale is <code>[0.25, 0.25, 0.25]</code>.</p>
     
       
       <pre class='p1 overflow-auto round fill-light'><span class="hljs-keyword">var</span> sawScale = viewer.getScale(<span class="hljs-string">"saw"</span>);
-<span class="hljs-keyword">var</span> sawCoverScale = viewer.getScale(<span class="hljs-string">"saw#1.1"</span>);</pre>
+<span class="hljs-keyword">var</span> sawCoverScale = viewer.getScale(<span class="hljs-string">"saw#3.1"</span>);</pre>
     
   
 
@@ -2434,7 +2434,7 @@ Y, then the object's effective rotation is <code>90</code> degrees about Y.</p>
     
       
       <pre class='p1 overflow-auto round fill-light'>viewer.setRotate(<span class="hljs-string">"saw"</span>, [<span class="hljs-number">90</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>]);
-viewer.setRotate(<span class="hljs-string">"saw#1.1"</span>, [<span class="hljs-number">0</span>, <span class="hljs-number">35</span>, <span class="hljs-number">0</span>]);</pre>
+viewer.setRotate(<span class="hljs-string">"saw#3.1"</span>, [<span class="hljs-number">0</span>, <span class="hljs-number">35</span>, <span class="hljs-number">0</span>]);</pre>
     
   
 
@@ -2514,7 +2514,7 @@ Y, then the object's effective rotation is <code>90</code> degrees about Y.</p>
     
       
       <pre class='p1 overflow-auto round fill-light'><span class="hljs-keyword">var</span> sawRotate = viewer.getRotate(<span class="hljs-string">"saw"</span>);
-<span class="hljs-keyword">var</span> sawCoverRotate = viewer.getRotate(<span class="hljs-string">"saw#1.1"</span>);</pre>
+<span class="hljs-keyword">var</span> sawCoverRotate = viewer.getRotate(<span class="hljs-string">"saw#3.1"</span>);</pre>
     
   
 
@@ -2602,7 +2602,7 @@ translation is <code>[150, 50, 50]</code>.</p>
     
       
       <pre class='p1 overflow-auto round fill-light'>viewer.setTranslate(<span class="hljs-string">"saw"</span>, [<span class="hljs-number">100</span>, <span class="hljs-number">30</span>, <span class="hljs-number">0</span>]);
-viewer.setTranslate(<span class="hljs-string">"saw#1.1"</span>, [<span class="hljs-number">50</span>, <span class="hljs-number">30</span>, <span class="hljs-number">0</span>]);</pre>
+viewer.setTranslate(<span class="hljs-string">"saw#3.1"</span>, [<span class="hljs-number">50</span>, <span class="hljs-number">30</span>, <span class="hljs-number">0</span>]);</pre>
     
   
 
@@ -2686,7 +2686,7 @@ viewer.setTranslate(<span class="hljs-string">"saw#1.1"</span>, [<span class="hl
     
       
       <pre class='p1 overflow-auto round fill-light'>viewer.addTranslate(<span class="hljs-string">"saw"</span>, [<span class="hljs-number">10</span>,<span class="hljs-number">0</span>,<span class="hljs-number">0</span>]);
-viewer.addTranslate(<span class="hljs-string">"saw#1.1"</span>, [<span class="hljs-number">10</span>,<span class="hljs-number">0</span>,<span class="hljs-number">0</span>]);</pre>
+viewer.addTranslate(<span class="hljs-string">"saw#3.1"</span>, [<span class="hljs-number">10</span>,<span class="hljs-number">0</span>,<span class="hljs-number">0</span>]);</pre>
     
   
 
@@ -2765,7 +2765,7 @@ translation is <code>[150, 50, 50]</code>.</p>
     
       
       <pre class='p1 overflow-auto round fill-light'><span class="hljs-keyword">var</span> sawTranslate = viewer.getTranslate(<span class="hljs-string">"saw"</span>);
-<span class="hljs-keyword">var</span> sawCoverTranslate = viewer.getTranslate(<span class="hljs-string">"saw#1.1"</span>);</pre>
+<span class="hljs-keyword">var</span> sawCoverTranslate = viewer.getTranslate(<span class="hljs-string">"saw#3.1"</span>);</pre>
     
   
 
@@ -3274,7 +3274,7 @@ viewer.setColor([<span class="hljs-string">"saw#0.1"</span>, <span class="hljs-s
     <div class='py1 quiet mt1 prose-big'>Example</div>
     
       
-      <pre class='p1 overflow-auto round fill-light'><span class="hljs-keyword">var</span> objectColor = viewer.getColor(<span class="hljs-string">"saw#1.1"</span>);</pre>
+      <pre class='p1 overflow-auto round fill-light'><span class="hljs-keyword">var</span> objectColor = viewer.getColor(<span class="hljs-string">"saw#3.1"</span>);</pre>
     
   
 

@@ -4,23 +4,26 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <script src="../build/xeometry.min.js"></script>
+    <script src="js/pickQueryObject.js"></script>
     <link href="css/styles.css" rel="stylesheet"/>
 <body>
+
+<div id="info">
+    <h1>outlining objects</h1>
+</div>
 
 <script>
 
     var viewer = new xeometry.Viewer();
 
-    viewer.setEyeLookUp([0, 10, 40], [0, 10, 0], [0, 1, 0]);
+    viewer.setEye([-191.08, -7.37, -168.19]);
+    viewer.setLook([-103.52, -20.63, -0.0]);
 
-    viewer.loadModel("gearbox", "models/gltf/GearboxAssy/glTF-MaterialsCommon/GearboxAssy.gltf", function () {
-        viewer.setTranslate("gearbox", [-159.20, -17.02, -3.21]);
-    });
+    viewer.setOutlineColor([1,1,0]);
 
     viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF-MaterialsCommon/ReciprocatingSaw.gltf", function () {
-        viewer.setTranslate("saw", [10, 17, 0]);
-        viewer.setScale("saw", [.09, .09, .09]);
         viewer.setRotate("saw", [90, 0, 0]);
+        viewer.showOutline(["saw#3.27", "saw#3.93"]);
     });
 
     new xeometry.CameraControl(viewer);

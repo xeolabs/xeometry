@@ -1,5 +1,5 @@
 /**
- * Controls the camera of a xeometry.Viewer with the mouse.
+ * Controls the camera of a {@link xeometry.Viewer} with the mouse.
  *
  * This is xeometry's bundled, default camera control.
  *

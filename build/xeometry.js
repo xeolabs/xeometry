@@ -4,7 +4,7 @@
  * A WebGL-based 3D visualization engine from xeoLabs
  * http://xeolabs.com/xeometry
  *
- * Built on 2017-10-03
+ * Built on 2017-10-15
  *
  * MIT License
  * Copyright 2017, Lindsay Kay
@@ -18,7 +18,7 @@
  * A WebGL-based 3D visualization engine from xeoLabs
  * http://xeogl.org/
  *
- * Built on 2017-09-21
+ * Built on 2017-10-15
  *
  * MIT License
  * Copyright 2017, Lindsay Kay
@@ -1196,6 +1196,8 @@ var Canvas2Image = (function () {
      */
     var math = xeogl.math = {
 
+        MAX_DOUBLE: +100000000,
+        MIN_DOUBLE: -100000000,
         /**
          * The number of radiians in a degree (0.0174532925).
          * @property DEGTORAD
@@ -3983,12 +3985,12 @@ var Canvas2Image = (function () {
 
         aabb = aabb || math.AABB3();
 
-        aabb[0] = 10000000;
-        aabb[1] = 10000000;
-        aabb[2] = 10000000;
-        aabb[3] = -10000000;
-        aabb[4] = -10000000;
-        aabb[5] = -10000000;
+        aabb[0] = xeogl.math.MAX_DOUBLE;
+        aabb[1] = xeogl.math.MAX_DOUBLE;
+        aabb[2] = xeogl.math.MAX_DOUBLE;
+        aabb[3] = -xeogl.math.MAX_DOUBLE;
+        aabb[4] = -xeogl.math.MAX_DOUBLE;
+        aabb[5] = -xeogl.math.MAX_DOUBLE;
 
         return aabb;
     };
@@ -4055,12 +4057,12 @@ var Canvas2Image = (function () {
 
         aabb = aabb || math.AABB3();
 
-        var xmin = 100000;
-        var ymin = 100000;
-        var zmin = 100000;
-        var xmax = -100000;
-        var ymax = -100000;
-        var zmax = -100000;
+        var xmin = xeogl.math.MAX_DOUBLE;
+        var ymin = xeogl.math.MAX_DOUBLE;
+        var zmin = xeogl.math.MAX_DOUBLE;
+        var xmax = -xeogl.math.MAX_DOUBLE;
+        var ymax = -xeogl.math.MAX_DOUBLE;
+        var zmax = -xeogl.math.MAX_DOUBLE;
 
         var x, y, z;
 
@@ -4114,12 +4116,12 @@ var Canvas2Image = (function () {
 
         aabb = aabb || math.AABB3();
 
-        var xmin = 100000;
-        var ymin = 100000;
-        var zmin = 100000;
-        var xmax = -100000;
-        var ymax = -100000;
-        var zmax = -100000;
+        var xmin = xeogl.math.MAX_DOUBLE;
+        var ymin = xeogl.math.MAX_DOUBLE;
+        var zmin = xeogl.math.MAX_DOUBLE;
+        var xmax = -xeogl.math.MAX_DOUBLE;
+        var ymax = -xeogl.math.MAX_DOUBLE;
+        var zmax = -xeogl.math.MAX_DOUBLE;
 
         var x, y, z;
 
@@ -4173,12 +4175,12 @@ var Canvas2Image = (function () {
 
         aabb = aabb || math.AABB3();
 
-        var xmin = 100000;
-        var ymin = 100000;
-        var zmin = 100000;
-        var xmax = -100000;
-        var ymax = -100000;
-        var zmax = -100000;
+        var xmin = xeogl.math.MAX_DOUBLE;
+        var ymin = xeogl.math.MAX_DOUBLE;
+        var zmin = xeogl.math.MAX_DOUBLE;
+        var xmax = -xeogl.math.MAX_DOUBLE;
+        var ymax = -xeogl.math.MAX_DOUBLE;
+        var zmax = -xeogl.math.MAX_DOUBLE;
 
         var x, y, z;
 
@@ -4418,10 +4420,10 @@ var Canvas2Image = (function () {
 
         aabb = aabb || math.AABB2();
 
-        aabb[0] = 10000000;
-        aabb[1] = 10000000;
-        aabb[2] = -10000000;
-        aabb[3] = -10000000;
+        aabb[0] = xeogl.math.MAX_DOUBLE;
+        aabb[1] = xeogl.math.MAX_DOUBLE;
+        aabb[2] = -xeogl.math.MAX_DOUBLE;
+        aabb[3] = -xeogl.math.MAX_DOUBLE;
 
         return aabb;
     };
@@ -4435,10 +4437,10 @@ var Canvas2Image = (function () {
 
         aabb = aabb || math.AABB2();
 
-        var xmin = 10000000;
-        var ymin = 10000000;
-        var xmax = -10000000;
-        var ymax = -10000000;
+        var xmin = xeogl.math.MAX_DOUBLE;
+        var ymin = xeogl.math.MAX_DOUBLE;
+        var xmax = -xeogl.math.MAX_DOUBLE;
+        var ymax = -xeogl.math.MAX_DOUBLE;
 
         var x;
         var y;
@@ -5855,14 +5857,28 @@ var Canvas2Image = (function () {
 
             // Draw transparent objects
 
+            var blendType = true;
+            var transparentDepthMask = true;
+
             if (numTransparentObjects > 0) {
 
                 gl.enable(gl.CULL_FACE);
                 gl.enable(gl.BLEND);
-             //   gl.depthMask(false);
-                gl.blendEquation(gl.FUNC_ADD);
-               // gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-                gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+
+
+                if (!transparentDepthMask) {
+                    gl.depthMask(false);
+                }
+
+                if (blendType) {
+
+                    // Makes glTF windows appear correct
+                     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+                } else {
+
+                    gl.blendEquation(gl.FUNC_ADD);
+                    gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+                }
 
                 gl.colorMask(true, true, true, true);
 
@@ -9091,6 +9107,10 @@ var Canvas2Image = (function () {
 
             add("precision " + getFSFloatPrecision(states.gl) + " float;");
 
+            add("vec4 LinearTosRGB( in vec4 value ) {");
+            add("   return vec4(mix(pow(value.rgb,vec3(0.41666))*1.055-vec3(0.055), value.rgb*12.92, vec3(lessThanEqual(value.rgb,vec3(0.0031308)))),value.w);");
+            add("}");
+
             //--------------------------------------------------------------------------------
             // USER CLIP PLANES
             //--------------------------------------------------------------------------------
@@ -9181,10 +9201,6 @@ var Canvas2Image = (function () {
                 add("}");
 
                 // COMMON UTILS
-
-                add("vec4 LinearTosRGB( in vec4 value ) {");
-                add("   return vec4(mix(pow(value.rgb,vec3(0.41666))*1.055-vec3(0.055), value.rgb*12.92, vec3(lessThanEqual(value.rgb,vec3(0.0031308)))),value.w);");
-                add("}");
 
                 if (phongMaterial) {
 
@@ -16494,6 +16510,8 @@ var Canvas2Image = (function () {
 
                         self._spinner._adjustPosition();
 
+                        self._resizeOverlay();
+
                         if (newCanvasSize) {
 
                             var newWidth = canvas.clientWidth;
@@ -16639,6 +16657,26 @@ var Canvas2Image = (function () {
             this.canvas.parentElement.appendChild(div);
 
             this.overlay = div;
+        },
+
+        /** (Re)sizes the overlay DIV to the canvas size
+         * @private
+         */
+        _resizeOverlay: function () {
+
+            if (!this.canvas || !this.overlay) {
+                return;
+            }
+
+            var canvas = this.canvas;
+            var overlay = this.overlay;
+            var overlayStyle = overlay.style;
+
+            var xy = this._getElementXY(canvas);
+            overlayStyle["left"] = xy.x + "px";
+            overlayStyle["top"] = xy.y + "px";
+            overlayStyle["width"] = canvas.clientWidth + "px";
+            overlayStyle["height"] = canvas.clientHeight + "px";
         },
 
         _getElementXY: function (e) {
@@ -30324,12 +30362,12 @@ TODO
                 this._aabb = xeogl.math.AABB3();
             }
 
-            var xmin = 100000;
-            var ymin = 100000;
-            var zmin = 100000;
-            var xmax = -100000;
-            var ymax = -100000;
-            var zmax = -100000;
+            var xmin = xeogl.math.MAX_DOUBLE;
+            var ymin = xeogl.math.MAX_DOUBLE;
+            var zmin = xeogl.math.MAX_DOUBLE;
+            var xmax = -xeogl.math.MAX_DOUBLE;
+            var ymax = -xeogl.math.MAX_DOUBLE;
+            var zmax = -xeogl.math.MAX_DOUBLE;
 
             var component;
             var worldBoundary;
@@ -40048,7 +40086,8 @@ TODO
 
                     this._eye.set(value || [0, 0, 10]);
 
-                    this._needUpdate(0); // Ensure matrix built on next "tick"
+                    this._update();
+                    //this._needUpdate(0); // Ensure matrix built on next "tick"
 
                     /**
                      * Fired whenever this Lookat's  {{#crossLink "Lookat/eye:property"}}{{/crossLink}} property changes.
@@ -40079,7 +40118,8 @@ TODO
 
                     this._look.set(value || [0, 0, 0]);
 
-                    this._needUpdate(0); // Ensure matrix built on next "tick";
+                    this._update();
+                    //this._needUpdate(0); // Ensure matrix built on next "tick";
 
                     /**
                      * Fired whenever this Lookat's  {{#crossLink "Lookat/look:property"}}{{/crossLink}} property changes.
@@ -40108,7 +40148,8 @@ TODO
 
                     this._up.set(value || [0, 1, 0]);
 
-                    this._needUpdate(0); // Ensure matrix built on next "tick"
+                    this._update();
+                    //this._needUpdate(0); // Ensure matrix built on next "tick"
 
                     /**
                      * Fired whenever this Lookat's  {{#crossLink "Lookat/up:property"}}{{/crossLink}} property changes.
@@ -45172,6 +45213,31 @@ xeometry.Viewer = function (cfg) {
         //transparent: true
     });
 
+    scene.lights.lights = [
+        new xeogl.AmbientLight(scene, {
+            color: [1,1,1],
+            intensity: 1
+        }),
+        new xeogl.DirLight(scene, {
+            dir: [0.8, -0.6, -0.8],
+            color: [1.0, 1.0, 1.0],
+            intensity: 1.0,
+            space: "view"
+        }),
+        new xeogl.DirLight(scene, {
+            dir: [-0.8, -0.3, -0.4],
+            color: [0.8, 0.8, 0.8],
+            intensity: 1.0,
+            space: "view"
+        }),
+        new xeogl.DirLight(scene, {
+            dir: [0.4, -0.4, 0.8],
+            color: [0.8, 1.0, 1.0],
+            intensity: 1.0,
+            space: "view"
+        })
+    ];
+
     var math = xeogl.math;
     var camera = scene.camera;
     var view = camera.view;
@@ -45197,10 +45263,10 @@ xeometry.Viewer = function (cfg) {
     var onTick = scene.on("tick", function () {
 
         // Orbit animation
-        if (yspin > 0) {
+        if (yspin !== 0) {
             view.rotateEyeY(yspin);
         }
-        if (xspin > 0) {
+        if (xspin !== 0) {
             view.rotateEyeX(xspin);
         }
 
@@ -45221,7 +45287,7 @@ xeometry.Viewer = function (cfg) {
 
     var cameraFlight = new xeogl.CameraFlightAnimation(scene, {
         fitFOV: 45,
-        duration: 0.1
+        duration: 0
     });
 
     var projections = { // Camera projections to switch between
@@ -45229,9 +45295,11 @@ xeometry.Viewer = function (cfg) {
         orthographic: new xeogl.Ortho(scene, {
             scale: 1.0,
             near: 0.1,
-            far: 10000
+            far: 5000
         })
     };
+
+    projections.perspective.far = 5000;
 
     var projectionType = "perspective";
 
@@ -45299,7 +45367,7 @@ xeometry.Viewer = function (cfg) {
      * @return {Viewer} this
      * @example
      * // Load saw model, fit in view, show two of its objects
-     * viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF/ReciprocatingSaw.gltf", function () {
+     * viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF-MaterialsCommon/ReciprocatingSaw.gltf", function () {
      *    viewer.viewFit("saw");
      *    viewer.hide();
      *    viewer.show(["saw#0.1", "saw#0.2"]);
@@ -45422,7 +45490,12 @@ xeometry.Viewer = function (cfg) {
             error("Object not found: " + id);
             return;
         }
-        return objectModels[id];
+        var model = objectModels[id];
+        if (!model) {
+            error("Model not found for object: " + id); // Should not happen!
+            return;
+        }
+        return model.id;
     };
 
     /**
@@ -45564,7 +45637,7 @@ xeometry.Viewer = function (cfg) {
      * @param {String} type The type.
      * @returns {Viewer} this
      * @example
-     * viewer.setType("saw#1.1", "cover");
+     * viewer.setType("saw#3.1", "cover");
      */
     this.setType = function (id, type) {
         type = type || "DEFAULT";
@@ -45599,7 +45672,7 @@ xeometry.Viewer = function (cfg) {
      * @param {String} id ID of the object.
      * @returns {String} The type of the object.
      * @example
-     * var type = viewer.getType("saw#1.1");
+     * var type = viewer.getType("saw#3.1");
      */
     this.getType = function (id) {
         var object = objects[id];
@@ -45632,7 +45705,7 @@ xeometry.Viewer = function (cfg) {
      * @returns {String} The primitive type. Possible values are 'points', 'lines', 'line-loop',
      * 'line-strip', 'triangles', 'triangle-strip' and 'triangle-fan'.
      * @example
-     * var prim = viewer.getPrimitive("saw#1.1");
+     * var prim = viewer.getPrimitive("saw#3.1");
      */
     this.getPrimitive = function (id) {
         var object = objects[id];
@@ -45648,7 +45721,7 @@ xeometry.Viewer = function (cfg) {
      * @param {String} id ID of the object.
      * @returns {Float32Array} The vertex positions.
      * @example
-     * var positions = viewer.getPositions("saw#1.1");
+     * var positions = viewer.getPositions("saw#3.1");
      */
     this.getPositions = function (id) {
         var object = objects[id];
@@ -45664,7 +45737,7 @@ xeometry.Viewer = function (cfg) {
      * @param {String} id ID of the object.
      * @returns {Int32Array} The indices.
      * @example
-     * var indices = viewer.getIndices("saw#1.1");
+     * var indices = viewer.getIndices("saw#3.1");
      */
     this.getIndices = function (id) {
         var object = objects[id];
@@ -45692,7 +45765,7 @@ xeometry.Viewer = function (cfg) {
      * @returns {Viewer} this
      * @example
      * viewer.setScale("saw", [1.5, 1.5, 1.5]);
-     * viewer.setScale("saw#1.1", [0.5, 0.5, 0.5]);
+     * viewer.setScale("saw#3.1", [0.5, 0.5, 0.5]);
      */
     this.setScale = function (id, xyz) {
         var scale = scales[id];
@@ -45721,7 +45794,7 @@ xeometry.Viewer = function (cfg) {
      * @return {[Number, Number, Number]} Scale factors for the X, Y and Z axis.
      * @example
      * var sawScale = viewer.getScale("saw");
-     * var sawCoverScale = viewer.getScale("saw#1.1");
+     * var sawCoverScale = viewer.getScale("saw#3.1");
      */
     this.getScale = function (id) {
         var scale = scales[id];
@@ -45752,7 +45825,7 @@ xeometry.Viewer = function (cfg) {
      * @returns {Viewer} this
      * @example
      * viewer.setRotate("saw", [90, 0, 0]);
-     * viewer.setRotate("saw#1.1", [0, 35, 0]);
+     * viewer.setRotate("saw#3.1", [0, 35, 0]);
      */
     this.setRotate = (function () {
         var quat = math.vec4();
@@ -45789,7 +45862,7 @@ xeometry.Viewer = function (cfg) {
      * @return {[Number, Number, Number]} Rotation angles, in degrees, for the X, Y and Z axis.
      * @example
      * var sawRotate = viewer.getRotate("saw");
-     * var sawCoverRotate = viewer.getRotate("saw#1.1");
+     * var sawCoverRotate = viewer.getRotate("saw#3.1");
      */
     this.getRotate = function (id) {
         var component = getTransformableComponent(id);
@@ -45815,7 +45888,7 @@ xeometry.Viewer = function (cfg) {
      * @returns {Viewer} this
      * @example
      * viewer.setTranslate("saw", [100, 30, 0]);
-     * viewer.setTranslate("saw#1.1", [50, 30, 0]);
+     * viewer.setTranslate("saw#3.1", [50, 30, 0]);
      */
     this.setTranslate = function (id, xyz) {
         var translation = translations[id];
@@ -45839,7 +45912,7 @@ xeometry.Viewer = function (cfg) {
      * @returns {Viewer} this
      * @example
      * viewer.addTranslate("saw", [10,0,0]);
-     * viewer.addTranslate("saw#1.1", [10,0,0]);
+     * viewer.addTranslate("saw#3.1", [10,0,0]);
      */
     this.addTranslate = function (id, xyz) {
         var translation = translations[id];
@@ -45869,7 +45942,7 @@ xeometry.Viewer = function (cfg) {
      * @return {[Number, Number, Number]} World-space translation vector.
      * @example
      * var sawTranslate = viewer.getTranslate("saw");
-     * var sawCoverTranslate = viewer.getTranslate("saw#1.1");
+     * var sawCoverTranslate = viewer.getTranslate("saw#3.1");
      */
     this.getTranslate = function (id) {
         var translation = translations[id];
@@ -46201,7 +46274,7 @@ xeometry.Viewer = function (cfg) {
      * @param {String|String} id ID of an object.
      * @return {[Number, Number, Number]} color The RGB color of the object, with each element in range [0..1].
      * @example
-     * var objectColor = viewer.getColor("saw#1.1");
+     * var objectColor = viewer.getColor("saw#3.1");
      */
     this.getColor = function (id) {
         var object = objects[id];
@@ -46940,7 +47013,7 @@ xeometry.Viewer = function (cfg) {
         if (xeogl._isString(target)) {
             var annotation = annotations[target];
             if (annotation) {
-                if (ok || cameraFlight.duration > 0.1) {
+                if (ok || cameraFlight.duration > 0) {
                     cameraFlight.flyTo({eye: annotation.eye, look: annotation.look, up: annotation.up}, ok);
                 } else {
                     cameraFlight.jumpTo({eye: annotation.eye, look: annotation.look, up: annotation.up});
@@ -46948,7 +47021,7 @@ xeometry.Viewer = function (cfg) {
                 return this;
             }
         }
-        if (ok || cameraFlight.duration > 0.1) {
+        if (ok || cameraFlight.duration > 0) {
             cameraFlight.flyTo({aabb: this.getAABB(target)}, ok);
         } else {
             cameraFlight.jumpTo({aabb: this.getAABB(target)});
@@ -47082,7 +47155,7 @@ xeometry.Viewer = function (cfg) {
                     };
                     break;
             }
-            if (ok || cameraFlight.duration > 0) {
+            if (ok || cameraFlight.duration > 0.1) {
                 cameraFlight.flyTo(cameraTarget, ok);
             } else {
                 cameraFlight.jumpTo(cameraTarget);
@@ -48226,7 +48299,7 @@ xeometry.Viewer = function (cfg) {
                 bookmark.perspectiveNear = projections.perspective.near;
             }
 
-            if (projections.perspective.far !== 10000.0) {
+                if (projections.perspective.far !== 5000.0) {
                 bookmark.perspectiveFar = projections.perspective.far;
             }
 
@@ -48238,7 +48311,7 @@ xeometry.Viewer = function (cfg) {
                 bookmark.orthoNear = projections.orthographic.near;
             }
 
-            if (projections.orthographic.far !== 10000.0) {
+            if (projections.orthographic.far !== 5000.0) {
                 bookmark.orthoFar = projections.orthographic.far;
             }
 
@@ -48363,15 +48436,15 @@ xeometry.Viewer = function (cfg) {
                     self.hide(invisible);
                 }
                 self.setEyeLookUp(bookmark.lookat.eye, bookmark.lookat.look, bookmark.lookat.up);
-                (bookmark.lockGimbalY === false) ? self.lockGimbalY() : self.unlockGimbalY();
+                (bookmark.gimbalLockY === false) ? self.unlockGimbalY() : self.lockGimbalY();
                 self.setProjection(bookmark.projection || "perspective");
                 self.setViewFitFOV(bookmark.viewFitFOV || 45);
                 self.setViewFitDuration(bookmark.viewFitDuration !== undefined ? bookmark.viewFitDuration : 0.5);
                 self.setPerspectiveNear(bookmark.perspectiveNear !== undefined ? bookmark.perspectiveNear : 0.1);
-                self.setPerspectiveFar(bookmark.perspectiveFar != undefined ? bookmark.perspectiveFar : 10000.0);
+                self.setPerspectiveFar(bookmark.perspectiveFar != undefined ? bookmark.perspectiveFar : 5000.0);
                 self.setPerspectiveFOV(bookmark.perspectiveFOV || 60);
                 self.setOrthoNear(bookmark.orthoNear != undefined ? bookmark.orthoNear : 0.1);
-                self.setOrthoFar(bookmark.orthoFar != undefined ? bookmark.orthoFar : 10000);
+                self.setOrthoFar(bookmark.orthoFar != undefined ? bookmark.orthoFar : 5000);
                 self.setOrthoScale(bookmark.orthoScale != undefined ? bookmark.orthoScale : 1.0);
                 self.setOutlineThickness(bookmark.outlineThickness != undefined ? bookmark.outlineThickness : 15);
                 self.setOutlineColor(bookmark.outlineColor != undefined ? bookmark.outlineColor : [1, 1, 0]);
@@ -48438,7 +48511,7 @@ xeometry.Viewer = function (cfg) {
 
     this.setBookmark(cfg);
 };;/**
- * Controls the camera of a xeometry.Viewer with the mouse.
+ * Controls the camera of a {@link xeometry.Viewer} with the mouse.
  *
  * This is xeometry's bundled, default camera control.
  *
@@ -48446,9 +48519,7 @@ xeometry.Viewer = function (cfg) {
  * @param {Viewer} viewer A Viewer.
  * @param {Object} [cfg] Configs
  * @example
- *
  * var viewer = new xeometry.Viewer();
- *
  * var cameraControl = new xeometry.CameraControl(viewer);
  */
 xeometry.CameraControl = function (viewer, cfg) {

@@ -4,28 +4,25 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <script src="../build/xeometry.min.js"></script>
+    <script src="js/pickQueryObject.js"></script>
     <link href="css/styles.css" rel="stylesheet"/>
 <body>
+
+<div id="info">
+    <h1>custom clipping planes</h1>
+</div>
 
 <script>
 
     var viewer = new xeometry.Viewer();
 
+    viewer.setEye([-130, 0, 350]);
+    viewer.setLook([-130, 0, 0]);
+
+    viewer.createClip("clip1", {pos: [0, 0, 0], dir: [0, 0, -1]});
+
     viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF-MaterialsCommon/ReciprocatingSaw.gltf", function () {
-
-        viewer.setViewFitDuration(0);
-        viewer.viewFit();
-
-        var angles = [0,0,0];
-
-        function update() {
-            angles[1] += 0.1;
-            angles[0] += 0.05;
-            viewer.setRotate("saw", angles);
-            requestAnimationFrame(update);
-        }
-
-        update();
+        viewer.setRotate("saw", [90, 0, 0]);
     });
 
     new xeometry.CameraControl(viewer);

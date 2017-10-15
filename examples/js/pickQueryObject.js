@@ -7,7 +7,7 @@ xeometry.PickQueryObject = function (viewer) {
             var canvasPos = getClickCoordsWithinElement(e);
             var hit = viewer.pickSurface(canvasPos);
             if (hit) {
-                alert(JSON.stringify(hit, null, "\t"));
+                console.log(JSON.stringify(hit, null, "\t"));
             }
         }
         e.preventDefault();

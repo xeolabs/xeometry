@@ -13,43 +13,43 @@
     <h2>creating clipping planes:</h2>
 
     <ul>
-        <li><a href='javascript:viewer.createClip("clip1", { pos:[0,0,0], dir:[0,0,-1]})'>createClip("clip1", {pos:[0,0,0], dir:[0,0,-1]})</a></li>
-        <li><a href='javascript:viewer.createClip("clip2", { pos:[0,10,0], dir:[0,-1,-1]})'>createClip("clip2", {pos:[0,10,0], dir:[0,-1,-1]})</a></li>
+        <li><a href='javascript:viewer.createClip("clip1", { pos:[0,0,0], dir:[0,0,-1]})'>createClip("clip1", {pos:[0,0,0], dir:[0,0,-1]});</a> <span class="comment">// Create first clipping plane</span></li>
+        <li><a href='javascript:viewer.createClip("clip2", { pos:[0,10,0], dir:[0,-1,-1]})'>createClip("clip2", {pos:[0,10,0], dir:[0,-1,-1]});</a> <span class="comment">// Create second clipping plane</span></li>
     </ul>
 
     <h2>destroying clipping planes: <span class="broken">(TODO: breaks when all are destroyed)</span></h2>
 
     <ul>
-        <li><a href='javascript:viewer.destroyClip()'>destroyClip()</a></li>
-        <li><a href='javascript:viewer.destroyClip("clip1")'>destroyClip("clip1")</a></li>
-        <li><a href='javascript:viewer.destroyClip("clip2")'>destroyClip("clip2")</a></li>
+        <li><a href='javascript:viewer.destroyClip()'>destroyClip();</a> <span class="comment">// Destroy all clip planes</span></li>
+        <li><a href='javascript:viewer.destroyClip("clip1")'>destroyClip("clip1");</a> <span class="comment">// Destroy first plane</span></li>
+        <li><a href='javascript:viewer.destroyClip("clip2")'>destroyClip("clip2")</a> <span class="comment">// Destroy second plane</span></li>
     </ul>
 
     <h2>enabling clipping planes:</h2>
 
     <ul>
-        <li><a href='javascript:viewer.enableClip()'>enableClip()</a></li>
-        <li><a href='javascript:viewer.enableClip("clip1")'>enableClip("clip1")</a></li>
-        <li><a href='javascript:viewer.enableClip("clip2")'>enableClip("clip2")</a></li>
+        <li><a href='javascript:viewer.enableClip()'>enableClip(); </a> <span class="comment">// Enable all clipping planes</span></li>
+        <li><a href='javascript:viewer.enableClip("clip1")'>enableClip("clip1"); </a> <span class="comment">// Enable first plane</span></li>
+        <li><a href='javascript:viewer.enableClip("clip2")'>enableClip("clip2"); </a> <span class="comment">// Enable second plane</span></li>
     </ul>
 
     <h2>disabling clipping planes:</h2>
 
     <ul>
-        <li><a href='javascript:viewer.disableClip()'>disableClip()</a></li>
-        <li><a href='javascript:viewer.disableClip("clip1")'>disableClip("clip1")</a></li>
-        <li><a href='javascript:viewer.disableClip("clip2")'>disableClip("clip2")</a></li>
+        <li><a href='javascript:viewer.disableClip()'>disableClip(); </a> <span class="comment">// Disable all clipping planes</span></li>
+        <li><a href='javascript:viewer.disableClip("clip1")'>disableClip("clip1"); </a> <span class="comment">// Disable first plane</span></li>
+        <li><a href='javascript:viewer.disableClip("clip2")'>disableClip("clip2"); </a> <span class="comment">// Disable second plane</span></li>
     </ul>
 
     <h2>controlling which objects are clipped</h2>
 
     <ul>
-        <li><a href="javascript:viewer.setClippable()">setClippable()</a></li>
-        <li><a href="javascript:viewer.setUnclippable()">setUnclippable()</a></li>
-        <li><a href="javascript:viewer.setClippable('saw')">setClippable("saw")</a></li>
-        <li><a href="javascript:viewer.setUnclippable('saw')">setUnclippable("saw")</a></li>
-        <li><a href='javascript:viewer.setClippable(["saw#1.1", "saw#1.2"])'>setClippable(["saw#1.1", "saw#1.2"])</a></li>
-        <li><a href='javascript:viewer.setUnclippable(["saw#1.1", "saw#1.2"])'>setUnclippable(["saw#1.1", "saw#1.2"])</a></li>
+        <li><a href="javascript:viewer.setClippable()">setClippable()</a> <span class="comment">// Make scene clippable</span></li>
+        <li><a href="javascript:viewer.setUnclippable()">setUnclippable()</a> <span class="comment">// Make scene unclippable</span></li>
+        <li><a href="javascript:viewer.setClippable('saw')">setClippable("saw")</a> <span class="comment">// Make saw clippable</span></li>
+        <li><a href="javascript:viewer.setUnclippable('saw')">setUnclippable("saw")</a> <span class="comment">// Make saw unclippable</span></li>
+        <li><a href='javascript:viewer.setClippable(["saw#3.1", "saw#3.2"])'>setClippable(["saw#3.1", "saw#3.2"])</a> <span class="comment">// Make cover unclippable</span></li>
+        <li><a href='javascript:viewer.setUnclippable(["saw#3.1", "saw#3.2"])'>setUnclippable(["saw#3.1", "saw#3.2"])</a> <span class="comment">// Make cover clippable</span></li>
     </ul>
 
 </div>
@@ -63,12 +63,12 @@
 
     viewer.setViewFitDuration(1);
 
-    viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF/ReciprocatingSaw.gltf", function () {
+    viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF-MaterialsCommon/ReciprocatingSaw.gltf", function () {
         viewer.setRotate("saw", [90, 0, 0]);
     });
 
     new xeometry.CameraControl(viewer);
-    
+
 </script>
 </body>
 </html>

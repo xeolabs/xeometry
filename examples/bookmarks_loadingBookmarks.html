@@ -13,22 +13,22 @@
     <ul>
         <li><a href='javascript:viewer.setBookmark(bookmarks["saw-panelRemoved"])'>
             setBookmark(bookmarks["saw-panelRemoved"])
-        </a></li>
+         </a> <span class="comment">// Saw model with panel hidden</span></li>
         <li><a href='javascript:viewer.setBookmark(bookmarks["saw-clipped"])'>
             setBookmark(bookmarks["saw-clipped"])
-        </a></li>
+         </a> <span class="comment">// Saw model with custom clipping plane</span></li>
         <li><a href='javascript:viewer.setBookmark(bookmarks["gearbox-outlined"])'>
             setBookmark(bookmarks["gearbox-outlined"])
-        </a></li>
+         </a> <span class="comment">// Gearbox model with two outlined objects</span></li>
         <li><a href='javascript:viewer.setBookmark(bookmarks["saw-xrayed"])'>
             setBookmark(bookmarks["saw-xrayed"])
-        </a></li>
+         </a> <span class="comment">// Saw model with transparent cover</span></li>
         <li><a href='javascript:viewer.setBookmark(bookmarks["saw-transformed"])'>
             setBookmark(bookmarks["saw-transformed"])
-        </a></li>
+         </a> <span class="comment">// Saw model with cover moved</span></li>
         <li><a href='javascript:viewer.setBookmark(bookmarks["saw-annotated"])'>
             setBookmark(bookmarks["saw-annotated"])
-        </a></li>
+         </a> <span class="comment">// Saw model with annotations</span></li>
 
     </ul>
 </div>
@@ -47,17 +47,17 @@
             "models": [
                 {
                     "id": "saw",
-                    "src": "models/gltf/ReciprocatingSaw/glTF/ReciprocatingSaw.gltf",
+                    "src": "models/gltf/ReciprocatingSaw/glTF-MaterialsCommon/ReciprocatingSaw.gltf",
                     "rotate": [90, 0, 0]
                 }
             ],
             "objects": [
                 {
-                    "id": "saw#1.1",
+                    "id": "saw#3.1",
                     "visible": false
                 },
                 {
-                    "id": "saw#1.2",
+                    "id": "saw#3.2",
                     "visible": false
                 }
             ],
@@ -76,17 +76,17 @@
             "models": [
                 {
                     "id": "saw",
-                    "src": "models/gltf/ReciprocatingSaw/glTF/ReciprocatingSaw.gltf",
+                    "src": "models/gltf/ReciprocatingSaw/glTF-MaterialsCommon/ReciprocatingSaw.gltf",
                     "rotate": [90, 0, 0]
                 }
             ],
             "objects": [
                 {
-                    "id": "saw#1.1",
+                    "id": "saw#3.1",
                     "clippable": false
                 },
                 {
-                    "id": "saw#1.2",
+                    "id": "saw#3.2",
                     "clippable": false
                 }
             ],
@@ -175,7 +175,7 @@
             "models": [
                 {
                     "id": "saw",
-                    "src": "models/gltf/ReciprocatingSaw/glTF/ReciprocatingSaw.gltf",
+                    "src": "models/gltf/ReciprocatingSaw/glTF-MaterialsCommon/ReciprocatingSaw.gltf",
                     "rotate": [90, 0, 0]
                 }
             ],
@@ -189,11 +189,11 @@
                     "opacity": 0.6
                 },
                 {
-                    "id": "saw#1.1",
+                    "id": "saw#3.1",
                     "opacity": 0.6
                 },
                 {
-                    "id": "saw#1.2",
+                    "id": "saw#3.2",
                     "opacity": 0.6
                 },
                 {
@@ -647,13 +647,13 @@
             "models": [
                 {
                     "id": "saw",
-                    "src": "models/gltf/ReciprocatingSaw/glTF/ReciprocatingSaw.gltf",
+                    "src": "models/gltf/ReciprocatingSaw/glTF-MaterialsCommon/ReciprocatingSaw.gltf",
                     "rotate": [90, 0, 0]
                 }
             ],
             "objects": [
                 {
-                    "id": "saw#1.1",
+                    "id": "saw#3.1",
                     "translate": [0, 80, -50],
                     "rotate": [-90, 0, 0]
                 }
@@ -672,50 +672,52 @@
             "models": [
                 {
                     "id": "saw",
-                    "src": "models/gltf/ReciprocatingSaw/glTF/ReciprocatingSaw.gltf",
+                    "src": "models/gltf/ReciprocatingSaw/glTF-MaterialsCommon/ReciprocatingSaw.gltf",
                     "rotate": [90, 0, 0]
                 }
             ],
             "objects": [
                 {
-                    "id": "saw#1.1",
+                    "id": "saw#3.1",
                     "visible": false
                 },
                 {
-                    "id": "saw#1.2",
+                    "id": "saw#3.2",
                     "visible": false
                 }
             ],
             "annotations": [
                 {
                     "id": "a1",
-                    "primIndex": 1224,
-                    "bary": [-0.05, 0.6, 0.45],
+                    "object": "saw#3.32",
+                    "primIndex": 3303,
+                    "bary": [0.3333, 0.3333, 0.3333],
                     "glyph": "A1",
-                    "title": "Armature",
-                    "desc": "The armature consists of a set of electromagnets",
-                    "object": "saw#1.44",
+                    "title": "Armature Bearing",
+                    "desc": "DeWalt Reciprocating Saw Ball Bearing 330003-09",
                     "eye": [-197.05, -16.27, 44.82],
                     "look": [-148.14, -20.64, 0],
-                    "up": [-0.39, 0.85, 0.35]
+                    "up": [-0.39, 0.85, 0.35],
+                    "occludable": false
                 },
                 {
                     "id": "a2",
-                    "primIndex": 9513,
-                    "bary": [2.01, 0.13, -1.14],
+                    "primIndex": 11532,
+                    "bary": [0.3333, 0.3333, 0.3333],
                     "glyph": "A2",
-                    "title": "Heatsink",
-                    "desc": "Dissipates heat from the motor",
-                    "object": "saw#1.27",
+                    "title": "Bearing enclosure",
+                    "desc": "Front bearing enclosure 330003-12",
+                    "object": "saw#3.94",
                     "eye": [-107.94, -31.69, 101.03],
                     "look": [-103.53, -20.64, 0],
-                    "up": [-0.03, 0.75, 0.66]
+                    "up": [-0.03, 0.75, 0.66],
+                    "occludable": false
                 }
             ],
             "lookat": {
-                "eye": [-291.65, 176.3, 280.43],
-                "look": [-110.89, -0.46, 44.86],
-                "up": [-0.05, 1, 0.06]
+                "eye": [37.23735046386719, 62.45271682739258, 301.0503845214844],
+                "look": [-130, 0, 0],
+                "up": [0, 1, 0]
             },
             "viewFitFOV": 50,
             "viewFitDuration": 0.1

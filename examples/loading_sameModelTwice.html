@@ -11,21 +11,16 @@
 
     var viewer = new xeometry.Viewer();
 
-    viewer.setEyeLookUp([0, 10, 35], [0, 10, 0], [0, 1, 0]);
+    viewer.setEye([-130, 60, 450]);
+    viewer.setLook([-130, 60, 0]);
 
-    viewer.yspin(0.1);
-
-    viewer.loadModel("saw1", "models/gltf/ReciprocatingSaw/glTF/ReciprocatingSaw.gltf", function () {
+    viewer.loadModel("saw1", "models/gltf/ReciprocatingSaw/glTF-MaterialsCommon/ReciprocatingSaw.gltf", function () {
         viewer.setTranslate("saw1", [-10, 0, 0]);
-        viewer.setScale("saw1", [.09, .09, .09]);
         viewer.setRotate("saw1", [90, 0, 0]);
 
-        viewer.loadModel("saw2", "models/gltf/ReciprocatingSaw/glTF/ReciprocatingSaw.gltf", function () {
-            viewer.setTranslate("saw2", [-10, 17, 0]);
-            viewer.setScale("saw2", [.09, .09, .09]);
+        viewer.loadModel("saw2", "models/gltf/ReciprocatingSaw/glTF-MaterialsCommon/ReciprocatingSaw.gltf", function () {
+            viewer.setTranslate("saw2", [-10, 150, 0]);
             viewer.setRotate("saw2", [90, 0, 0]);
-
-            //viewer.viewFit(["saw1", "saw2"]);
         });
     });
 

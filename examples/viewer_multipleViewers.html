@@ -48,8 +48,7 @@
     <h1>multiple viewers in a page</h1>
 </div>
 
-<canvas id="myCanvas1" class="multiCanvas" width="400px" height="400px"
-        style="  background-image: url(textures/diffuse/uvGrid2.jpg);"></canvas>
+<canvas id="myCanvas1" class="multiCanvas" width="400px" height="400px"></canvas>
 <canvas id="myCanvas2" class="multiCanvas" width="400px" height="400px"></canvas>
 <canvas id="myCanvas3" class="multiCanvas" width="400px" height="400px"></canvas>
 
@@ -68,7 +67,7 @@
             canvas: document.getElementById("myCanvas2")
         });
 
-        viewer2.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF/ReciprocatingSaw.gltf", function () {
+        viewer2.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF-MaterialsCommon/ReciprocatingSaw.gltf", function () {
 
             viewer2.viewFit();
             viewer2.yspin(-0.2);

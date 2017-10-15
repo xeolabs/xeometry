@@ -45299,7 +45299,7 @@ xeometry.Viewer = function (cfg) {
      * @return {Viewer} this
      * @example
      * // Load saw model, fit in view, show two of its objects
-     * viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF/ReciprocatingSaw.gltf", function () {
+     * viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF-MaterialsCommon/ReciprocatingSaw.gltf", function () {
      *    viewer.viewFit("saw");
      *    viewer.hide();
      *    viewer.show(["saw#0.1", "saw#0.2"]);
@@ -45564,7 +45564,7 @@ xeometry.Viewer = function (cfg) {
      * @param {String} type The type.
      * @returns {Viewer} this
      * @example
-     * viewer.setType("saw#1.1", "cover");
+     * viewer.setType("saw#3.1", "cover");
      */
     this.setType = function (id, type) {
         type = type || "DEFAULT";
@@ -45599,7 +45599,7 @@ xeometry.Viewer = function (cfg) {
      * @param {String} id ID of the object.
      * @returns {String} The type of the object.
      * @example
-     * var type = viewer.getType("saw#1.1");
+     * var type = viewer.getType("saw#3.1");
      */
     this.getType = function (id) {
         var object = objects[id];
@@ -45632,7 +45632,7 @@ xeometry.Viewer = function (cfg) {
      * @returns {String} The primitive type. Possible values are 'points', 'lines', 'line-loop',
      * 'line-strip', 'triangles', 'triangle-strip' and 'triangle-fan'.
      * @example
-     * var prim = viewer.getPrimitive("saw#1.1");
+     * var prim = viewer.getPrimitive("saw#3.1");
      */
     this.getPrimitive = function (id) {
         var object = objects[id];
@@ -45648,7 +45648,7 @@ xeometry.Viewer = function (cfg) {
      * @param {String} id ID of the object.
      * @returns {Float32Array} The vertex positions.
      * @example
-     * var positions = viewer.getPositions("saw#1.1");
+     * var positions = viewer.getPositions("saw#3.1");
      */
     this.getPositions = function (id) {
         var object = objects[id];
@@ -45664,7 +45664,7 @@ xeometry.Viewer = function (cfg) {
      * @param {String} id ID of the object.
      * @returns {Int32Array} The indices.
      * @example
-     * var indices = viewer.getIndices("saw#1.1");
+     * var indices = viewer.getIndices("saw#3.1");
      */
     this.getIndices = function (id) {
         var object = objects[id];
@@ -45692,7 +45692,7 @@ xeometry.Viewer = function (cfg) {
      * @returns {Viewer} this
      * @example
      * viewer.setScale("saw", [1.5, 1.5, 1.5]);
-     * viewer.setScale("saw#1.1", [0.5, 0.5, 0.5]);
+     * viewer.setScale("saw#3.1", [0.5, 0.5, 0.5]);
      */
     this.setScale = function (id, xyz) {
         var scale = scales[id];
@@ -45721,7 +45721,7 @@ xeometry.Viewer = function (cfg) {
      * @return {[Number, Number, Number]} Scale factors for the X, Y and Z axis.
      * @example
      * var sawScale = viewer.getScale("saw");
-     * var sawCoverScale = viewer.getScale("saw#1.1");
+     * var sawCoverScale = viewer.getScale("saw#3.1");
      */
     this.getScale = function (id) {
         var scale = scales[id];
@@ -45752,7 +45752,7 @@ xeometry.Viewer = function (cfg) {
      * @returns {Viewer} this
      * @example
      * viewer.setRotate("saw", [90, 0, 0]);
-     * viewer.setRotate("saw#1.1", [0, 35, 0]);
+     * viewer.setRotate("saw#3.1", [0, 35, 0]);
      */
     this.setRotate = (function () {
         var quat = math.vec4();
@@ -45789,7 +45789,7 @@ xeometry.Viewer = function (cfg) {
      * @return {[Number, Number, Number]} Rotation angles, in degrees, for the X, Y and Z axis.
      * @example
      * var sawRotate = viewer.getRotate("saw");
-     * var sawCoverRotate = viewer.getRotate("saw#1.1");
+     * var sawCoverRotate = viewer.getRotate("saw#3.1");
      */
     this.getRotate = function (id) {
         var component = getTransformableComponent(id);
@@ -45815,7 +45815,7 @@ xeometry.Viewer = function (cfg) {
      * @returns {Viewer} this
      * @example
      * viewer.setTranslate("saw", [100, 30, 0]);
-     * viewer.setTranslate("saw#1.1", [50, 30, 0]);
+     * viewer.setTranslate("saw#3.1", [50, 30, 0]);
      */
     this.setTranslate = function (id, xyz) {
         var translation = translations[id];
@@ -45839,7 +45839,7 @@ xeometry.Viewer = function (cfg) {
      * @returns {Viewer} this
      * @example
      * viewer.addTranslate("saw", [10,0,0]);
-     * viewer.addTranslate("saw#1.1", [10,0,0]);
+     * viewer.addTranslate("saw#3.1", [10,0,0]);
      */
     this.addTranslate = function (id, xyz) {
         var translation = translations[id];
@@ -45869,7 +45869,7 @@ xeometry.Viewer = function (cfg) {
      * @return {[Number, Number, Number]} World-space translation vector.
      * @example
      * var sawTranslate = viewer.getTranslate("saw");
-     * var sawCoverTranslate = viewer.getTranslate("saw#1.1");
+     * var sawCoverTranslate = viewer.getTranslate("saw#3.1");
      */
     this.getTranslate = function (id) {
         var translation = translations[id];
@@ -46201,7 +46201,7 @@ xeometry.Viewer = function (cfg) {
      * @param {String|String} id ID of an object.
      * @return {[Number, Number, Number]} color The RGB color of the object, with each element in range [0..1].
      * @example
-     * var objectColor = viewer.getColor("saw#1.1");
+     * var objectColor = viewer.getColor("saw#3.1");
      */
     this.getColor = function (id) {
         var object = objects[id];

@@ -2,6 +2,8 @@ module.exports = function (grunt) {
 
     "use strict";
 
+    var path = require('path');
+
     var devScripts = [
 
         "libs/xeogl/xeogl.js",
@@ -59,9 +61,10 @@ module.exports = function (grunt) {
                 files: [{
                     "expand": true,
                     "cwd": "js",
-                    "src": ["**/*.js"]
+                    "src": ["viewer.js", "cameraControl.js"]
                 }],
                 options: {
+                  //  theme: path.join(__dirname, "documentation-theme-light"),
                     destination: "docs",
                     name: "xeometry",
                     version: "V1.0.0"

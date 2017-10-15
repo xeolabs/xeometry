@@ -49,12 +49,12 @@
         canvas: "myCanvas"
     });
 
-    viewer.setViewFitDuration(0);
+    viewer.setEye([-130, 0, 350]);
+    viewer.setLook([-130, 0, 0]);
 
-    viewer.loadModel("house", "models/gltf/vianney_house_2/scene.gltf", function () {
-        viewer.viewFitRight("house");
+    viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF-MaterialsCommon/ReciprocatingSaw.gltf", function () {
+        viewer.setRotate("saw", [90, 0, 0]);
         viewer.yspin(0.3);
-        viewer.setViewFitFOV(70);
     });
 
     new xeometry.CameraControl(viewer);

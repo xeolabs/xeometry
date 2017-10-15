@@ -4,7 +4,7 @@
  * A WebGL-based 3D visualization engine from xeoLabs
  * http://xeogl.org/
  *
- * Built on 2017-10-05
+ * Built on 2017-10-15
  *
  * MIT License
  * Copyright 2017, Lindsay Kay
@@ -1182,6 +1182,8 @@ var Canvas2Image = (function () {
      */
     var math = xeogl.math = {
 
+        MAX_DOUBLE: +100000000,
+        MIN_DOUBLE: -100000000,
         /**
          * The number of radiians in a degree (0.0174532925).
          * @property DEGTORAD
@@ -3969,12 +3971,12 @@ var Canvas2Image = (function () {
 
         aabb = aabb || math.AABB3();
 
-        aabb[0] = 10000000;
-        aabb[1] = 10000000;
-        aabb[2] = 10000000;
-        aabb[3] = -10000000;
-        aabb[4] = -10000000;
-        aabb[5] = -10000000;
+        aabb[0] = xeogl.math.MAX_DOUBLE;
+        aabb[1] = xeogl.math.MAX_DOUBLE;
+        aabb[2] = xeogl.math.MAX_DOUBLE;
+        aabb[3] = -xeogl.math.MAX_DOUBLE;
+        aabb[4] = -xeogl.math.MAX_DOUBLE;
+        aabb[5] = -xeogl.math.MAX_DOUBLE;
 
         return aabb;
     };
@@ -4041,12 +4043,12 @@ var Canvas2Image = (function () {
 
         aabb = aabb || math.AABB3();
 
-        var xmin = 100000;
-        var ymin = 100000;
-        var zmin = 100000;
-        var xmax = -100000;
-        var ymax = -100000;
-        var zmax = -100000;
+        var xmin = xeogl.math.MAX_DOUBLE;
+        var ymin = xeogl.math.MAX_DOUBLE;
+        var zmin = xeogl.math.MAX_DOUBLE;
+        var xmax = -xeogl.math.MAX_DOUBLE;
+        var ymax = -xeogl.math.MAX_DOUBLE;
+        var zmax = -xeogl.math.MAX_DOUBLE;
 
         var x, y, z;
 
@@ -4100,12 +4102,12 @@ var Canvas2Image = (function () {
 
         aabb = aabb || math.AABB3();
 
-        var xmin = 100000;
-        var ymin = 100000;
-        var zmin = 100000;
-        var xmax = -100000;
-        var ymax = -100000;
-        var zmax = -100000;
+        var xmin = xeogl.math.MAX_DOUBLE;
+        var ymin = xeogl.math.MAX_DOUBLE;
+        var zmin = xeogl.math.MAX_DOUBLE;
+        var xmax = -xeogl.math.MAX_DOUBLE;
+        var ymax = -xeogl.math.MAX_DOUBLE;
+        var zmax = -xeogl.math.MAX_DOUBLE;
 
         var x, y, z;
 
@@ -4159,12 +4161,12 @@ var Canvas2Image = (function () {
 
         aabb = aabb || math.AABB3();
 
-        var xmin = 100000;
-        var ymin = 100000;
-        var zmin = 100000;
-        var xmax = -100000;
-        var ymax = -100000;
-        var zmax = -100000;
+        var xmin = xeogl.math.MAX_DOUBLE;
+        var ymin = xeogl.math.MAX_DOUBLE;
+        var zmin = xeogl.math.MAX_DOUBLE;
+        var xmax = -xeogl.math.MAX_DOUBLE;
+        var ymax = -xeogl.math.MAX_DOUBLE;
+        var zmax = -xeogl.math.MAX_DOUBLE;
 
         var x, y, z;
 
@@ -4404,10 +4406,10 @@ var Canvas2Image = (function () {
 
         aabb = aabb || math.AABB2();
 
-        aabb[0] = 10000000;
-        aabb[1] = 10000000;
-        aabb[2] = -10000000;
-        aabb[3] = -10000000;
+        aabb[0] = xeogl.math.MAX_DOUBLE;
+        aabb[1] = xeogl.math.MAX_DOUBLE;
+        aabb[2] = -xeogl.math.MAX_DOUBLE;
+        aabb[3] = -xeogl.math.MAX_DOUBLE;
 
         return aabb;
     };
@@ -4421,10 +4423,10 @@ var Canvas2Image = (function () {
 
         aabb = aabb || math.AABB2();
 
-        var xmin = 10000000;
-        var ymin = 10000000;
-        var xmax = -10000000;
-        var ymax = -10000000;
+        var xmin = xeogl.math.MAX_DOUBLE;
+        var ymin = xeogl.math.MAX_DOUBLE;
+        var xmax = -xeogl.math.MAX_DOUBLE;
+        var ymax = -xeogl.math.MAX_DOUBLE;
 
         var x;
         var y;
@@ -5842,7 +5844,7 @@ var Canvas2Image = (function () {
             // Draw transparent objects
 
             var blendType = true;
-            var transparentDepthMask = false;
+            var transparentDepthMask = true;
 
             if (numTransparentObjects > 0) {
 
@@ -9091,6 +9093,10 @@ var Canvas2Image = (function () {
 
             add("precision " + getFSFloatPrecision(states.gl) + " float;");
 
+            add("vec4 LinearTosRGB( in vec4 value ) {");
+            add("   return vec4(mix(pow(value.rgb,vec3(0.41666))*1.055-vec3(0.055), value.rgb*12.92, vec3(lessThanEqual(value.rgb,vec3(0.0031308)))),value.w);");
+            add("}");
+
             //--------------------------------------------------------------------------------
             // USER CLIP PLANES
             //--------------------------------------------------------------------------------
@@ -9181,10 +9187,6 @@ var Canvas2Image = (function () {
                 add("}");
 
                 // COMMON UTILS
-
-                add("vec4 LinearTosRGB( in vec4 value ) {");
-                add("   return vec4(mix(pow(value.rgb,vec3(0.41666))*1.055-vec3(0.055), value.rgb*12.92, vec3(lessThanEqual(value.rgb,vec3(0.0031308)))),value.w);");
-                add("}");
 
                 if (phongMaterial) {
 
@@ -10026,7 +10028,7 @@ var Canvas2Image = (function () {
             }
 
             add("gl_FragColor = vec4(outgoingLight, alpha);");
-                add("gl_FragColor = LinearTosRGB(gl_FragColor);");  // Gamma correction
+            //    add("gl_FragColor = LinearTosRGB(gl_FragColor);");  // Gamma correction
 
             add("}");
 
@@ -16494,6 +16496,8 @@ var Canvas2Image = (function () {
 
                         self._spinner._adjustPosition();
 
+                        self._resizeOverlay();
+
                         if (newCanvasSize) {
 
                             var newWidth = canvas.clientWidth;
@@ -16639,6 +16643,26 @@ var Canvas2Image = (function () {
             this.canvas.parentElement.appendChild(div);
 
             this.overlay = div;
+        },
+
+        /** (Re)sizes the overlay DIV to the canvas size
+         * @private
+         */
+        _resizeOverlay: function () {
+
+            if (!this.canvas || !this.overlay) {
+                return;
+            }
+
+            var canvas = this.canvas;
+            var overlay = this.overlay;
+            var overlayStyle = overlay.style;
+
+            var xy = this._getElementXY(canvas);
+            overlayStyle["left"] = xy.x + "px";
+            overlayStyle["top"] = xy.y + "px";
+            overlayStyle["width"] = canvas.clientWidth + "px";
+            overlayStyle["height"] = canvas.clientHeight + "px";
         },
 
         _getElementXY: function (e) {
@@ -30324,12 +30348,12 @@ TODO
                 this._aabb = xeogl.math.AABB3();
             }
 
-            var xmin = 100000;
-            var ymin = 100000;
-            var zmin = 100000;
-            var xmax = -100000;
-            var ymax = -100000;
-            var zmax = -100000;
+            var xmin = xeogl.math.MAX_DOUBLE;
+            var ymin = xeogl.math.MAX_DOUBLE;
+            var zmin = xeogl.math.MAX_DOUBLE;
+            var xmax = -xeogl.math.MAX_DOUBLE;
+            var ymax = -xeogl.math.MAX_DOUBLE;
+            var zmax = -xeogl.math.MAX_DOUBLE;
 
             var component;
             var worldBoundary;
