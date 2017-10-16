@@ -14,8 +14,6 @@ body {
     margin: 0;
 }
 
-
-
 #viewer {
     position: absolute;
     left: 300px;
@@ -28,7 +26,7 @@ body {
 
 #sourceButton {
     position: fixed;
-    bottom: 20px;
+    top: 20px;
     right: 20px;
     padding: 8px;
     color: #fff;
@@ -40,7 +38,6 @@ body {
     cursor: pointer;
     opacity: 1;
 }
-
 
 #logos {
     position: absolute;
@@ -66,23 +63,22 @@ body {
     pointer-events: none;
 }
 
-
 #menu {
     margin: 0;
-    left:0;
+    left: 0;
     width: auto;
-    height:100%;
+    height: 100%;
     padding: 7px;
     z-index: 200000;
 }
 
 #explorer {
     margin: 0;
-    left:0;
+    left: 0;
     top: 110px;
     width: auto;
-    height:100%;
-    position:absolute;
+    height: 100%;
+    position: absolute;
     overflow-y: scroll;
     overflow-x: hidden;
     padding: 7px;
@@ -105,13 +101,11 @@ body {
     /*border: solid 1px #bdbcbc;*/
 }
 
-
 #menu a {
     color: white;
     text-decoration: none;
 
 }
-
 
 #menu a:hover {
     color: yellow;
@@ -162,7 +156,7 @@ body {
 
 #info span.comment {
     color: #b6b4b7;
-    font-style:italic;
+    font-style: italic;
 }
 
 #info a {
@@ -189,11 +183,11 @@ body {
     color: white;
 }
 
-#info span.broken{
+#info span.broken {
     color: red;
 }
 
-#info span.todo{
+#info span.todo {
     color: orange;
 }
 
@@ -204,6 +198,13 @@ body {
     font-size: 38px;
     font-weight: normal;
     text-decoration: none !important;
+}
+
+#info p.guidebookpage {
+    font-style: italic;
+    background: url("../images/userGuideIcon.png") no-repeat;
+    background-position-y: 1px;
+    padding-left: 28px;
 }
 
 
@@ -218,12 +219,12 @@ body {
 #dat-gui-container {
     position: absolute;
     /*top: 120px;*/
-    top:0;
+    top: 0;
     right: 0;
     z-index: 100001;
     float: right;
     width: 320px;
-    margin-right : 60px !important;
+    margin-right: 60px !important;
 }
 
 #header {
@@ -288,12 +289,12 @@ h1, h2, h3 {
 }
 
 /*h1 {*/
-    /*color: #4b4b68;*/
-    /*margin-top: 0;*/
-    /*margin-bottom: 0;*/
-    /*padding-top: 25px;*/
-    /*font-size: 18px;*/
-    /*font-weight: normal;*/
+/*color: #4b4b68;*/
+/*margin-top: 0;*/
+/*margin-bottom: 0;*/
+/*padding-top: 25px;*/
+/*font-size: 18px;*/
+/*font-weight: normal;*/
 /*}*/
 
 h1 {
@@ -387,7 +388,6 @@ ul ul {
     margin-top: 0;
 }
 
-
 #contents {
     text-align: right;
     position: absolute;
@@ -396,7 +396,7 @@ ul ul {
     /*overflow-Y: scroll;*/
     /*overflow-x: hidden;*/
     background: #fdfbff;
-    overflow:auto;
+    overflow: auto;
 }
 
 #contents a {
@@ -426,7 +426,7 @@ ul ul {
 }
 
 #contents #list {
-    color:  black;
+    color: black;
     padding: 0px 20px;
     padding-right: 20px;
     line-height: 18px;
@@ -443,7 +443,7 @@ ul ul {
     background: #fdfbff;
     cursor: pointer;
     line-height: 2.2em;
-font-size: 20px;
+    font-size: 20px;
 }
 
 #contents #list .link {

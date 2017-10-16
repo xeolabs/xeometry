@@ -29,6 +29,7 @@
     viewer.setViewFitDuration(1);
 
     viewer.loadModel("house", "models/gltf/vianney_house_2/scene.gltf", function () {
+        viewer.setRotate("house", [-90, 0,0]);
         viewer.viewFit();
     });
 
