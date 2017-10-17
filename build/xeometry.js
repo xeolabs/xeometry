@@ -4,7 +4,7 @@
  * A WebGL-based 3D visualization engine from xeoLabs
  * http://xeolabs.com/xeometry
  *
- * Built on 2017-10-17
+ * Built on 2017-10-18
  *
  * MIT License
  * Copyright 2017, Lindsay Kay
@@ -18,7 +18,7 @@
  * A WebGL-based 3D visualization engine from xeoLabs
  * http://xeogl.org/
  *
- * Built on 2017-10-17
+ * Built on 2017-10-18
  *
  * MIT License
  * Copyright 2017, Lindsay Kay
@@ -11434,6 +11434,12 @@ var Canvas2Image = (function () {
 
         draw: function (frameCtx) {
 
+            var draw = this.program.draw;
+            var state = this.state;
+            var gl = this.program.gl;
+            var maxTextureUnits = xeogl.WEBGL_INFO.MAX_TEXTURE_UNITS;
+         //   frameCtx.textureUnit = 0;
+
             var backfaces = state.backfaces;
             if (frameCtx.backfaces !== backfaces) {
                 if (backfaces) {
@@ -11452,12 +11458,6 @@ var Canvas2Image = (function () {
                 }
                 frameCtx.frontface = frontface;
             }
-
-            var draw = this.program.draw;
-            var state = this.state;
-            var gl = this.program.gl;
-            var maxTextureUnits = xeogl.WEBGL_INFO.MAX_TEXTURE_UNITS;
-         //   frameCtx.textureUnit = 0;
 
             if (this._uBaseColor) {
                 this._uBaseColor.setValue(state.baseColor);
@@ -25122,7 +25122,7 @@ xeogl.PathGeometry = xeogl.Geometry.extend({
 
             offset = 0;
 
-            var indices = new ( ( positions.length / 3 ) > 65535 ? Uint32Arraz : Uint16Array )(planeX * planeZ * 6);
+            var indices = new ( ( positions.length / 3 ) > 65535 ? Uint32Array : Uint16Array )(planeX * planeZ * 6);
 
             for (iz = 0; iz < planeZ; iz++) {
 
@@ -35900,8 +35900,8 @@ TODO
         _getJSON: function () {
             var vecToColor = xeogl.math.vecToColor;
             return {
-                edgeColor: vecToArray(this._state.edgeColor),
-                centerColor: vecToArray(this._state.centerColor),
+                edgeColor: xeogl.math.vecToArray(this._state.edgeColor),
+                centerColor: xeogl.math.vecToArray(this._state.centerColor),
                 edgeBias: this._state.edgeBias,
                 centerBias: this._state.centerBias,
                 power: this._state.power
@@ -42783,7 +42783,7 @@ xeogl.version="1.0.0";;/**
 
                     this._planeScale.xyz = [this._size[0], this._size[1], 1.0];
 
-                    this._label.geometry.size = (this._size[0] / this._label.geometry.text.length) * 0.1;
+                   // this._label.geometry.size = (this._size[0] / this._label.geometry.text.length) * 0.1;
 
                     /**
                      Fired whenever this ClipHelper's {{#crossLink "ClipHelper/size:property"}}{{/crossLink}} property changes.
@@ -48661,6 +48661,38 @@ xeometry.Viewer = function (cfg) {
     }
 
     this.setBookmark(cfg);
+
+    var eventSubs = {};
+
+    /**
+     * Subscribes to an event on this BIMViewer.
+     * @method on
+     * @param {String} event The event
+     * @param {Function} callback Called fired on the event
+     */
+    this.on = function (event, callback) {
+        var subs = eventSubs[event];
+        if (!subs) {
+            subs = [];
+            eventSubs[event] = subs;
+        }
+        subs.push(callback);
+    };
+
+    /**
+     * Fires an event on this BIMViewer.
+     * @method fire
+     * @param {String} event The event type name
+     * @param {Object} value The event parameters
+     */
+    this.fire = function (event, value) {
+        var subs = eventSubs[event];
+        if (subs) {
+            for (var i = 0, len = subs.length; i < len; i++) {
+                subs[i](value);
+            }
+        }
+    };
 };;/**
  * Controls the camera of a {@link xeometry.Viewer} with the mouse.
  *
