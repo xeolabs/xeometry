@@ -3,10 +3,15 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+
     <script src="../build/xeometry.min.js"></script>
+
+    <link href="libs/perfect-scrollbar.css" rel="stylesheet"/>
+    <script src="libs/perfect-scrollbar.min.js"></script>
     <link href="css/styles.css" rel="stylesheet"/>
 <body>
 
+<div id="scrollable">
 <div id="info">
     <h1>clipping</h1>
     <p class="guidebookpage">See user guide: <a target="_top" href="https://xeolabs.gitbooks.io/xeometry/content/clipping.html">Clipping</a></p>
@@ -14,8 +19,8 @@
     <h2>creating clipping planes:</h2>
 
     <ul>
-        <li><a href='javascript:viewer.createClip("clip1", { pos:[0,0,0], dir:[0,0,-1]})'>createClip("clip1", {pos:[0,0,0], dir:[0,0,-1]});</a> <span class="comment">// Create first clipping plane</span></li>
-        <li><a href='javascript:viewer.createClip("clip2", { pos:[0,10,0], dir:[0,-1,-1]})'>createClip("clip2", {pos:[0,10,0], dir:[0,-1,-1]});</a> <span class="comment">// Create second clipping plane</span></li>
+        <li><a href='javascript:viewer.createClip("clip1", { pos:[-130,-40,0], dir:[0,0,-1]})'>createClip("clip1", {pos:[-130,-40,0], dir:[0,0,-1]});</a> <span class="comment">// Create first clipping plane</span></li>
+        <li><a href='javascript:viewer.createClip("clip2", { pos:[-130,10,0], dir:[0,-1,-1]})'>createClip("clip2", {pos:[-130,10,0], dir:[0,-1,-1]});</a> <span class="comment">// Create second clipping plane</span></li>
     </ul>
 
     <h2>destroying clipping planes: <span class="broken">(TODO: breaks when all are destroyed)</span></h2>
@@ -42,6 +47,22 @@
         <li><a href='javascript:viewer.disableClip("clip2")'>disableClip("clip2"); </a> <span class="comment">// Disable second plane</span></li>
     </ul>
 
+    <h2>showing clipping planes:</h2>
+
+    <ul>
+        <!--<li><a href='javascript:viewer.showClip()'>showClip(); </a> <span class="comment">// Show all clipping planes</span></li>-->
+        <li><a href='javascript:viewer.showClip("clip1")'>showClip("clip1"); </a> <span class="comment">// Show first plane</span></li>
+        <li><a href='javascript:viewer.showClip("clip2")'>showClip("clip2"); </a> <span class="comment">// Show second plane</span></li>
+    </ul>
+
+    <h2>hiding clipping planes:</h2>
+
+    <ul>
+        <!--<li><a href='javascript:viewer.hideClip()'>hideClip(); </a> <span class="comment">// Hide all clipping planes</span></li>-->
+        <li><a href='javascript:viewer.hideClip("clip1")'>disableClip("clip1"); </a> <span class="comment">// Hide first plane</span></li>
+        <li><a href='javascript:viewer.hideClip("clip2")'>hideClip("clip2"); </a> <span class="comment">// Hide second plane</span></li>
+    </ul>
+
     <h2>controlling which objects are clipped</h2>
 
     <ul>
@@ -54,6 +75,7 @@
     </ul>
 
 </div>
+    </div>
 
 <script>
 
@@ -69,6 +91,9 @@
     });
 
     new xeometry.CameraControl(viewer);
+
+    Ps.initialize(document.getElementById("scrollable"));
+
 
 </script>
 </body>
