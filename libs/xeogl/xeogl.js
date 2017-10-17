@@ -4,7 +4,7 @@
  * A WebGL-based 3D visualization engine from xeoLabs
  * http://xeogl.org/
  *
- * Built on 2017-10-15
+ * Built on 2017-10-17
  *
  * MIT License
  * Copyright 2017, Lindsay Kay
@@ -5763,7 +5763,6 @@ var Canvas2Image = (function () {
 
             gl.enable(gl.DEPTH_TEST);
             gl.frontFace(gl.CCW);
-          //  gl.enable(gl.CULL_FACE);
             gl.disable(gl.CULL_FACE);
             gl.depthMask(true);
             gl.colorMask(true, true, true, false);
@@ -5851,6 +5850,7 @@ var Canvas2Image = (function () {
                 gl.enable(gl.CULL_FACE);
                 gl.enable(gl.BLEND);
 
+                frameCtx.backfaces = false;
 
                 if (!transparentDepthMask) {
                     gl.depthMask(false);
@@ -11012,6 +11012,25 @@ var Canvas2Image = (function () {
             var maxTextureUnits = xeogl.WEBGL_INFO.MAX_TEXTURE_UNITS;
             //  frameCtx.textureUnit = 0;
 
+            var backfaces = state.backfaces;
+            if (frameCtx.backfaces !== backfaces) {
+                if (backfaces) {
+                    gl.disable(gl.CULL_FACE);
+                } else {
+                    gl.enable(gl.CULL_FACE);
+                }
+                frameCtx.backfaces = backfaces;
+            }
+            var frontface = state.frontface;
+            if (frameCtx.frontface !== frontface) {
+                if (frontface) {
+                    gl.frontFace(gl.CCW);
+                } else {
+                    gl.frontFace(gl.CW);
+                }
+                frameCtx.frontface = frontface;
+            }
+
             if (this._uShininess) {
                 this._uShininess.setValue(state.shininess);
             }
@@ -11401,6 +11420,25 @@ var Canvas2Image = (function () {
 
         draw: function (frameCtx) {
 
+            var backfaces = state.backfaces;
+            if (frameCtx.backfaces !== backfaces) {
+                if (backfaces) {
+                    gl.disable(gl.CULL_FACE);
+                } else {
+                    gl.enable(gl.CULL_FACE);
+                }
+                frameCtx.backfaces = backfaces;
+            }
+            var frontface = state.frontface;
+            if (frameCtx.frontface !== frontface) {
+                if (frontface) {
+                    gl.frontFace(gl.CCW);
+                } else {
+                    gl.frontFace(gl.CW);
+                }
+                frameCtx.frontface = frontface;
+            }
+
             var draw = this.program.draw;
             var state = this.state;
             var gl = this.program.gl;
@@ -11652,6 +11690,25 @@ var Canvas2Image = (function () {
             var gl = this.program.gl;
             var maxTextureUnits = xeogl.WEBGL_INFO.MAX_TEXTURE_UNITS;
             //    frameCtx.textureUnit = 0;
+
+            var backfaces = state.backfaces;
+            if (frameCtx.backfaces !== backfaces) {
+                if (backfaces) {
+                    gl.disable(gl.CULL_FACE);
+                } else {
+                    gl.enable(gl.CULL_FACE);
+                }
+                frameCtx.backfaces = backfaces;
+            }
+            var frontface = state.frontface;
+            if (frameCtx.frontface !== frontface) {
+                if (frontface) {
+                    gl.frontFace(gl.CCW);
+                } else {
+                    gl.frontFace(gl.CW);
+                }
+                frameCtx.frontface = frontface;
+            }
 
             if (this._uDiffuse) {
                 this._uDiffuse.setValue(state.diffuse);
