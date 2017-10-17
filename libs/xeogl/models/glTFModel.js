@@ -593,7 +593,7 @@
                 cfg.emissive = emissiveFactor;
             }
 
-            cfg.backfaces = !!materialInfo.doubleSided;
+            cfg.backfaces = materialInfo.doubleSided !== false;
 
             var alphaMode = materialInfo.alphaMode;
             switch (alphaMode) {
