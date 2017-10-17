@@ -4,7 +4,7 @@
  * A WebGL-based 3D visualization engine from xeoLabs
  * http://xeolabs.com/xeometry
  *
- * Built on 2017-10-15
+ * Built on 2017-10-17
  *
  * MIT License
  * Copyright 2017, Lindsay Kay
@@ -18,7 +18,7 @@
  * A WebGL-based 3D visualization engine from xeoLabs
  * http://xeogl.org/
  *
- * Built on 2017-10-15
+ * Built on 2017-10-17
  *
  * MIT License
  * Copyright 2017, Lindsay Kay
@@ -5777,7 +5777,6 @@ var Canvas2Image = (function () {
 
             gl.enable(gl.DEPTH_TEST);
             gl.frontFace(gl.CCW);
-          //  gl.enable(gl.CULL_FACE);
             gl.disable(gl.CULL_FACE);
             gl.depthMask(true);
             gl.colorMask(true, true, true, false);
@@ -5865,6 +5864,7 @@ var Canvas2Image = (function () {
                 gl.enable(gl.CULL_FACE);
                 gl.enable(gl.BLEND);
 
+                frameCtx.backfaces = false;
 
                 if (!transparentDepthMask) {
                     gl.depthMask(false);
@@ -11026,6 +11026,25 @@ var Canvas2Image = (function () {
             var maxTextureUnits = xeogl.WEBGL_INFO.MAX_TEXTURE_UNITS;
             //  frameCtx.textureUnit = 0;
 
+            var backfaces = state.backfaces;
+            if (frameCtx.backfaces !== backfaces) {
+                if (backfaces) {
+                    gl.disable(gl.CULL_FACE);
+                } else {
+                    gl.enable(gl.CULL_FACE);
+                }
+                frameCtx.backfaces = backfaces;
+            }
+            var frontface = state.frontface;
+            if (frameCtx.frontface !== frontface) {
+                if (frontface) {
+                    gl.frontFace(gl.CCW);
+                } else {
+                    gl.frontFace(gl.CW);
+                }
+                frameCtx.frontface = frontface;
+            }
+
             if (this._uShininess) {
                 this._uShininess.setValue(state.shininess);
             }
@@ -11415,6 +11434,25 @@ var Canvas2Image = (function () {
 
         draw: function (frameCtx) {
 
+            var backfaces = state.backfaces;
+            if (frameCtx.backfaces !== backfaces) {
+                if (backfaces) {
+                    gl.disable(gl.CULL_FACE);
+                } else {
+                    gl.enable(gl.CULL_FACE);
+                }
+                frameCtx.backfaces = backfaces;
+            }
+            var frontface = state.frontface;
+            if (frameCtx.frontface !== frontface) {
+                if (frontface) {
+                    gl.frontFace(gl.CCW);
+                } else {
+                    gl.frontFace(gl.CW);
+                }
+                frameCtx.frontface = frontface;
+            }
+
             var draw = this.program.draw;
             var state = this.state;
             var gl = this.program.gl;
@@ -11666,6 +11704,25 @@ var Canvas2Image = (function () {
             var gl = this.program.gl;
             var maxTextureUnits = xeogl.WEBGL_INFO.MAX_TEXTURE_UNITS;
             //    frameCtx.textureUnit = 0;
+
+            var backfaces = state.backfaces;
+            if (frameCtx.backfaces !== backfaces) {
+                if (backfaces) {
+                    gl.disable(gl.CULL_FACE);
+                } else {
+                    gl.enable(gl.CULL_FACE);
+                }
+                frameCtx.backfaces = backfaces;
+            }
+            var frontface = state.frontface;
+            if (frameCtx.frontface !== frontface) {
+                if (frontface) {
+                    gl.frontFace(gl.CCW);
+                } else {
+                    gl.frontFace(gl.CW);
+                }
+                frameCtx.frontface = frontface;
+            }
 
             if (this._uDiffuse) {
                 this._uDiffuse.setValue(state.diffuse);
@@ -42500,6 +42557,8 @@ xeogl.version="1.0.0";;/**
  @param cfg {*} Configuration
  @param cfg.clip {Clip} A {{#crossLink "Clip"}}{{/crossLink}} to visualize.
  @param [cfg.visible=true] {Boolean} Indicates whether or not this helper is visible.
+ @param [cfg.size] {Float32Array} The width and height of the ClipHelper plane indicator. When no value is specified,
+ will automatically size to fit within the {{#crossLink "Scene/worldBoundary:property"}}Scene's worldBoundary{{/crossLink}}.
  */
 (function () {
 
@@ -42517,14 +42576,21 @@ xeogl.version="1.0.0";;/**
                 lineWidth: 4
             });
 
-            var transform = new xeogl.Quaternion(this, {
-                xyzw: [0, 0, 0, 1],
-                parent: new xeogl.Translate(this, {
-                    xyz: [0, 0, 0]
-                })
+            this._translate = new xeogl.Translate(this, {
+                xyz: [0, 0, 0]
             });
 
-            this._plane = new xeogl.Entity(this, {
+            this._quaternion = new xeogl.Quaternion(this, {
+                xyzw: [0, 0, 0, 1],
+                parent: this._translate
+            });
+
+            this._planeScale = new xeogl.Scale(this, {
+                xyz: [10, 10, 0],
+                parent: this._quaternion
+            });
+
+            this._planeWire = new xeogl.Entity(this, {
                 geometry: new xeogl.Geometry(this, {
                     primitive: "lines",
                     positions: [
@@ -42535,8 +42601,38 @@ xeogl.version="1.0.0";;/**
                     ],
                     indices: [0, 1, 0, 3, 1, 2, 2, 3]
                 }),
-                material: material,
-                transform: transform,
+                material: new xeogl.PhongMaterial(this, {
+                    emissive: [1, 0, 0],
+                    diffuse: [0, 0, 0],
+                    lineWidth: 2
+                }),
+                transform: this._planeScale,
+                pickable: false,
+                collidable: true,
+                clippable: false
+            });
+
+            this._planeSolid = new xeogl.Entity(this, {
+                geometry: new xeogl.Geometry(this, {
+                    primitive: "triangles",
+                    positions: [
+                        0.5, 0.5, 0.0, 0.5, -0.5, 0.0, // 0
+                        -0.5, -0.5, 0.0, -0.5, 0.5, 0.0, // 1
+                        0.5, 0.5, -0.0, 0.5, -0.5, -0.0, // 2
+                        -0.5, -0.5, -0.0, -0.5, 0.5, -0.0 // 3
+                    ],
+                    indices: [0, 1, 2, 2, 3, 0]
+                }),
+                material: new xeogl.PhongMaterial(this, {
+                    emissive: [0, 0, 0],
+                    diffuse: [0, 0, 0],
+                    specular: [1, 1, 1],
+                    shininess: 120,
+                    alpha: 0.3,
+                    alphaMode: "blend",
+                    backfaces: true
+                }),
+                transform: this._planeScale,
                 pickable: false,
                 collidable: true,
                 clippable: false
@@ -42550,30 +42646,32 @@ xeogl.version="1.0.0";;/**
                     ],
                     indices: [0, 1]
                 }),
+                transform: this._quaternion,
                 material: material,
                 pickable: false,
-                collidable: false,
+                collidable: true,
                 clippable: false
             });
 
             this._label = new xeogl.Entity(this, {
                 geometry: new xeogl.VectorTextGeometry(this, {
                     text: this.id,
-                    size: 0.07,
+                    size: 10.07,
                     origin: [0.02, 0.02, 0.0]
                 }),
                 material: new xeogl.PhongMaterial(this, {
                     emissive: [0.3, 1, 0.3],
                     lineWidth: 2
                 }),
-                transform: transform, // Shares transform with plane
+                transform: this._quaternion,
                 pickable: false,
-                collidable: false,
+                collidable: true,
                 clippable: false,
                 billboard: "spherical"
             });
 
             this.clip = cfg.clip;
+            this.size = cfg.size;
             this.visible = cfg.visible;
         },
 
@@ -42601,11 +42699,17 @@ xeogl.version="1.0.0";;/**
 
                     xeogl.math.vec3PairToQuaternion(zeroVec, dir, quat);
 
-                    this._plane.transform.xyzw = quat;
-                    this._plane.transform.parent.xyz = pos;
+                    this._quaternion.xyzw = quat;
+                    this._translate.xyz = pos;
                 }
             };
         })(),
+
+        _autoSizeClipPlane: function () {
+            var aabbDiag = xeogl.math.getAABB3Diag(this.scene.worldBoundary.aabb);
+            var clipSize = (aabbDiag * 0.50);
+            this.size = [clipSize, clipSize];
+        },
 
         _props: {
 
@@ -42635,11 +42739,9 @@ xeogl.version="1.0.0";;/**
                                 self._needUpdate();
                             },
                             active: function (active) {
-                                var emissive = active ? [0.3, 1.0, 0.3] : [0.3, 0.3, 0.3];
-                                self._plane.material.emissive = emissive;
+                                var emissive = active ? [0.2, 0.2, 0.2] : [1.0, 0.2, 0.2];
+                                self._planeWire.material.emissive = emissive;
                                 self._arrow.material.emissive = emissive;
-                            },
-                            side: function (quadraticAttenuation) {
                             }
                         }
                     });
@@ -42651,6 +42753,48 @@ xeogl.version="1.0.0";;/**
 
                 get: function () {
                     return this._attached.clip;
+                }
+            },
+
+            /**
+             * The width and height of the ClipHelper plane indicator.
+             *
+             * When no value is specified, will automatically size to fit within the
+             * {{#crossLink "Scene/worldBoundary:property"}}Scene's worldBoundary{{/crossLink}}.
+             *
+             * Fires an {{#crossLink "ClipHelper/size:event"}}{{/crossLink}} event on change.
+             *
+             * @property size
+             * @default Fitted to scene boundary
+             * @type {Float32Array}
+             */
+            size: {
+
+                set: function (value) {
+
+                    if (!value) {
+                        if (!this._onSceneAABB) {
+                            this._onSceneAABB = this.scene.worldBoundary.on("updated", this._autoSizeClipPlane, this);
+                            return;
+                        }
+                    }
+
+                    (this._size = this._size || new xeogl.math.vec2()).set(value || [1, 1]);
+
+                    this._planeScale.xyz = [this._size[0], this._size[1], 1.0];
+
+                    this._label.geometry.size = (this._size[0] / this._label.geometry.text.length) * 0.1;
+
+                    /**
+                     Fired whenever this ClipHelper's {{#crossLink "ClipHelper/size:property"}}{{/crossLink}} property changes.
+                     @event size
+                     @param value {Float32Array} The property's new value
+                     */
+                    this.fire("size", this._size);
+                },
+
+                get: function () {
+                    return this._size;
                 }
             },
 
@@ -42669,7 +42813,8 @@ xeogl.version="1.0.0";;/**
 
                     value = value !== false;
 
-                    this._plane.visible = value;
+                    this._planeWire.visible = value;
+                    this._planeSolid.visible = value;
                     this._arrow.visible = value;
                     this._label.visible = value;
 
@@ -42679,12 +42824,18 @@ xeogl.version="1.0.0";;/**
                      @event visible
                      @param value {Boolean} The property's new value
                      */
-                    this.fire("visible", this._plane.visible);
+                    this.fire("visible", this._planeWire.visible);
                 },
 
                 get: function () {
-                    return this._plane.visible;
+                    return this._planeWire.visible;
                 }
+            }
+        },
+
+        _destroy: function () {
+            if (this._onSceneAABB) {
+                this.scene.worldBoundary.off(this._onSceneAABB);
             }
         }
     });
@@ -44706,7 +44857,7 @@ xeogl.Annotation = xeogl.Pin.extend({
                 cfg.emissive = emissiveFactor;
             }
 
-            cfg.backfaces = !!materialInfo.doubleSided;
+            cfg.backfaces = materialInfo.doubleSided !== false;
 
             var alphaMode = materialInfo.alphaMode;
             switch (alphaMode) {
