@@ -2,7 +2,6 @@
 
 xeometry is an open source JavaScript API for viewing glTF models on WebGL.
 
-* [xeometry.org](http://xeometry.org)
 * [Programming Guide](https://xeolabs.gitbooks.io/xeometry-guide/content/)
 * [API Documentation](http://xeometry.org/docs)
 * [Examples](http://xeometry.org/examples)
