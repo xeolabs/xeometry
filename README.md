@@ -5,7 +5,7 @@
 Use it to build 3D viewer apps and custom interactive presentations of glTF content.
 
 * [Programming Guide](https://www.gitbook.com/book/xeolabs/xeometry-guide/details)
-* [API Docs](http://xeometry.org/docs)
+* [API Docs](http://xeometry.org/docs/#viewer)
 * [Examples](http://xeometry.org/examples)
 * [Downloads](https://github.com/xeolabs/xeometry/releases)
 * [Source code](https://github.com/xeolabs/xeometry)
