@@ -10,7 +10,7 @@ Use it to build 3D viewer apps, or program custom interactive presentations of g
 * [Downloads](https://github.com/xeolabs/xeometry/releases)
 * [Source code](https://github.com/xeolabs/xeometry)
 
-[![](https://xeolabs.gitbooks.io/xeometry-guide/content/assets/transparency.png)](http://xeolabs.com/xeometry/examples/#effects_transparency)
+[![](http://xeolabs.com/xeometry/assets/transparency.png)](http://xeolabs.com/xeometry/examples/#effects_transparency)
 
 ````javascript
 var viewer = new xeometry.Viewer({ canvasId: "theCanvas" });
