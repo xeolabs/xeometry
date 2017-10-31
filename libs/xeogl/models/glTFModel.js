@@ -265,10 +265,13 @@
      *
      * @param {Model} model Model to parse into.
      * @param {Object} gltf The glTF JSON.
-     * @param {String} [basePath] Base path path to find external resources on, if any.
+     * @param {Object} [options] Parsing options
+     * @param {String} [options.basePath] Base path path to find external resources on, if any.
+     * @param {String} [options.loadBuffer] Callback to load buffer files.
      */
-    xeogl.GLTFModel.parse = function (model, gltf, basePath) {
-        parseGLTF(gltf, "", basePath || "", model, function () {
+    xeogl.GLTFModel.parse = function (model, gltf, options) {
+        options = options || {};
+        parseGLTF(gltf, "", options, model, function () {
                 model.fire("loaded", true, true);
             },
             function (msg) {
@@ -286,17 +289,16 @@
         return function (model, src, ok, error) {
 
             loadJSON(src, function (response) { // OK
-
                     var json;
                     try {
                         json = JSON.parse(response);
                     } catch (e) {
                         error(e);
                     }
-
-                    var basePath = getBasePath(src);
-
-                    parseGLTF(json, src, basePath, model, ok, error);
+                    var options = {
+                        basePath: getBasePath(src)
+                    };
+                    parseGLTF(json, src, options, model, ok, error);
                 },
                 error);
         };
@@ -354,12 +356,14 @@
             'MAT4': 16
         };
 
-        return function (json, src, basePath, model, ok) {
+        return function (json, src, options, model, ok) {
 
             var ctx = {
                 src: src,
-                basePath: basePath,
+                loadBuffer: options.loadBuffer,
+                basePath: options.basePath,
                 json: json,
+                scene: model.scene,
                 model: model
             };
 
@@ -445,19 +449,26 @@
                     }, 0);
                 }
             } else {
-                var request = new XMLHttpRequest();
-                request.responseType = 'arraybuffer';
-                request.open('GET', ctx.basePath + url, true);
-                request.onreadystatechange = function () {
-                    if (request.readyState == 4) {
-                        if (request.status == "200") {
-                            ok(request.response);
-                        } else {
-                            err('loadArrayBuffer error : ' + request.response);
+
+                if (ctx.loadBuffer) {
+                    ctx.loadBuffer(url, ok, err);
+
+                } else {
+
+                    var request = new XMLHttpRequest();
+                    request.responseType = 'arraybuffer';
+                    request.open('GET', ctx.basePath + url, true);
+                    request.onreadystatechange = function () {
+                        if (request.readyState == 4) {
+                            if (request.status == "200") {
+                                ok(request.response);
+                            } else {
+                                err('loadArrayBuffer error : ' + request.response);
+                            }
                         }
-                    }
-                };
-                request.send(null);
+                    };
+                    request.send(null);
+                }
             }
         }
 
@@ -534,7 +545,7 @@
         }
 
         function loadTexture(ctx, textureInfo) {
-            var texture = new xeogl.Texture(ctx.model, {
+            var texture = new xeogl.Texture(ctx.scene, {
                 src: ctx.basePath + ctx.json.images[textureInfo.source].uri,
                 flipY: !!textureInfo.flipY
             });
@@ -593,7 +604,7 @@
                 cfg.emissive = emissiveFactor;
             }
 
-            cfg.backfaces = materialInfo.doubleSided !== false;
+            cfg.backfaces = !!materialInfo.doubleSided;
 
             var alphaMode = materialInfo.alphaMode;
             switch (alphaMode) {
@@ -654,7 +665,7 @@
                         }
                     }
 
-                    return new xeogl.SpecularMaterial(ctx.model, cfg);
+                    return new xeogl.SpecularMaterial(ctx.scene, cfg);
                 }
 
                 // Common Phong, Blinn, Lambert or Constant materials
@@ -733,7 +744,7 @@
                         //cfg.transparent = 1.0;
                     }
 
-                    return new xeogl.PhongMaterial(ctx.model, cfg);
+                    return new xeogl.PhongMaterial(ctx.scene, cfg);
                 }
             }
 
@@ -774,12 +785,12 @@
                     }
                 }
 
-                return new xeogl.MetallicMaterial(ctx.model, cfg);
+                return new xeogl.MetallicMaterial(ctx.scene, cfg);
             }
 
             // Default material
 
-            return new xeogl.PhongMaterial(ctx.model, cfg);
+            return new xeogl.PhongMaterial(ctx.scene, cfg);
         }
 
         function loadMeshes(ctx) {
@@ -858,7 +869,7 @@
 
                     meshCfg = {};
 
-                    geometry = new xeogl.Geometry(ctx.model, geometryCfg);
+                    geometry = new xeogl.Geometry(ctx.scene, geometryCfg);
                     ctx.model.add(geometry);
                     meshCfg.geometry = geometry;
 
@@ -878,14 +889,13 @@
 
         function loadDefaultScene(ctx) {
             var json = ctx.json;
-            if (json.scene !== undefined) {
-                var defaultSceneInfo = json.scenes[json.scene];
-                if (!defaultSceneInfo) {
-                    error(ctx, "glTF has no default scene");
-                    return;
-                }
-                loadScene(ctx, defaultSceneInfo);
+            var scene = json.scene || 0;
+            var defaultSceneInfo = json.scenes[scene];
+            if (!defaultSceneInfo) {
+                error(ctx, "glTF has no default scene");
+                return;
             }
+            loadScene(ctx, defaultSceneInfo);
         }
 
         function loadScene(ctx, sceneInfo) {
@@ -956,13 +966,12 @@
                     var entityId;
                     var entity;
                     var numMeshes = meshes.length;
-                    var manyMeshes = numMeshes > 1;
 
                     for (var i = 0, len = numMeshes; i < len; i++) {
 
                         mesh = meshes[i];
 
-                        entityId = makeEntityId(ctx, nodeInfo, nodeIdx, manyMeshes);
+                        entityId = makeEntityId(ctx, nodeInfo, nodeIdx);
 
                         var meta = nodeInfo.extra || {};
                         meta.name = nodeInfo.name;
@@ -1005,12 +1014,8 @@
             }
         }
 
-        function makeEntityId(ctx, nodeInfo, nodeIdx, manyMeshes) {
-            var prefix = nodeInfo.name || nodeIdx;
-            var id = makeID(ctx, prefix);
-            if (!manyMeshes && !ctx.model.entities[id]) {
-                return id;
-            }
+        function makeEntityId(ctx, nodeInfo, nodeIdx) {
+            var id = makeID(ctx, nodeInfo.name || nodeIdx);
             var id2;
             var i = 0;
             while (true) {
