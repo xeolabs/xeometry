@@ -78,9 +78,9 @@
                       </a></li>
                       
                       <li><a
-                        href='#.Viewer#getModelSrc'
+                        href='#.Viewer#getSrc'
                         class='regular pre-open'>
-                        #getModelSrc
+                        #getSrc
                       </a></li>
                       
                       <li><a
@@ -93,12 +93,6 @@
                         href='#.Viewer#getObjects'
                         class='regular pre-open'>
                         #getObjects
-                      </a></li>
-                      
-                      <li><a
-                        href='#.Viewer#unloadModel'
-                        class='regular pre-open'>
-                        #unloadModel
                       </a></li>
                       
                       <li><a
@@ -570,15 +564,9 @@
                       </a></li>
                       
                       <li><a
-                        href='#.Viewer#destroyAnnotation'
+                        href='#.Viewer#destroyAnnotations'
                         class='regular pre-open'>
-                        #destroyAnnotation
-                      </a></li>
-                      
-                      <li><a
-                        href='#.Viewer#clearAnnotations'
-                        class='regular pre-open'>
-                        #clearAnnotations
+                        #destroyAnnotations
                       </a></li>
                       
                       <li><a
@@ -738,63 +726,105 @@
                       </a></li>
                       
                       <li><a
-                        href='#.Viewer#destroyClip'
+                        href='#.Viewer#destroyClips'
                         class='regular pre-open'>
-                        #destroyClip
+                        #destroyClips
                       </a></li>
                       
                       <li><a
-                        href='#.Viewer#clearClips'
+                        href='#.Viewer#enable'
                         class='regular pre-open'>
-                        #clearClips
+                        #enable
                       </a></li>
                       
                       <li><a
-                        href='#.Viewer#showClip'
+                        href='#.Viewer#disable'
                         class='regular pre-open'>
-                        #showClip
+                        #disable
                       </a></li>
                       
                       <li><a
-                        href='#.Viewer#hideClip'
+                        href='#.Viewer#createLight'
                         class='regular pre-open'>
-                        #hideClip
+                        #createLight
                       </a></li>
                       
                       <li><a
-                        href='#.Viewer#enableClip'
+                        href='#.Viewer#getLights'
                         class='regular pre-open'>
-                        #enableClip
+                        #getLights
                       </a></li>
                       
                       <li><a
-                        href='#.Viewer#disableClip'
+                        href='#.Viewer#destroyLights'
                         class='regular pre-open'>
-                        #disableClip
+                        #destroyLights
                       </a></li>
                       
                       <li><a
-                        href='#.Viewer#setClipPos'
+                        href='#.Viewer#defaultLights'
                         class='regular pre-open'>
-                        #setClipPos
+                        #defaultLights
                       </a></li>
                       
                       <li><a
-                        href='#.Viewer#getClipPos'
+                        href='#.Viewer#getLightType'
                         class='regular pre-open'>
-                        #getClipPos
+                        #getLightType
                       </a></li>
                       
                       <li><a
-                        href='#.Viewer#setClipDir'
+                        href='#.Viewer#setPos'
                         class='regular pre-open'>
-                        #setClipDir
+                        #setPos
                       </a></li>
                       
                       <li><a
-                        href='#.Viewer#getClipDir'
+                        href='#.Viewer#getPos'
                         class='regular pre-open'>
-                        #getClipDir
+                        #getPos
+                      </a></li>
+                      
+                      <li><a
+                        href='#.Viewer#setDir'
+                        class='regular pre-open'>
+                        #setDir
+                      </a></li>
+                      
+                      <li><a
+                        href='#.Viewer#getDir'
+                        class='regular pre-open'>
+                        #getDir
+                      </a></li>
+                      
+                      <li><a
+                        href='#.Viewer#setIntensity'
+                        class='regular pre-open'>
+                        #setIntensity
+                      </a></li>
+                      
+                      <li><a
+                        href='#.Viewer#getIntensity'
+                        class='regular pre-open'>
+                        #getIntensity
+                      </a></li>
+                      
+                      <li><a
+                        href='#.Viewer#setSpace'
+                        class='regular pre-open'>
+                        #setSpace
+                      </a></li>
+                      
+                      <li><a
+                        href='#.Viewer#getSpace'
+                        class='regular pre-open'>
+                        #getSpace
+                      </a></li>
+                      
+                      <li><a
+                        href='#.Viewer#destroy'
+                        class='regular pre-open'>
+                        #destroy
                       </a></li>
                       
                       <li><a
@@ -816,9 +846,15 @@
                       </a></li>
                       
                       <li><a
-                        href='#.Viewer#destroy'
+                        href='#.Viewer#on'
                         class='regular pre-open'>
-                        #destroy
+                        #on
+                      </a></li>
+                      
+                      <li><a
+                        href='#.Viewer#fire'
+                        class='regular pre-open'>
+                        #fire
                       </a></li>
                       
                     </ul>
@@ -826,6 +862,16 @@
                   
                   
                 </div>
+                
+                </li>
+              
+                
+                <li><a
+                  href='#error'
+                  class="">
+                  error
+                  
+                </a>
                 
                 </li>
               
@@ -1363,7 +1409,7 @@ viewer.loadModel(<span class="hljs-string">"saw"</span>, <span class="hljs-strin
 
   
 
-  <p>Gets the models currently in the viewer.</p>
+  <p>Gets the models currently loaded in the viewer.</p>
 
 
   <div class='pre p1 fill-light mt0'>models</div>
@@ -1405,11 +1451,11 @@ viewer.loadModel(<span class="hljs-string">"saw"</span>, <span class="hljs-strin
       </div>
     </div>
   
-    <div class='border-bottom' id='.Viewer#getModelSrc'>
+    <div class='border-bottom' id='.Viewer#getSrc'>
       <div class="clearfix small pointer toggle-sibling">
         <div class="py1 contain">
             <a class='icon pin-right py1 dark-link caret-right'>▸</a>
-            <span class='code strong strong truncate'>getModelSrc(id)</span>
+            <span class='code strong strong truncate'>getSrc(id)</span>
         </div>
       </div>
       <div class="clearfix display-none toggle-target">
@@ -1421,7 +1467,7 @@ viewer.loadModel(<span class="hljs-string">"saw"</span>, <span class="hljs-strin
 <p>This is the <code>src</code> parameter that was given to <a href="#loadModel">#loadModel</a>.</p>
 
 
-  <div class='pre p1 fill-light mt0'>getModelSrc(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></div>
+  <div class='pre p1 fill-light mt0'>getSrc(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></div>
   
   
 
@@ -1486,7 +1532,7 @@ viewer.loadModel(<span class="hljs-string">"saw"</span>, <span class="hljs-strin
 
   
 
-  <p>Gets a the model an object belongs to.</p>
+  <p>Gets the model an object belongs to.</p>
 
 
   <div class='pre p1 fill-light mt0'>getModel(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></div>
@@ -1627,80 +1673,6 @@ viewer.loadModel(<span class="hljs-string">"saw"</span>, <span class="hljs-strin
       </div>
     </div>
   
-    <div class='border-bottom' id='.Viewer#unloadModel'>
-      <div class="clearfix small pointer toggle-sibling">
-        <div class="py1 contain">
-            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
-            <span class='code strong strong truncate'>unloadModel(id)</span>
-        </div>
-      </div>
-      <div class="clearfix display-none toggle-target">
-        <section class='p2 mb2 clearfix bg-white minishadow'>
-
-  
-
-  <p>Unloads a model.</p>
-
-
-  <div class='pre p1 fill-light mt0'>unloadModel(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): Viewer</div>
-  
-  
-
-  
-  
-  
-  
-  
-  
-
-  
-    <div class='py1 quiet mt1 prose-big'>Parameters</div>
-    <div class='prose'>
-      
-        <div class='space-bottom0'>
-          <div>
-            <span class='code bold'>id</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>
-	    ID of the model.
-
-          </div>
-          
-        </div>
-      
-    </div>
-  
-
-  
-
-  
-    
-      <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code>Viewer</code>:
-        this
-
-      
-    
-  
-
-  
-
-  
-    <div class='py1 quiet mt1 prose-big'>Example</div>
-    
-      
-      <pre class='p1 overflow-auto round fill-light'>viewer.unloadModel(<span class="hljs-string">"saw"</span>);</pre>
-    
-  
-
-  
-
-  
-
-  
-</section>
-
-      </div>
-    </div>
-  
     <div class='border-bottom' id='.Viewer#clear'>
       <div class="clearfix small pointer toggle-sibling">
         <div class="py1 contain">
@@ -1713,7 +1685,7 @@ viewer.loadModel(<span class="hljs-string">"saw"</span>, <span class="hljs-strin
 
   
 
-  <p>Unloads all models, annotations and clipping planes.</p>
+  <p>Unloads all models, annotations and clipping planes, resets lights to defaults.</p>
 <p>Preserves the current camera state.</p>
 
 
@@ -1926,7 +1898,7 @@ viewer.loadModel(<span class="hljs-string">"saw"</span>, <span class="hljs-strin
 
   
 
-  <p>Gets all the types currently in the viewer.</p>
+  <p>Gets all the object types currently in the viewer.</p>
 
 
   <div class='pre p1 fill-light mt0'>getTypes(): <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>></div>
@@ -2791,7 +2763,7 @@ translation is <code>[150, 50, 50]</code>.</p>
 
   
 
-  <p>Shows model(s), object(s) and/or types(s).</p>
+  <p>Shows model/object/types/clip/annotation/light(s).</p>
 <p>Shows all objects in the viewer when no arguments are given.</p>
 <p>Objects are visible by default.</p>
 
@@ -2814,7 +2786,7 @@ translation is <code>[150, 50, 50]</code>.</p>
         <div class='space-bottom0'>
           <div>
             <span class='code bold'>ids</span> <code class='quiet'>((<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>>)?)</code>
-	    IDs of model(s) and/or object(s).
+	    IDs of model/object/types/clip/annotation/light(s).
 
           </div>
           
@@ -2839,9 +2811,6 @@ translation is <code>[150, 50, 50]</code>.</p>
 
   
     <div class='py1 quiet mt1 prose-big'>Example</div>
-    
-      
-      <pre class='p1 overflow-auto round fill-light'>viewer.show(); <span class="hljs-comment">// Show all objects in the viewer</span></pre>
     
       
       <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// Show all objects in the viewer</span>
@@ -2880,7 +2849,7 @@ viewer.show(<span class="hljs-string">"gearbox"</span>, <span class="hljs-string
 
   
 
-  <p>Hides model(s), object(s) and/or types(s).</p>
+  <p>Hides model/object/types/clip/annotation/light(s).</p>
 <p>Hides all objects in the viewer when no arguments are given.</p>
 <p>Objects are visible by default.</p>
 
@@ -2903,7 +2872,7 @@ viewer.show(<span class="hljs-string">"gearbox"</span>, <span class="hljs-string
         <div class='space-bottom0'>
           <div>
             <span class='code bold'>ids</span> <code class='quiet'>((<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>>))</code>
-	    IDs of model(s) and/or object(s).
+	    IDs of model/object/types/clip/annotation/light(s).
 
           </div>
           
@@ -2966,7 +2935,7 @@ viewer.hide(<span class="hljs-string">"gearbox"</span>, <span class="hljs-string
 
   
 
-  <p>Sets the opacity of model(s), object(s) and/or type(s).</p>
+  <p>Sets the opacity of model/object/type(s).</p>
 
 
   <div class='pre p1 fill-light mt0'>setOpacity(ids: (<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>>), opacity: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>): Viewer</div>
@@ -3131,7 +3100,7 @@ viewer.setOpacity([<span class="hljs-string">"saw#0.1"</span>, <span class="hljs
 
   
 
-  <p>Sets the albedo color of model(s), object(s) and/or types(s).</p>
+  <p>Sets the color of model/object/type/light(s).</p>
 
 
   <div class='pre p1 fill-light mt0'>setColor(ids: (<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>>), color: [<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>]): Viewer</div>
@@ -3152,7 +3121,7 @@ viewer.setOpacity([<span class="hljs-string">"saw#0.1"</span>, <span class="hljs
         <div class='space-bottom0'>
           <div>
             <span class='code bold'>ids</span> <code class='quiet'>((<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>>))</code>
-	    IDs of models, objects or types. Applies to all objects when this is null or undefined.
+	    IDs of models, objects, types or lights. Applies to all objects when this is null or undefined.
 
           </div>
           
@@ -3222,7 +3191,7 @@ viewer.setColor([<span class="hljs-string">"saw#0.1"</span>, <span class="hljs-s
 
   
 
-  <p>Gets the color of an object.</p>
+  <p>Gets the color of an object or a light.</p>
 
 
   <div class='pre p1 fill-light mt0'>getColor(id: (<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)): [<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>]</div>
@@ -3243,7 +3212,7 @@ viewer.setColor([<span class="hljs-string">"saw#0.1"</span>, <span class="hljs-s
         <div class='space-bottom0'>
           <div>
             <span class='code bold'>id</span> <code class='quiet'>((<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>))</code>
-	    ID of an object.
+	    ID of an object or a light.
 
           </div>
           
@@ -3258,7 +3227,7 @@ viewer.setColor([<span class="hljs-string">"saw#0.1"</span>, <span class="hljs-s
     
       <div class='py1 quiet mt1 prose-big'>Returns</div>
       <code>[<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>]</code>:
-        color The RGB color of the object, with each element in range 
+        color The RGB color, with each element in range 
 [
 0..1
 ]
@@ -3300,7 +3269,7 @@ viewer.setColor([<span class="hljs-string">"saw#0.1"</span>, <span class="hljs-s
 
   
 
-  <p>Makes model(s), object(s) and/or type(s) clippable.</p>
+  <p>Makes model/object/type(s) clippable.</p>
 <p>Makes all objects in the viewer clippable when no arguments are given.</p>
 <p>Objects are clippable by default.</p>
 
@@ -3386,8 +3355,8 @@ viewer.setClippable(<span class="hljs-string">"gearbox"</span>, <span class="hlj
 
   
 
-  <p>Makes model(s), object(s) and/or type(s) unclippable.</p>
-<p>These objects will then remain fully visible when they would otherwise be clipped by clipping planes.</p>
+  <p>Makes model/object/type(s) unclippable.</p>
+<p>Unclippable objects will then remain fully visible when they would otherwise be clipped by clipping planes.</p>
 <p>Makes all objects in the viewer unclippable when no arguments are given.</p>
 <p>Objects are clippable by default.</p>
 
@@ -3473,7 +3442,7 @@ viewer.setUnclippable(<span class="hljs-string">"gearbox"</span>, <span class="h
 
   
 
-  <p>Shows outline around model(s), object(s) or type(s).</p>
+  <p>Shows outline around model/object/type(s).</p>
 <p>Outlines all objects in the viewer when no arguments are given.</p>
 
 
@@ -3550,7 +3519,7 @@ viewer.showOutline([<span class="hljs-string">"saw#0.1"</span>, <span class="hlj
 
   
 
-  <p>Hides outline around model(s), object(s) or type(s).</p>
+  <p>Hides outline around model/object/type(s).</p>
 <p>Hides all outlines in the viewer when no arguments are given.</p>
 
 
@@ -3891,7 +3860,7 @@ viewer.hideOutline([<span class="hljs-string">"saw#0.1"</span>, <span class="hlj
 
   
 
-  <p>Gets the World-space center point of the given model(s), object(s) or type(s).</p>
+  <p>Gets the World-space center point of the given given model/object/types/clip/annotation/light(s).</p>
 <p>When no arguments are given, returns the collective center of all objects in the viewer.</p>
 
 
@@ -3970,7 +3939,7 @@ viewer.getCenter([<span class="hljs-string">"saw#0.1"</span>, <span class="hljs-
 
   
 
-  <p>Gets the axis-aligned World-space boundary of the given model(s), object(s) or type(s).</p>
+  <p>Gets the axis-aligned World-space boundary of the given model/object/type/annotation/light(s).</p>
 <p>When no arguments are given, returns the collective boundary of all objects in the viewer.</p>
 
 
@@ -3992,7 +3961,7 @@ viewer.getCenter([<span class="hljs-string">"saw#0.1"</span>, <span class="hljs-
         <div class='space-bottom0'>
           <div>
             <span class='code bold'>target</span> <code class='quiet'>((<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>>))</code>
-	    IDs of models, objects and/or annotations
+	    IDs of model/object/type/annotation/light(s).
 
           </div>
           
@@ -6126,7 +6095,7 @@ will occupy when fitted to view.</p>
 
   
 
-  <p>Moves the camera to fit the given annotation(s), model(s), object(s) and/or boundary(s).</p>
+  <p>Moves the camera to fit the given model/object/annotation/light/boundary(s).</p>
 <p>Preserves the direction that the camera is currently pointing in.</p>
 <p>A boundary is an axis-aligned World-space bounding box, given as elements <code>[xmin, ymin, zmin, xmax, ymax, zmax]</code>.</p>
 
@@ -6205,7 +6174,7 @@ will occupy when fitted to view.</p>
 
   
 
-  <p>Moves the camera to fit the given model(s), object(s) and/or boundary(s) in view, while looking along the +X axis.</p>
+  <p>Moves the camera to fit the given model/object/annotation/light/boundary(s) in view, while looking along the +X axis.</p>
 
 
   <div class='pre p1 fill-light mt0'>viewFitRight(target: (<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | []), ok: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">Function</a>?): Viewer</div>
@@ -6282,7 +6251,7 @@ will occupy when fitted to view.</p>
 
   
 
-  <p>Moves the camera to fit the given model(s), object(s) and/or boundary(s) in view, while looking along the +Z axis.</p>
+  <p>Moves the camera to fit the given model/object/annotation/light/boundary(s) in view, while looking along the +Z axis.</p>
 
 
   <div class='pre p1 fill-light mt0'>viewFitBack(target: (<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | []), ok: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">Function</a>?): Viewer</div>
@@ -6359,7 +6328,7 @@ will occupy when fitted to view.</p>
 
   
 
-  <p>Moves the camera to fit the given model(s), object(s) and/or boundary(s) in view, while looking along the -X axis.</p>
+  <p>Moves the camera to fit the given model/object/annotation/light/boundary(s) in view, while looking along the -X axis.</p>
 
 
   <div class='pre p1 fill-light mt0'>viewFitLeft(target: (<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | []), ok: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">Function</a>?): Viewer</div>
@@ -6436,7 +6405,7 @@ will occupy when fitted to view.</p>
 
   
 
-  <p>Moves the camera to fit the given model(s), object(s) and/or boundary(s) in view, while looking along the +X axis.</p>
+  <p>Moves the camera to fit the given model/object/annotation/light/boundary(s) in view, while looking along the +X axis.</p>
 
 
   <div class='pre p1 fill-light mt0'>viewFitFront(target: (<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | []), ok: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">Function</a>?): Viewer</div>
@@ -6513,7 +6482,7 @@ will occupy when fitted to view.</p>
 
   
 
-  <p>Moves the camera to fit the given model(s), object(s) and/or boundary(s) in view, while looking along the -Y axis.</p>
+  <p>Moves the camera to fit the given model/object/annotation/light/boundary(s) in view, while looking along the -Y axis.</p>
 
 
   <div class='pre p1 fill-light mt0'>viewFitTop(target: (<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | []), ok: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">Function</a>?): Viewer</div>
@@ -6590,7 +6559,7 @@ will occupy when fitted to view.</p>
 
   
 
-  <p>Moves the camera to fit the given model(s), object(s) and/or boundary(s) in view, while looking along the +X axis.</p>
+  <p>Moves the camera to fit the given model/object/annotation/light/boundary(s) in view, while looking along the +X axis.</p>
 
 
   <div class='pre p1 fill-light mt0'>viewFitBottom(target: (<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | []), ok: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">Function</a>?): Viewer</div>
@@ -7388,79 +7357,11 @@ is typically a short string of 1-2 chars, eg. "a1".
       </div>
     </div>
   
-    <div class='border-bottom' id='.Viewer#destroyAnnotation'>
+    <div class='border-bottom' id='.Viewer#destroyAnnotations'>
       <div class="clearfix small pointer toggle-sibling">
         <div class="py1 contain">
             <a class='icon pin-right py1 dark-link caret-right'>▸</a>
-            <span class='code strong strong truncate'>destroyAnnotation(id)</span>
-        </div>
-      </div>
-      <div class="clearfix display-none toggle-target">
-        <section class='p2 mb2 clearfix bg-white minishadow'>
-
-  
-
-  <p>Destroys an annotation.</p>
-
-
-  <div class='pre p1 fill-light mt0'>destroyAnnotation(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): Viewer</div>
-  
-  
-
-  
-  
-  
-  
-  
-  
-
-  
-    <div class='py1 quiet mt1 prose-big'>Parameters</div>
-    <div class='prose'>
-      
-        <div class='space-bottom0'>
-          <div>
-            <span class='code bold'>id</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>
-	    ID of the annotation.
-
-          </div>
-          
-        </div>
-      
-    </div>
-  
-
-  
-
-  
-    
-      <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code>Viewer</code>:
-        This viewer
-
-      
-    
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-</section>
-
-      </div>
-    </div>
-  
-    <div class='border-bottom' id='.Viewer#clearAnnotations'>
-      <div class="clearfix small pointer toggle-sibling">
-        <div class="py1 contain">
-            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
-            <span class='code strong strong truncate'>clearAnnotations()</span>
+            <span class='code strong strong truncate'>destroyAnnotations()</span>
         </div>
       </div>
       <div class="clearfix display-none toggle-target">
@@ -7471,7 +7372,7 @@ is typically a short string of 1-2 chars, eg. "a1".
   <p>Destroys all annotations.</p>
 
 
-  <div class='pre p1 fill-light mt0'>clearAnnotations(): Viewer</div>
+  <div class='pre p1 fill-light mt0'>destroyAnnotations(): Viewer</div>
   
   
 
@@ -9281,8 +9182,7 @@ where a value of <code>[0.3,0.3,0.3]</code> places the annotation at the center 
   
 
   <p>Creates a user-defined clipping plane.</p>
-<p>The plane is positioned at a given World-space position, oriented in a given direction, and may be
-active or inactive.</p>
+<p>The plane is positioned at a given World-space position and oriented in a given direction.</p>
 
 
   <div class='pre p1 fill-light mt0'>createClip(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>, cfg: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>): Viewer</div>
@@ -9335,6 +9235,15 @@ active or inactive.</p>
                     (default <code>0,0,0</code>)
                   </td>
                   <td class='break-word'><span>World-space position of the clip plane.
+</span></td>
+                </tr>
+              
+                <tr>
+                  <td class='break-word'><span class='code bold'>cfg.dir</span> <code class='quiet'>[<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>]?</code>
+                  
+                    (default <code>0,0,-1</code>)
+                  </td>
+                  <td class='break-word'><span>Vector indicating the orientation of the clip plane.
 </span></td>
                 </tr>
               
@@ -9447,79 +9356,11 @@ the front of the plane (with respect to the plane orientation vector), while
       </div>
     </div>
   
-    <div class='border-bottom' id='.Viewer#destroyClip'>
+    <div class='border-bottom' id='.Viewer#destroyClips'>
       <div class="clearfix small pointer toggle-sibling">
         <div class="py1 contain">
             <a class='icon pin-right py1 dark-link caret-right'>▸</a>
-            <span class='code strong strong truncate'>destroyClip(id)</span>
-        </div>
-      </div>
-      <div class="clearfix display-none toggle-target">
-        <section class='p2 mb2 clearfix bg-white minishadow'>
-
-  
-
-  <p>Removes a clip plane from this viewer.</p>
-
-
-  <div class='pre p1 fill-light mt0'>destroyClip(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): Viewer</div>
-  
-  
-
-  
-  
-  
-  
-  
-  
-
-  
-    <div class='py1 quiet mt1 prose-big'>Parameters</div>
-    <div class='prose'>
-      
-        <div class='space-bottom0'>
-          <div>
-            <span class='code bold'>id</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>
-	    ID of the clip plane to remove.
-
-          </div>
-          
-        </div>
-      
-    </div>
-  
-
-  
-
-  
-    
-      <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code>Viewer</code>:
-        this
-
-      
-    
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-</section>
-
-      </div>
-    </div>
-  
-    <div class='border-bottom' id='.Viewer#clearClips'>
-      <div class="clearfix small pointer toggle-sibling">
-        <div class="py1 contain">
-            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
-            <span class='code strong strong truncate'>clearClips()</span>
+            <span class='code strong strong truncate'>destroyClips()</span>
         </div>
       </div>
       <div class="clearfix display-none toggle-target">
@@ -9530,7 +9371,7 @@ the front of the plane (with respect to the plane orientation vector), while
   <p>Removes all clip planes from this viewer.</p>
 
 
-  <div class='pre p1 fill-light mt0'>clearClips(): Viewer</div>
+  <div class='pre p1 fill-light mt0'>destroyClips(): Viewer</div>
   
   
 
@@ -9569,147 +9410,11 @@ the front of the plane (with respect to the plane orientation vector), while
       </div>
     </div>
   
-    <div class='border-bottom' id='.Viewer#showClip'>
+    <div class='border-bottom' id='.Viewer#enable'>
       <div class="clearfix small pointer toggle-sibling">
         <div class="py1 contain">
             <a class='icon pin-right py1 dark-link caret-right'>▸</a>
-            <span class='code strong strong truncate'>showClip(id)</span>
-        </div>
-      </div>
-      <div class="clearfix display-none toggle-target">
-        <section class='p2 mb2 clearfix bg-white minishadow'>
-
-  
-
-  <p>Shows a helper object to indicate the position and orientation of a clipping plane.</p>
-
-
-  <div class='pre p1 fill-light mt0'>showClip(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): Viewer</div>
-  
-  
-
-  
-  
-  
-  
-  
-  
-
-  
-    <div class='py1 quiet mt1 prose-big'>Parameters</div>
-    <div class='prose'>
-      
-        <div class='space-bottom0'>
-          <div>
-            <span class='code bold'>id</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>
-	    ID of the clip plane to show.
-
-          </div>
-          
-        </div>
-      
-    </div>
-  
-
-  
-
-  
-    
-      <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code>Viewer</code>:
-        
-
-      
-    
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-</section>
-
-      </div>
-    </div>
-  
-    <div class='border-bottom' id='.Viewer#hideClip'>
-      <div class="clearfix small pointer toggle-sibling">
-        <div class="py1 contain">
-            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
-            <span class='code strong strong truncate'>hideClip(id)</span>
-        </div>
-      </div>
-      <div class="clearfix display-none toggle-target">
-        <section class='p2 mb2 clearfix bg-white minishadow'>
-
-  
-
-  <p>Hides the helper object that indicates the position and orientation of the given clipping plane.</p>
-
-
-  <div class='pre p1 fill-light mt0'>hideClip(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): Viewer</div>
-  
-  
-
-  
-  
-  
-  
-  
-  
-
-  
-    <div class='py1 quiet mt1 prose-big'>Parameters</div>
-    <div class='prose'>
-      
-        <div class='space-bottom0'>
-          <div>
-            <span class='code bold'>id</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>
-	    ID of the clip plane to hide.
-
-          </div>
-          
-        </div>
-      
-    </div>
-  
-
-  
-
-  
-    
-      <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code>Viewer</code>:
-        
-
-      
-    
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-</section>
-
-      </div>
-    </div>
-  
-    <div class='border-bottom' id='.Viewer#enableClip'>
-      <div class="clearfix small pointer toggle-sibling">
-        <div class="py1 contain">
-            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
-            <span class='code strong strong truncate'>enableClip(id)</span>
+            <span class='code strong strong truncate'>enable(id)</span>
         </div>
       </div>
       <div class="clearfix display-none toggle-target">
@@ -9720,7 +9425,7 @@ the front of the plane (with respect to the plane orientation vector), while
   <p>Enables a clipping plane.</p>
 
 
-  <div class='pre p1 fill-light mt0'>enableClip(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): Viewer</div>
+  <div class='pre p1 fill-light mt0'>enable(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): Viewer</div>
   
   
 
@@ -9773,11 +9478,11 @@ the front of the plane (with respect to the plane orientation vector), while
       </div>
     </div>
   
-    <div class='border-bottom' id='.Viewer#disableClip'>
+    <div class='border-bottom' id='.Viewer#disable'>
       <div class="clearfix small pointer toggle-sibling">
         <div class="py1 contain">
             <a class='icon pin-right py1 dark-link caret-right'>▸</a>
-            <span class='code strong strong truncate'>disableClip(id)</span>
+            <span class='code strong strong truncate'>disable(id)</span>
         </div>
       </div>
       <div class="clearfix display-none toggle-target">
@@ -9788,7 +9493,7 @@ the front of the plane (with respect to the plane orientation vector), while
   <p>Disables a clipping plane.</p>
 
 
-  <div class='pre p1 fill-light mt0'>disableClip(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): Viewer</div>
+  <div class='pre p1 fill-light mt0'>disable(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): Viewer</div>
   
   
 
@@ -9841,11 +9546,11 @@ the front of the plane (with respect to the plane orientation vector), while
       </div>
     </div>
   
-    <div class='border-bottom' id='.Viewer#setClipPos'>
+    <div class='border-bottom' id='.Viewer#createLight'>
       <div class="clearfix small pointer toggle-sibling">
         <div class="py1 contain">
             <a class='icon pin-right py1 dark-link caret-right'>▸</a>
-            <span class='code strong strong truncate'>setClipPos(id, pos = 0,0,0)</span>
+            <span class='code strong strong truncate'>createLight(id, cfg)</span>
         </div>
       </div>
       <div class="clearfix display-none toggle-target">
@@ -9853,10 +9558,10 @@ the front of the plane (with respect to the plane orientation vector), while
 
   
 
-  <p>Sets the position of the given clip plane.</p>
+  <p>Creates a light source.</p>
 
 
-  <div class='pre p1 fill-light mt0'>setClipPos(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>, pos: [<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>]?): Viewer</div>
+  <div class='pre p1 fill-light mt0'>createLight(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>, cfg: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>): Viewer</div>
   
   
 
@@ -9874,7 +9579,351 @@ the front of the plane (with respect to the plane orientation vector), while
         <div class='space-bottom0'>
           <div>
             <span class='code bold'>id</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>
-	    ID of the clip plane to remove.
+	    Unique ID to assign to the lightping plane.
+
+          </div>
+          
+        </div>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>cfg</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</code>
+	    Light plane configuration.
+
+          </div>
+          
+          <table class='mt1 mb2 fixed-table h5 col-12'>
+            <colgroup>
+              <col width='30%' />
+              <col width='70%' />
+            </colgroup>
+            <thead>
+              <tr class='bold fill-light'>
+                <th>Name</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody class='mt1'>
+              
+                <tr>
+                  <td class='break-word'><span class='code bold'>cfg.pos</span> <code class='quiet'>[<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>]?</code>
+                  
+                    (default <code>0,0,0</code>)
+                  </td>
+                  <td class='break-word'><span>World-space position of the light plane.
+</span></td>
+                </tr>
+              
+                <tr>
+                  <td class='break-word'><span class='code bold'>cfg.shown</span> <code class='quiet'><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a>?</code>
+                  
+                    (default <code>true</code>)
+                  </td>
+                  <td class='break-word'><span>Whether to show a helper object to indicate the light plane's position and orientation.
+the front of the plane (with respect to the plane orientation vector), while 
+<code>-1</code>
+ discards elements behind the plane.
+</span></td>
+                </tr>
+              
+            </tbody>
+          </table>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>Viewer</code>:
+        this
+
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='.Viewer#getLights'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>getLights()</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Gets the IDs of the light sources currently in the viewer.</p>
+
+
+  <div class='pre p1 fill-light mt0'>getLights(): <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>></div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>></code>:
+        IDs of the light sources.
+
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='.Viewer#destroyLights'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>destroyLights()</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Destroys all lights.</p>
+
+
+  <div class='pre p1 fill-light mt0'>destroyLights(): Viewer</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>Viewer</code>:
+        This viewer
+
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='.Viewer#defaultLights'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>defaultLights()</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Sets light sources to defaults.</p>
+
+
+  <div class='pre p1 fill-light mt0'>defaultLights(): Viewer</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>Viewer</code>:
+        this
+
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='.Viewer#getLightType'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>getLightType</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Gets the type of the given light source.</p>
+
+
+  <div class='pre p1 fill-light mt0'>getLightType</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>id</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>
+	    ID of the light source.
+
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></code>:
+        The light type: "dir", "point" or "ambient".
+
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='.Viewer#setPos'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>setPos(id, pos = 0,0,0)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Sets the position of the given light source or clip plane.</p>
+
+
+  <div class='pre p1 fill-light mt0'>setPos(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>, pos: [<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>]?): Viewer</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>id</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>
+	    ID of the light source or clip plane.
 
           </div>
           
@@ -9884,7 +9933,7 @@ the front of the plane (with respect to the plane orientation vector), while
           <div>
             <span class='code bold'>pos</span> <code class='quiet'>([<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>]?
             = <code>0,0,0</code>)</code>
-	    World-space position of the clip plane.
+	    World-space position.
 
           </div>
           
@@ -9919,11 +9968,11 @@ the front of the plane (with respect to the plane orientation vector), while
       </div>
     </div>
   
-    <div class='border-bottom' id='.Viewer#getClipPos'>
+    <div class='border-bottom' id='.Viewer#getPos'>
       <div class="clearfix small pointer toggle-sibling">
         <div class="py1 contain">
             <a class='icon pin-right py1 dark-link caret-right'>▸</a>
-            <span class='code strong strong truncate'>getClipPos(id)</span>
+            <span class='code strong strong truncate'>getPos(id)</span>
         </div>
       </div>
       <div class="clearfix display-none toggle-target">
@@ -9931,10 +9980,10 @@ the front of the plane (with respect to the plane orientation vector), while
 
   
 
-  <p>Gets the position of the given clip plane.</p>
+  <p>Gets the position of the given light source or clip plane.</p>
 
 
-  <div class='pre p1 fill-light mt0'>getClipPos(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): [<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>]</div>
+  <div class='pre p1 fill-light mt0'>getPos(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): [<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>]</div>
   
   
 
@@ -9952,7 +10001,7 @@ the front of the plane (with respect to the plane orientation vector), while
         <div class='space-bottom0'>
           <div>
             <span class='code bold'>id</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>
-	    ID of the clip plane.
+	    ID of the light source or clip plane.
 
           </div>
           
@@ -9967,7 +10016,7 @@ the front of the plane (with respect to the plane orientation vector), while
     
       <div class='py1 quiet mt1 prose-big'>Returns</div>
       <code>[<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>]</code>:
-        World-space position of the plane.
+        World-space position.
 
       
     
@@ -9987,11 +10036,11 @@ the front of the plane (with respect to the plane orientation vector), while
       </div>
     </div>
   
-    <div class='border-bottom' id='.Viewer#setClipDir'>
+    <div class='border-bottom' id='.Viewer#setDir'>
       <div class="clearfix small pointer toggle-sibling">
         <div class="py1 contain">
             <a class='icon pin-right py1 dark-link caret-right'>▸</a>
-            <span class='code strong strong truncate'>setClipDir(id, dir = 0,0,1)</span>
+            <span class='code strong strong truncate'>setDir(id, dir = 0,0,1)</span>
         </div>
       </div>
       <div class="clearfix display-none toggle-target">
@@ -9999,10 +10048,10 @@ the front of the plane (with respect to the plane orientation vector), while
 
   
 
-  <p>Sets the orientation of the given clip plane.</p>
+  <p>Sets the orientation of the given light source or clip plane.</p>
 
 
-  <div class='pre p1 fill-light mt0'>setClipDir(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>, dir: [<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>]?): Viewer</div>
+  <div class='pre p1 fill-light mt0'>setDir(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>, dir: [<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>]?): Viewer</div>
   
   
 
@@ -10020,7 +10069,7 @@ the front of the plane (with respect to the plane orientation vector), while
         <div class='space-bottom0'>
           <div>
             <span class='code bold'>id</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>
-	    ID of the clip plane.
+	    ID of a light source or clip plane.
 
           </div>
           
@@ -10065,11 +10114,11 @@ the front of the plane (with respect to the plane orientation vector), while
       </div>
     </div>
   
-    <div class='border-bottom' id='.Viewer#getClipDir'>
+    <div class='border-bottom' id='.Viewer#getDir'>
       <div class="clearfix small pointer toggle-sibling">
         <div class="py1 contain">
             <a class='icon pin-right py1 dark-link caret-right'>▸</a>
-            <span class='code strong strong truncate'>getClipDir(id)</span>
+            <span class='code strong strong truncate'>getDir(id)</span>
         </div>
       </div>
       <div class="clearfix display-none toggle-target">
@@ -10077,10 +10126,10 @@ the front of the plane (with respect to the plane orientation vector), while
 
   
 
-  <p>Gets the orientation of the given clip plane.</p>
+  <p>Gets the orientation of the given light source or clip plane.</p>
 
 
-  <div class='pre p1 fill-light mt0'>getClipDir(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): [<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>]</div>
+  <div class='pre p1 fill-light mt0'>getDir(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): [<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>]</div>
   
   
 
@@ -10098,7 +10147,7 @@ the front of the plane (with respect to the plane orientation vector), while
         <div class='space-bottom0'>
           <div>
             <span class='code bold'>id</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>
-	    ID of the clip plane.
+	    ID of a light source or clip plane.
 
           </div>
           
@@ -10114,6 +10163,370 @@ the front of the plane (with respect to the plane orientation vector), while
       <div class='py1 quiet mt1 prose-big'>Returns</div>
       <code>[<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>]</code>:
         Orientation vector.
+
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='.Viewer#setIntensity'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>setIntensity(id, intensity)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Sets the intensity of the given light source.</p>
+
+
+  <div class='pre p1 fill-light mt0'>setIntensity(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>, intensity: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>): Viewer</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>id</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>
+	    ID of the light source.
+
+          </div>
+          
+        </div>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>intensity</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>)</code>
+	    Intensity factor in range 
+[
+0..1
+]
+.
+
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>Viewer</code>:
+        
+
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='.Viewer#getIntensity'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>getIntensity(id)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Gets the intensity of the given light source.</p>
+
+
+  <div class='pre p1 fill-light mt0'>getIntensity(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a></div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>id</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>
+	    ID of the light source.
+
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a></code>:
+        Intensity factor in range 
+[
+0..1
+]
+.
+
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='.Viewer#setSpace'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>setSpace(id, space)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Sets the coordinate space of the given light source.</p>
+
+
+  <div class='pre p1 fill-light mt0'>setSpace(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>, space: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): Viewer</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>id</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>
+	    ID of the light source.
+
+          </div>
+          
+        </div>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>space</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>
+	    The coordinate space: "world" or "view".
+
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>Viewer</code>:
+        
+
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='.Viewer#getSpace'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>getSpace(id)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Gets the coordinate space of the given light source.</p>
+
+
+  <div class='pre p1 fill-light mt0'>getSpace(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>id</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>
+	    ID of the light source.
+
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a></code>:
+        Coordinate space: "world" or "view".
+
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='.Viewer#destroy'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>destroy(id)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  
+
+  <div class='pre p1 fill-light mt0'>destroy(id: any): Viewer</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>id</span> <code class='quiet'>(any)</code>
+	    
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>Viewer</code>:
+        
 
       
     
@@ -10399,11 +10812,11 @@ clear everything in the viewer first.</p>
       </div>
     </div>
   
-    <div class='border-bottom' id='.Viewer#destroy'>
+    <div class='border-bottom' id='.Viewer#on'>
       <div class="clearfix small pointer toggle-sibling">
         <div class="py1 contain">
             <a class='icon pin-right py1 dark-link caret-right'>▸</a>
-            <span class='code strong strong truncate'>destroy()</span>
+            <span class='code strong strong truncate'>on(event, callback)</span>
         </div>
       </div>
       <div class="clearfix display-none toggle-target">
@@ -10411,10 +10824,159 @@ clear everything in the viewer first.</p>
 
   
 
+  <p>Subscribes to an event on this BIMViewer.</p>
+
+
+  <div class='pre p1 fill-light mt0'>on(event: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>, callback: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">Function</a>)</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>event</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>
+	    The event
+
+          </div>
+          
+        </div>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>callback</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function">Function</a>)</code>
+	    Called fired on the event
+
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='.Viewer#fire'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>fire(event, value)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Fires an event on this BIMViewer.</p>
+
+
+  <div class='pre p1 fill-light mt0'>fire(event: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>, value: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>event</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>
+	    The event type name
+
+          </div>
+          
+        </div>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>value</span> <code class='quiet'>(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</code>
+	    The event parameters
+
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+</div>
+
+  
+
+  
+</section>
+
+          
+        
+          
+            <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+  <div class='clearfix'>
+    
+    <h3 class='fl m0' id='error'>
+      error
+    </h3>
+    
+    
+  </div>
+  
+
   <p>Clears and destroys this viewer.</p>
 
 
-  <div class='pre p1 fill-light mt0'>destroy(): Viewer</div>
+  <div class='pre p1 fill-light mt0'>error(msg: any): Viewer</div>
   
   
 
@@ -10425,6 +10987,19 @@ clear everything in the viewer first.</p>
   
   
 
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>msg</span> <code class='quiet'>(any)</code>
+	    
+          </div>
+          
+        </div>
+      
+    </div>
   
 
   
@@ -10444,16 +11019,6 @@ clear everything in the viewer first.</p>
   
 
   
-
-  
-
-  
-</section>
-
-      </div>
-    </div>
-  
-</div>
 
   
 
