@@ -4,7 +4,7 @@
  * A WebGL-based 3D visualization engine from xeoLabs
  * http://xeolabs.com/xeometry
  *
- * Built on 2017-10-18
+ * Built on 2017-11-01
  *
  * MIT License
  * Copyright 2017, Lindsay Kay
@@ -18,7 +18,7 @@
  * A WebGL-based 3D visualization engine from xeoLabs
  * http://xeogl.org/
  *
- * Built on 2017-10-18
+ * Built on 2017-11-01
  *
  * MIT License
  * Copyright 2017, Lindsay Kay
@@ -173,6 +173,7 @@
             //},
             components: {
                 scenes: 0,
+                models: 0,
                 entities: 0
             },
             memory: {
@@ -3234,6 +3235,54 @@ var Canvas2Image = (function () {
         },
 
         /**
+         * Transforms an array of positions by a 4x4 matrix.
+         * @method transformPositions4
+         * @static
+         */
+        transformPositions4: function (m, p, p2) {
+
+            p2 = p2 || p;
+
+            var i;
+            var len = p.length;
+
+            var x;
+            var y;
+            var z;
+
+            var m0 = m[0];
+            var m1 = m[1];
+            var m2 = m[2];
+            var m3 = m[3];
+            var m4 = m[4];
+            var m5 = m[5];
+            var m6 = m[6];
+            var m7 = m[7];
+            var m8 = m[8];
+            var m9 = m[9];
+            var m10 = m[10];
+            var m11 = m[11];
+            var m12 = m[12];
+            var m13 = m[13];
+            var m14 = m[14];
+            var m15 = m[15];
+
+            for (i = 0; i < len; i += 4) {
+
+                x = p[i + 0];
+                y = p[i + 1];
+                z = p[i + 2];
+
+                p2[i + 0] = (m0 * x) + (m4 * y) + (m8 * z) + m12;
+                p2[i + 1] = (m1 * x) + (m5 * y) + (m9 * z) + m13;
+                p2[i + 2] = (m2 * x) + (m6 * y) + (m10 * z) + m14;
+                p2[i + 3] = (m3 * x) + (m7 * y) + (m11 * z) + m15;
+            }
+
+            return p2;
+        },
+
+        /**
          * Transforms a three-element vector by a 4x4 matrix.
          * @method transformVec3
          * @static
@@ -5757,7 +5806,7 @@ var Canvas2Image = (function () {
                 this.ambientColor[2] = 0;
             }
 
-            frameCtx.backfaces = true;
+            frameCtx.backfaces = false;
             frameCtx.frontface = true; // true == "ccw" else "cw"
             frameCtx.textureUnit = 0;
             frameCtx.ambientColor = this.ambientColor;
@@ -5777,7 +5826,7 @@ var Canvas2Image = (function () {
 
             gl.enable(gl.DEPTH_TEST);
             gl.frontFace(gl.CCW);
-            gl.disable(gl.CULL_FACE);
+            gl.enable(gl.CULL_FACE);
             gl.depthMask(true);
             gl.colorMask(true, true, true, false);
 
@@ -10022,7 +10071,7 @@ var Canvas2Image = (function () {
 
                 if (phongMaterial) {
 
-                    add("ambientColor *= lightAmbient;");
+                    add("ambientColor *= (lightAmbient * lightAmbientIntensity);");
 
                     add("vec3 outgoingLight =  (shadow * occlusion * (ambientColor + reflectedLight.diffuse + reflectedLight.specular)) + emissiveColor;");
 
@@ -10036,7 +10085,7 @@ var Canvas2Image = (function () {
                 // NO SHADING - EMISSIVE and AMBIENT ONLY
                 //--------------------------------------------------------------------------------
 
-                add("ambientColor *= lightAmbient;");
+                add("ambientColor *= (lightAmbient * lightAmbientIntensity);");
 
                 add("vec3 outgoingLight = emissiveColor + ambientColor;");
             }
@@ -12377,7 +12426,6 @@ var Canvas2Image = (function () {
 
             // Event support - lazy creating these properties because
             // they are expensive to have around if not using them
-            this._events = null;
             this._handleMap = null; // Subscription handle pool
             this._handleEvents = null; // Subscription handles mapped to event names
             this._eventSubs = null; // Event names mapped to subscribers
@@ -12626,6 +12674,17 @@ var Canvas2Image = (function () {
                     callback(value);
                 },
                 scope);
+        },
+
+        /**
+         * Returns true if there are any subscribers to the given event on this component.
+         *
+         * @method hasSubs
+         * @param {String} event The event
+         * @return {Boolean} True if there are any subscribers to the given event on this component.
+         */
+        hasSubs: function (event) {
+            return (this._eventSubs && !!this._eventSubs[event]);
         },
 
         /**
@@ -13580,6 +13639,15 @@ var Canvas2Image = (function () {
              */
             this.entities = {};
 
+            /**
+             * The {{#crossLink "Model"}}{{/crossLink}}s within
+             * this Scene, mapped to their IDs.
+             *
+             * @property entities
+             * @type {String:xeogl.Model}
+             */
+            this.models = {};
+
             // Map of components created with #getSharedComponent, mapped to their "share IDs"
             this._sharedComponents = {};
 
@@ -13768,6 +13836,16 @@ var Canvas2Image = (function () {
                 xeogl.stats.components.entities++;
             }
 
+            if (c.isType("xeogl.Model")) {
+
+                this.models[c.id] = c;
+
+                // Update scene statistics
+
+                xeogl.stats.components.models++;
+            }
+
+
             /**
              * Fired whenever a component has been created within this Scene.
              * @event componentCreated
@@ -13808,6 +13886,15 @@ var Canvas2Image = (function () {
                 delete this.entities[c.id];
 
                 delete this._dirtyEntities[c.id];
+            }
+
+            if (c.isType("xeogl.Model")) {
+
+                // Component is a xeogl.Model, or a subtype thereof
+
+                xeogl.stats.components.models--;
+
+                delete this.models[c.id];
             }
 
             /**
@@ -14206,10 +14293,6 @@ var Canvas2Image = (function () {
                                 //    id: "default.light0",
                                 //    color: [0.55, 0.55, 0.6],
                                 //    intensity: 1.0
-                                //}),
-
-                                //new xeogl.AmbientLight(this, {
-                                //    color: [0.5, 0.5, 0.55]
                                 //}),
 
                                 //new xeogl.SpotLight(this, {
@@ -32726,6 +32809,8 @@ TODO
 
             this.alphaMode = cfg.alphaMode;
             this.alphaCutoff = cfg.alphaCutoff;
+            this.backfaces = cfg.backfaces;
+            this.frontface = cfg.frontface;
         },
 
         _props: {
@@ -40495,7 +40580,7 @@ TODO
         }),
 
         project: new xeogl.Perspective({
-            fovy: 60,
+            fovy: 50,
             near: 0.1,
             far: 1000
         })
@@ -40515,7 +40600,7 @@ TODO
  @param [cfg.id] {String} Optional ID, unique among all components in the parent scene, generated automatically when omitted.
  @param [cfg.meta] {String:Object} Optional map of user-defined metadata to attach to this Perspective.
  @param [cfg.parent] {String|Transform} ID or instance of a parent {{#crossLink "Transform"}}{{/crossLink}} within the same {{#crossLink "Scene"}}Scene{{/crossLink}}.
- @param [cfg.fovy=60.0] {Number} Field-of-view angle, in degrees, on Y-axis.
+ @param [cfg.fovy=50.0] {Number} Field-of-view angle, in degrees, on Y-axis.
  @param [cfg.near=0.1] {Number} Position of the near plane on the View-space Z-axis.
  @param [cfg.far=10000] {Number} Position of the far plane on the View-space Z-axis.
  @extends Transform
@@ -40533,7 +40618,7 @@ TODO
             this._super(cfg);
 
             this._dirty = false;
-            this._fovy = 60.0;
+            this._fovy = 50.0;
             this._near = 0.1;
             this._far = 10000.0;
 
@@ -40561,14 +40646,14 @@ TODO
              * Fires a {{#crossLink "Perspective/fovy:event"}}{{/crossLink}} event on change.
              *
              * @property fovy
-             * @default 60.0
+             * @default 50.0
              * @type Number
              */
             fovy: {
 
                 set: function (value) {
 
-                    this._fovy = (value !== undefined && value !== null) ? value : 60.0;
+                    this._fovy = (value !== undefined && value !== null) ? value : 50.0;
 
                     this._renderer.imageDirty = true;
 
@@ -42547,47 +42632,38 @@ xeogl.version="1.0.0";;/**
 })();
 ;/**
 
- Helper that visualizes the position and direction of a {{#crossLink "Clip"}}{{/crossLink}}.
+ Helper that visualizes the position and direction of a plane.
 
- The helper works by tracking updates to the {{#crossLink "Clip"}}{{/crossLink}}'s
- {{#crossLink "Clip/pos:property"}}{{/crossLink}} and {{#crossLink "Clip/dir:property"}}{{/crossLink}}.
-
- @class ClipHelper
+ @class PlaneHelper
  @constructor
  @param cfg {*} Configuration
- @param cfg.clip {Clip} A {{#crossLink "Clip"}}{{/crossLink}} to visualize.
+ @param [cfg.pos=[0,0,0]] {Float32Array} World-space position.
+ @param [cfg.dir=[0,0,1]] {Float32Array} World-space direction vector.
+ @param [cfg.color=[0.4,0.4,0.4]] {Float32Array} Emmissive color
  @param [cfg.visible=true] {Boolean} Indicates whether or not this helper is visible.
- @param [cfg.size] {Float32Array} The width and height of the ClipHelper plane indicator. When no value is specified,
- will automatically size to fit within the {{#crossLink "Scene/worldBoundary:property"}}Scene's worldBoundary{{/crossLink}}.
+ @param [cfg.planeSize] {Float32Array} The width and height of the PlaneHelper plane indicator.
+ @param [cfg.autoPlaneSize=false] {Boolean} Indicates whether or not this PlaneHelper's
+ {{#crossLink "PlaneHelper/planeSize:property"}}{{/crossLink}} is automatically sized to fit within
+ the {{#crossLink "Scene/worldBoundary:property"}}Scene's worldBoundary{{/crossLink}}.
  */
 (function () {
 
     "use strict";
 
-    xeogl.ClipHelper = xeogl.Component.extend({
+    xeogl.PlaneHelper = xeogl.Component.extend({
 
-        type: "xeogl.ClipHelper",
+        type: "xeogl.PlaneHelper",
 
         _init: function (cfg) {
 
-            var material = new xeogl.PhongMaterial(this, {
-                emissive: [1, 0, 0],
-                diffuse: [0, 0, 0],
-                lineWidth: 4
-            });
-
-            this._translate = new xeogl.Translate(this, {
-                xyz: [0, 0, 0]
-            });
-
-            this._quaternion = new xeogl.Quaternion(this, {
-                xyzw: [0, 0, 0, 1],
-                parent: this._translate
-            });
-
-            this._planeScale = new xeogl.Scale(this, {
-                xyz: [10, 10, 0],
-                parent: this._quaternion
+            var transform = this._planeScale = new xeogl.Scale(this, {
+                worldPos: [10, 10, 0],
+                parent: this._quaternion = new xeogl.Quaternion(this, {
+                    worldPosw: [0, 0, 0, 1],
+                    parent: this._translate = new xeogl.Translate(this, {
+                        worldPos: [0, 0, 0]
+                    })
+                })
             });
 
             this._planeWire = new xeogl.Entity(this, {
@@ -42606,9 +42682,9 @@ xeogl.version="1.0.0";;/**
                     diffuse: [0, 0, 0],
                     lineWidth: 2
                 }),
-                transform: this._planeScale,
+                transform: transform,
                 pickable: false,
-                collidable: true,
+                collidable: false,
                 clippable: false
             });
 
@@ -42632,9 +42708,9 @@ xeogl.version="1.0.0";;/**
                     alphaMode: "blend",
                     backfaces: true
                 }),
-                transform: this._planeScale,
+                transform: transform,
                 pickable: false,
-                collidable: true,
+                collidable: false,
                 clippable: false
             });
 
@@ -42646,69 +42722,324 @@ xeogl.version="1.0.0";;/**
                     ],
                     indices: [0, 1]
                 }),
-                transform: this._quaternion,
-                material: material,
+                material: new xeogl.PhongMaterial(this, {
+                    emissive: [1, 0, 0],
+                    diffuse: [0, 0, 0],
+                    lineWidth: 4
+                }),
                 pickable: false,
-                collidable: true,
+                collidable: false,
                 clippable: false
             });
 
             this._label = new xeogl.Entity(this, {
                 geometry: new xeogl.VectorTextGeometry(this, {
                     text: this.id,
-                    size: 10.07,
+                    size: 0.07,
                     origin: [0.02, 0.02, 0.0]
                 }),
                 material: new xeogl.PhongMaterial(this, {
                     emissive: [0.3, 1, 0.3],
                     lineWidth: 2
                 }),
-                transform: this._quaternion,
+                transform: transform, // Shares transform with plane
                 pickable: false,
-                collidable: true,
+                collidable: false,
                 clippable: false,
                 billboard: "spherical"
             });
 
-            this.clip = cfg.clip;
-            this.size = cfg.size;
+            this.planeSize = cfg.planeSize;
+            this.autoPlaneSize = cfg.autoPlaneSize;
+            this.pos = cfg.pos;
+            this.dir = cfg.dir;
+            this.color = cfg.color;
             this.visible = cfg.visible;
         },
 
         _update: (function () {
-            var positions = new Float32Array(6);
-            var zeroVec = new Float32Array([0, 0, -1]);
-            var quat = new Float32Array(4);
+            var arrowPositions = new Float32Array(6);
             return function () {
 
-                var clip = this._attached.clip;
+                var pos = this._pos;
+                var dir = this._dir;
 
-                if (clip) {
+                // Rebuild arrow geometry
 
-                    var pos = clip.pos;
-                    var dir = clip.dir;
+                arrowPositions[0] = pos[0];
+                arrowPositions[1] = pos[1];
+                arrowPositions[2] = pos[2];
+                arrowPositions[3] = pos[0] + dir[0];
+                arrowPositions[4] = pos[1] + dir[1];
+                arrowPositions[5] = pos[2] + dir[2];
 
-                    positions[0] = pos[0];
-                    positions[1] = pos[1];
-                    positions[2] = pos[2];
-                    positions[3] = pos[0] + dir[0];
-                    positions[4] = pos[1] + dir[1];
-                    positions[5] = pos[2] + dir[2];
-
-                    this._arrow.geometry.positions = positions;
-
-                    xeogl.math.vec3PairToQuaternion(zeroVec, dir, quat);
-
-                    this._quaternion.xyzw = quat;
-                    this._translate.xyz = pos;
-                }
-            };
+                this._arrow.geometry.positions = arrowPositions;
+            }
         })(),
 
-        _autoSizeClipPlane: function () {
-            var aabbDiag = xeogl.math.getAABB3Diag(this.scene.worldBoundary.aabb);
-            var clipSize = (aabbDiag * 0.50);
-            this.size = [clipSize, clipSize];
+        _props: {
+
+            /**
+             * World-space position of this PlaneHelper.
+             * Fires an {{#crossLink "PlaneHelper/worldPos:event"}}{{/crossLink}} event on change.
+             * @property worldPos
+             * @default [0,0,0]
+             * @type {Float32Array}
+             */
+            pos: {
+
+                set: function (value) {
+
+                    (this._pos = this._pos || new xeogl.math.vec3()).set(value || [0, 0, 0]);
+
+                    this._translate.xyz = this._pos;
+
+                    this._needUpdate(); // Need to rebuild arrow
+
+                    /**
+                     Fired whenever this PlaneHelper's {{#crossLink "PlaneHelper/pos:property"}}{{/crossLink}} property changes.
+                     @event pos
+                     @param value {Float32Array} The property's new value
+                     */
+                    this.fire("pos", this._pos);
+                },
+
+                get: function () {
+                    return this._pos;
+                }
+            },
+
+            /**
+             * World-space direction of this PlaneHelper.
+             * Fires an {{#crossLink "PlaneHelper/dir:event"}}{{/crossLink}} event on change.
+             * @property dir
+             * @default [0,0,1]
+             * @type {Float32Array}
+             */
+            dir: {
+
+                set: (function () {
+
+                    var zeroVec = new Float32Array([0, 0, -1]);
+                    var quat = new Float32Array(4);
+
+                    return function (value) {
+
+                        (this._dir = this._dir || new xeogl.math.vec3()).set(value || [0, 0, 1]);
+
+                        xeogl.math.vec3PairToQuaternion(zeroVec, this._dir, quat);
+
+                        this._quaternion.xyzw = quat;
+
+                        this._needUpdate(); // Need to rebuild arrow
+
+                        /**
+                         Fired whenever this PlaneHelper's {{#crossLink "PlaneHelper/dir:property"}}{{/crossLink}} property changes.
+                         @event dir
+                         @param value {Float32Array} The property's new value
+                         */
+                        this.fire("dir", this._dir);
+                    };
+                })(),
+
+                get: function () {
+                    return this._dir;
+                }
+            },
+
+            /**
+             * The width and height of the PlaneHelper plane indicator.
+             *
+             * Values assigned to this property will be overridden by an auto-computed value when
+             * {{#crossLink "PlaneHelper/autoPlaneSize:property"}}{{/crossLink}} is true.
+             *
+             * Fires an {{#crossLink "PlaneHelper/planeSize:event"}}{{/crossLink}} event on change.
+             *
+             * @property planeSize
+             * @default [1,1]
+             * @type {Float32Array}
+             */
+            planeSize: {
+
+                set: function (value) {
+
+                    (this._planeSize = this._planeSize || new xeogl.math.vec2()).set(value || [1, 1]);
+
+                    this._planeScale.xyz = [this._planeSize[0], this._planeSize[1], 1.0];
+
+                    /**
+                     Fired whenever this PlaneHelper's {{#crossLink "PlaneHelper/planeSize:property"}}{{/crossLink}} property changes.
+                     @event planeSize
+                     @param value {Float32Array} The property's new value
+                     */
+                    this.fire("planeSize", this._planeSize);
+                },
+
+                get: function () {
+                    return this._planeSize;
+                }
+            },
+
+            /**
+             * Indicates whether this PlaneHelper's {{#crossLink "PlaneHelper/planeSize:property"}}{{/crossLink}} is automatically
+             * generated or not.
+             *
+             * When auto-generated, {{#crossLink "PlaneHelper/planeSize:property"}}{{/crossLink}} will automatically size
+             * to fit within the {{#crossLink "Scene/worldBoundary:property"}}Scene's worldBoundary{{/crossLink}}.
+             *
+             * Fires an {{#crossLink "PlaneHelper/autoPlaneSize:event"}}{{/crossLink}} event on change.
+             *
+             * @property autoPlaneSize
+             * @default false
+             * @type {Boolean}
+             */
+            autoPlaneSize: {
+
+                set: function (value) {
+
+                    value = !!value;
+
+                    if (this._autoPlaneSize === value) {
+                        return;
+                    }
+
+                    this._autoPlaneSize = value;
+
+                    if (this._autoPlaneSize) {
+                        if (!this._onSceneAABB) {
+                            this._onSceneAABB = this.scene.worldBoundary.on("updated", function () {
+                                var aabbDiag = xeogl.math.getAABB3Diag(this.scene.worldBoundary.aabb);
+                                var clipSize = (aabbDiag * 0.50);
+                                this.planeSize = [clipSize, clipSize];
+                            }, this);
+                        }
+                    } else {
+                        if (this._onSceneAABB) {
+                            this.scene.worldBoundary.off(this._onSceneAABB);
+                            this._onSceneAABB = null;
+                        }
+                    }
+
+                    /**
+                     Fired whenever this PlaneHelper's {{#crossLink "PlaneHelper/autoPlaneSize:property"}}{{/crossLink}} property changes.
+                     @event autoPlaneSize
+                     @param value {Boolean} The property's new value
+                     */
+                    this.fire("autoPlaneSize", this._autoPlaneSize);
+                },
+
+                get: function () {
+                    return this._autoPlaneSize;
+                }
+            },
+
+            /**
+             * Emmissive color of this PlaneHelper.
+             *
+             * Fires an {{#crossLink "PlaneHelper/color:event"}}{{/crossLink}} event on change.
+             *
+             * @property color
+             * @default [0.4,0.4,0.4]
+             * @type {Float32Array}
+             */
+            color: {
+
+                set: function (value) {
+
+                    (this._color = this._color || new xeogl.math.vec3()).set(value || [0.4,0.4,0.4]);
+
+                    this._planeWire.material.emissive = this._color;
+                    this._arrow.material.emissive = this._color;
+
+                    /**
+                     Fired whenever this PlaneHelper's {{#crossLink "PlaneHelper/color:property"}}{{/crossLink}} property changes.
+                     @event color
+                     @param value {Float32Array} The property's new value
+                     */
+                    this.fire("color", this._color);
+                },
+
+                get: function () {
+                    return this._color;
+                }
+            },
+
+            /**
+             Indicates whether this PlaneHelper is visible or not.
+
+             Fires a {{#crossLink "PlaneHelper/active:event"}}{{/crossLink}} event on change.
+
+             @property visible
+             @default true
+             @type Boolean
+             */
+            visible: {
+
+                set: function (value) {
+
+                    value = value !== false;
+
+                    this._planeWire.visible = value;
+                    this._planeSolid.visible = value;
+                    this._arrow.visible = value;
+                    this._label.visible = value;
+
+                    /**
+                     Fired whenever this helper's {{#crossLink "PlaneHelper/visible:property"}}{{/crossLink}} property changes.
+
+                     @event visible
+                     @param value {Boolean} The property's new value
+                     */
+                    this.fire("visible", this._planeWire.visible);
+                },
+
+                get: function () {
+                    return this._planeWire.visible;
+                }
+            }
+        },
+
+        _destroy: function () {
+            if (this._onSceneAABB) {
+                this.scene.worldBoundary.off(this._onSceneAABB);
+            }
+        }
+    });
+})();;/**
+
+ Helper that visualizes the position and direction of a {{#crossLink "Clip"}}{{/crossLink}}.
+
+ The helper works by tracking updates to the {{#crossLink "Clip"}}{{/crossLink}}'s
+ {{#crossLink "Clip/pos:property"}}{{/crossLink}} and {{#crossLink "Clip/dir:property"}}{{/crossLink}}.
+
+ @class ClipHelper
+ @constructor
+ @param cfg {*} Configuration
+ @param cfg.clip {Clip} A {{#crossLink "Clip"}}{{/crossLink}} to visualize.
+ @param [cfg.visible=true] {Boolean} Indicates whether or not this helper is visible.
+ @param [cfg.planeSize] {Float32Array} The width and height of the ClipHelper plane indicator.
+ @param [cfg.autoPlaneSize=false] {Boolean} Indicates whether or not this ClipHelper's
+ {{#crossLink "ClipHelper/planeSize:property"}}{{/crossLink}} is automatically sized to fit within
+ the {{#crossLink "Scene/worldBoundary:property"}}Scene's worldBoundary{{/crossLink}}.
+ */
+(function () {
+
+    "use strict";
+
+    xeogl.ClipHelper = xeogl.Component.extend({
+
+        type: "xeogl.ClipHelper",
+
+        _init: function (cfg) {
+
+            // STYLE: Compose instead of extend, because we may want to add more helpers here
+
+            this._planeHelper = new xeogl.PlaneHelper(this);
+
+            this.clip = cfg.clip;
+            this.planeSize = cfg.planeSize;
+            this.autoPlaneSize = cfg.autoPlaneSize;
+            this.visible = cfg.visible;
         },
 
         _props: {
@@ -42733,21 +43064,19 @@ xeogl.version="1.0.0";;/**
                         component: value,
                         on: {
                             pos: function (pos) {
-                                self._needUpdate();
+                                self._planeHelper.pos = pos;
                             },
                             dir: function (dir) {
-                                self._needUpdate();
+                                self._planeHelper.dir = dir;
                             },
                             active: function (active) {
-                                var emissive = active ? [0.2, 0.2, 0.2] : [1.0, 0.2, 0.2];
-                                self._planeWire.material.emissive = emissive;
-                                self._arrow.material.emissive = emissive;
+                                self._planeHelper.color = active ? [0.2, 0.2, 0.2] : [1.0, 0.2, 0.2];
                             }
                         }
                     });
 
                     if (this._attached.clip) {
-                        this._label.geometry.text = this._attached.clip.id;
+                        //this._label.geometry.text = this._attached.clip.id;
                     }
                 },
 
@@ -42762,39 +43091,60 @@ xeogl.version="1.0.0";;/**
              * When no value is specified, will automatically size to fit within the
              * {{#crossLink "Scene/worldBoundary:property"}}Scene's worldBoundary{{/crossLink}}.
              *
-             * Fires an {{#crossLink "ClipHelper/size:event"}}{{/crossLink}} event on change.
+             * Fires an {{#crossLink "ClipHelper/planeSize:event"}}{{/crossLink}} event on change.
              *
-             * @property size
+             * @property planeSize
              * @default Fitted to scene boundary
              * @type {Float32Array}
              */
-            size: {
+            planeSize: {
 
                 set: function (value) {
 
-                    if (!value) {
-                        if (!this._onSceneAABB) {
-                            this._onSceneAABB = this.scene.worldBoundary.on("updated", this._autoSizeClipPlane, this);
-                            return;
-                        }
-                    }
-
-                    (this._size = this._size || new xeogl.math.vec2()).set(value || [1, 1]);
-
-                    this._planeScale.xyz = [this._size[0], this._size[1], 1.0];
-
-                   // this._label.geometry.size = (this._size[0] / this._label.geometry.text.length) * 0.1;
+                    this._planeHelper.planeSize = value;
 
                     /**
-                     Fired whenever this ClipHelper's {{#crossLink "ClipHelper/size:property"}}{{/crossLink}} property changes.
-                     @event size
+                     Fired whenever this ClipHelper's {{#crossLink "ClipHelper/planeSize:property"}}{{/crossLink}} property changes.
+                     @event planeSize
                      @param value {Float32Array} The property's new value
                      */
-                    this.fire("size", this._size);
+                    this.fire("planeSize", this._planeHelper.planeSize);
                 },
 
                 get: function () {
-                    return this._size;
+                    return this._planeHelper.planeSize;
+                }
+            },
+
+            /**
+             * Indicates whether this ClipHelper's {{#crossLink "ClipHelper/planeSize:property"}}{{/crossLink}} is automatically
+             * generated or not.
+             *
+             * When auto-generated, {{#crossLink "ClipHelper/planeSize:property"}}{{/crossLink}} will automatically size
+             * to fit within the {{#crossLink "Scene/worldBoundary:property"}}Scene's worldBoundary{{/crossLink}}.
+             *
+             * Fires an {{#crossLink "ClipHelper/autoPlaneSize:event"}}{{/crossLink}} event on change.
+             *
+             * @property autoPlaneSize
+             * @default false
+             * @type {Boolean}
+             */
+            autoPlaneSize: {
+
+                set: function (value) {
+
+                    this._planeHelper.autoPlaneSize = value;
+
+                    /**
+                     Fired whenever this ClipHelper's {{#crossLink "ClipHelper/autoPlaneSize:property"}}{{/crossLink}} property changes.
+                     @event autoPlaneSize
+                     @param value {Float32Array} The property's new value
+                     */
+                    this.fire("autoPlaneSize", this._planeHelper.autoPlaneSize);
+                },
+
+                get: function () {
+                    return this._planeHelper.autoPlaneSize;
                 }
             },
 
@@ -42811,12 +43161,7 @@ xeogl.version="1.0.0";;/**
 
                 set: function (value) {
 
-                    value = value !== false;
-
-                    this._planeWire.visible = value;
-                    this._planeSolid.visible = value;
-                    this._arrow.visible = value;
-                    this._label.visible = value;
+                    this._planeHelper.visible = value;
 
                     /**
                      Fired whenever this helper's {{#crossLink "ClipHelper/visible:property"}}{{/crossLink}} property changes.
@@ -42824,18 +43169,12 @@ xeogl.version="1.0.0";;/**
                      @event visible
                      @param value {Boolean} The property's new value
                      */
-                    this.fire("visible", this._planeWire.visible);
+                    this.fire("visible", this._planeHelper.visible);
                 },
 
                 get: function () {
-                    return this._planeWire.visible;
+                    return this._planeHelper.visible;
                 }
-            }
-        },
-
-        _destroy: function () {
-            if (this._onSceneAABB) {
-                this.scene.worldBoundary.off(this._onSceneAABB);
             }
         }
     });
@@ -44529,10 +44868,13 @@ xeogl.Annotation = xeogl.Pin.extend({
      *
      * @param {Model} model Model to parse into.
      * @param {Object} gltf The glTF JSON.
-     * @param {String} [basePath] Base path path to find external resources on, if any.
+     * @param {Object} [options] Parsing options
+     * @param {String} [options.basePath] Base path path to find external resources on, if any.
+     * @param {String} [options.loadBuffer] Callback to load buffer files.
      */
-    xeogl.GLTFModel.parse = function (model, gltf, basePath) {
-        parseGLTF(gltf, "", basePath || "", model, function () {
+    xeogl.GLTFModel.parse = function (model, gltf, options) {
+        options = options || {};
+        parseGLTF(gltf, "", options, model, function () {
                 model.fire("loaded", true, true);
             },
             function (msg) {
@@ -44550,17 +44892,16 @@ xeogl.Annotation = xeogl.Pin.extend({
         return function (model, src, ok, error) {
 
             loadJSON(src, function (response) { // OK
-
                     var json;
                     try {
                         json = JSON.parse(response);
                     } catch (e) {
                         error(e);
                     }
-
-                    var basePath = getBasePath(src);
-
-                    parseGLTF(json, src, basePath, model, ok, error);
+                    var options = {
+                        basePath: getBasePath(src)
+                    };
+                    parseGLTF(json, src, options, model, ok, error);
                 },
                 error);
         };
@@ -44618,12 +44959,14 @@ xeogl.Annotation = xeogl.Pin.extend({
             'MAT4': 16
         };
 
-        return function (json, src, basePath, model, ok) {
+        return function (json, src, options, model, ok) {
 
             var ctx = {
                 src: src,
-                basePath: basePath,
+                loadBuffer: options.loadBuffer,
+                basePath: options.basePath,
                 json: json,
+                scene: model.scene,
                 model: model
             };
 
@@ -44709,19 +45052,26 @@ xeogl.Annotation = xeogl.Pin.extend({
                     }, 0);
                 }
             } else {
-                var request = new XMLHttpRequest();
-                request.responseType = 'arraybuffer';
-                request.open('GET', ctx.basePath + url, true);
-                request.onreadystatechange = function () {
-                    if (request.readyState == 4) {
-                        if (request.status == "200") {
-                            ok(request.response);
-                        } else {
-                            err('loadArrayBuffer error : ' + request.response);
+
+                if (ctx.loadBuffer) {
+                    ctx.loadBuffer(url, ok, err);
+
+                } else {
+
+                    var request = new XMLHttpRequest();
+                    request.responseType = 'arraybuffer';
+                    request.open('GET', ctx.basePath + url, true);
+                    request.onreadystatechange = function () {
+                        if (request.readyState == 4) {
+                            if (request.status == "200") {
+                                ok(request.response);
+                            } else {
+                                err('loadArrayBuffer error : ' + request.response);
+                            }
                         }
-                    }
-                };
-                request.send(null);
+                    };
+                    request.send(null);
+                }
             }
         }
 
@@ -44798,7 +45148,7 @@ xeogl.Annotation = xeogl.Pin.extend({
         }
 
         function loadTexture(ctx, textureInfo) {
-            var texture = new xeogl.Texture(ctx.model, {
+            var texture = new xeogl.Texture(ctx.scene, {
                 src: ctx.basePath + ctx.json.images[textureInfo.source].uri,
                 flipY: !!textureInfo.flipY
             });
@@ -44857,7 +45207,7 @@ xeogl.Annotation = xeogl.Pin.extend({
                 cfg.emissive = emissiveFactor;
             }
 
-            cfg.backfaces = materialInfo.doubleSided !== false;
+            cfg.backfaces = !!materialInfo.doubleSided;
 
             var alphaMode = materialInfo.alphaMode;
             switch (alphaMode) {
@@ -44918,7 +45268,7 @@ xeogl.Annotation = xeogl.Pin.extend({
                         }
                     }
 
-                    return new xeogl.SpecularMaterial(ctx.model, cfg);
+                    return new xeogl.SpecularMaterial(ctx.scene, cfg);
                 }
 
                 // Common Phong, Blinn, Lambert or Constant materials
@@ -44997,7 +45347,7 @@ xeogl.Annotation = xeogl.Pin.extend({
                         //cfg.transparent = 1.0;
                     }
 
-                    return new xeogl.PhongMaterial(ctx.model, cfg);
+                    return new xeogl.PhongMaterial(ctx.scene, cfg);
                 }
             }
 
@@ -45038,12 +45388,12 @@ xeogl.Annotation = xeogl.Pin.extend({
                     }
                 }
 
-                return new xeogl.MetallicMaterial(ctx.model, cfg);
+                return new xeogl.MetallicMaterial(ctx.scene, cfg);
             }
 
             // Default material
 
-            return new xeogl.PhongMaterial(ctx.model, cfg);
+            return new xeogl.PhongMaterial(ctx.scene, cfg);
         }
 
         function loadMeshes(ctx) {
@@ -45122,7 +45472,7 @@ xeogl.Annotation = xeogl.Pin.extend({
 
                     meshCfg = {};
 
-                    geometry = new xeogl.Geometry(ctx.model, geometryCfg);
+                    geometry = new xeogl.Geometry(ctx.scene, geometryCfg);
                     ctx.model.add(geometry);
                     meshCfg.geometry = geometry;
 
@@ -45142,14 +45492,13 @@ xeogl.Annotation = xeogl.Pin.extend({
 
         function loadDefaultScene(ctx) {
             var json = ctx.json;
-            if (json.scene !== undefined) {
-                var defaultSceneInfo = json.scenes[json.scene];
-                if (!defaultSceneInfo) {
-                    error(ctx, "glTF has no default scene");
-                    return;
-                }
-                loadScene(ctx, defaultSceneInfo);
+            var scene = json.scene || 0;
+            var defaultSceneInfo = json.scenes[scene];
+            if (!defaultSceneInfo) {
+                error(ctx, "glTF has no default scene");
+                return;
             }
+            loadScene(ctx, defaultSceneInfo);
         }
 
         function loadScene(ctx, sceneInfo) {
@@ -45220,13 +45569,12 @@ xeogl.Annotation = xeogl.Pin.extend({
                     var entityId;
                     var entity;
                     var numMeshes = meshes.length;
-                    var manyMeshes = numMeshes > 1;
 
                     for (var i = 0, len = numMeshes; i < len; i++) {
 
                         mesh = meshes[i];
 
-                        entityId = makeEntityId(ctx, nodeInfo, nodeIdx, manyMeshes);
+                        entityId = makeEntityId(ctx, nodeInfo, nodeIdx);
 
                         var meta = nodeInfo.extra || {};
                         meta.name = nodeInfo.name;
@@ -45269,12 +45617,8 @@ xeogl.Annotation = xeogl.Pin.extend({
             }
         }
 
-        function makeEntityId(ctx, nodeInfo, nodeIdx, manyMeshes) {
-            var prefix = nodeInfo.name || nodeIdx;
-            var id = makeID(ctx, prefix);
-            if (!manyMeshes && !ctx.model.entities[id]) {
-                return id;
-            }
+        function makeEntityId(ctx, nodeInfo, nodeIdx) {
+            var id = makeID(ctx, nodeInfo.name || nodeIdx);
             var id2;
             var i = 0;
             while (true) {
@@ -45364,30 +45708,30 @@ xeometry.Viewer = function (cfg) {
         //transparent: true
     });
 
-    scene.lights.lights = [
-        new xeogl.AmbientLight(scene, {
-            color: [1,1,1],
-            intensity: 1
-        }),
-        new xeogl.DirLight(scene, {
-            dir: [0.8, -0.6, -0.8],
-            color: [1.0, 1.0, 1.0],
-            intensity: 1.0,
-            space: "view"
-        }),
-        new xeogl.DirLight(scene, {
-            dir: [-0.8, -0.3, -0.4],
-            color: [0.8, 0.8, 0.8],
-            intensity: 1.0,
-            space: "view"
-        }),
-        new xeogl.DirLight(scene, {
-            dir: [0.4, -0.4, 0.8],
-            color: [0.8, 1.0, 1.0],
-            intensity: 1.0,
-            space: "view"
-        })
-    ];
+    //scene.lights.lights = [
+    //    new xeogl.AmbientLight(scene, {
+    //        color: [1, 1, 1],
+    //        intensity: 1
+    //    }),
+    //    new xeogl.DirLight(scene, {
+    //        dir: [0.8, -0.6, -0.8],
+    //        color: [1.0, 1.0, 1.0],
+    //        intensity: 1.0,
+    //        space: "view"
+    //    }),
+    //    new xeogl.DirLight(scene, {
+    //        dir: [-0.8, -0.3, -0.4],
+    //        color: [0.8, 0.8, 0.8],
+    //        intensity: 1.0,
+    //        space: "view"
+    //    }),
+    //    new xeogl.DirLight(scene, {
+    //        dir: [0.4, -0.4, 0.8],
+    //        color: [0.8, 1.0, 1.0],
+    //        intensity: 1.0,
+    //        space: "view"
+    //    })
+    //];
 
     var math = xeogl.math;
     var camera = scene.camera;
@@ -45410,6 +45754,9 @@ xeometry.Viewer = function (cfg) {
     var clips = {};
     var clipHelpers = {};
     var clipsDirty = true;
+    var lights = {};
+    var lightHelpers = {};
+    var lightsDirty = false;
 
     var onTick = scene.on("tick", function () {
 
@@ -45434,10 +45781,24 @@ xeometry.Viewer = function (cfg) {
             scene.clips.clips = clipArray;
             clipsDirty = false;
         }
+
+        // Rebuild lights
+        if (lightsDirty) {
+            var light;
+            var lightArray = [];
+            for (var id in lights) {
+                if (lights.hasOwnProperty(id)) {
+                    light = lights[id];
+                    lightArray.push(light);
+                }
+            }
+            scene.lights.lights = lightArray;
+            lightsDirty = false;
+        }
     });
 
     var cameraFlight = new xeogl.CameraFlightAnimation(scene, {
-        fitFOV: 45,
+        viewFitFOV: 45,
         duration: 0
     });
 
@@ -45534,7 +45895,7 @@ xeometry.Viewer = function (cfg) {
                 }
                 return this;
             }
-            this.unloadModel(id);
+            this.destroy(id);
         }
         if (scene.components[id]) {
             error("Component with this ID already exists: " + id);
@@ -45602,7 +45963,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the models currently in the viewer.
+     * Gets the models currently loaded in the viewer.
      *
      * @see loadModel
      * @module models
@@ -45620,7 +45981,7 @@ xeometry.Viewer = function (cfg) {
      * @param {String} id ID of the model.
      * @return {String} Model source.
      */
-    this.getModelSrc = function (id) {
+    this.getSrc = function (id) {
         var src = modelSrcs[id];
         if (!src) {
             error("Model not found: " + id);
@@ -45630,7 +45991,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets a the model an object belongs to.
+     * Gets the model an object belongs to.
      *
      * @param {String} id ID of the object.
      * @return {String} ID of the object's model.
@@ -45713,57 +46074,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Unloads a model.
-     *
-     * @see {@link #loadModel}
-     * @param {String} id ID of the model.
-     * @return {Viewer} this
-     * @example viewer.unloadModel("saw");
-     */
-    this.unloadModel = function (id) {
-        var model = models[id];
-        if (!model) {
-            error("Model not found: " + id);
-            return this;
-        }
-        var entities = model.types["xeogl.Entity"];
-        var entity;
-        var meta;
-        for (var objectId in entities) {
-            if (entities.hasOwnProperty(objectId)) {
-                entity = entities[objectId];
-                // Deregister for type
-                meta = entity.meta;
-                var type = meta && meta.type ? meta.type : "DEFAULT";
-                var objectsOfType = types[type];
-                if (objectsOfType) {
-                    delete objectsOfType[objectId];
-                }
-                delete objects[objectId];
-                delete objectModels[objectId];
-                delete eulerAngles[objectId];
-                delete transformable[objectId];
-                delete translations[objectId];
-                delete rotations[objectId];
-                delete scales[objectId];
-            }
-        }
-        model.destroy();
-        delete models[id];
-        delete modelSrcs[id];
-        delete eulerAngles[id];
-        delete transformable[id];
-        delete translations[id];
-        delete rotations[id];
-        delete scales[id];
-        if (unloadedModel) {
-            unloadedModel(id);
-        }
-        return this;
-    };
-
-    /**
-     * Unloads all models, annotations and clipping planes.
+     * Unloads all models, annotations and clipping planes, resets lights to defaults.
      *
      * Preserves the current camera state.
      *
@@ -45772,11 +46083,12 @@ xeometry.Viewer = function (cfg) {
     this.clear = function () {
         for (var id in models) {
             if (models.hasOwnProperty(id)) {
-                this.unloadModel(id);
+                this.destroy(id);
             }
         }
-        this.clearAnnotations();
-        this.clearClips();
+        this.destroyAnnotations();
+        this.destroyClips();
+        this.destroyLights();
     };
 
     /**
@@ -45791,29 +46103,35 @@ xeometry.Viewer = function (cfg) {
      * viewer.setType("saw#3.1", "cover");
      */
     this.setType = function (id, type) {
-        type = type || "DEFAULT";
-        var object = objects[id];
-        if (object) {
-            var meta = object.meta;
-            var currentType = meta && meta.type ? meta.type : "DEFAULT";
-            if (currentType === type) {
+        if (xeogl._isString(id)) {
+            type = type || "DEFAULT";
+            var object = objects[id];
+            if (object) {
+                var meta = object.meta;
+                var currentType = meta && meta.type ? meta.type : "DEFAULT";
+                if (currentType === type) {
+                    return this;
+                }
+                var currentTypes = types[currentType];
+                if (currentTypes) {
+                    delete currentTypes[id];
+                }
+                var newTypes = (types[type] || (types[type] = {}));
+                newTypes[id] = object;
+                object.meta.type = type;
                 return this;
             }
-            var currentTypes = types[currentType];
-            if (currentTypes) {
-                delete currentTypes[id];
+            var model = models[id];
+            if (model) {
+                //.. TODO
+                return this;
             }
-            var newTypes = (types[type] || (types[type] = {}));
-            newTypes[id] = object;
-            object.meta.type = type;
+            error("Model, object or type not found: " + id);
             return this;
         }
-        var model = models[id];
-        if (model) {
-            //.. TODO
-            return this;
+        for (var i = 0, len = id.length; i < len; i++) {
+            this.setType(id[i], type);
         }
-        error("Model, object or type not found: " + id);
         return this;
     };
 
@@ -45835,7 +46153,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets all the types currently in the viewer.
+     * Gets all the object types currently in the viewer.
      *
      * @return {String[]} The types in the viewer.
      */
@@ -45919,16 +46237,22 @@ xeometry.Viewer = function (cfg) {
      * viewer.setScale("saw#3.1", [0.5, 0.5, 0.5]);
      */
     this.setScale = function (id, xyz) {
-        var scale = scales[id];
-        if (!scale) {
-            var component = getTransformableComponent(id);
-            if (!component) {
-                error("Model or object not found: " + id);
-                return this;
+        if (xeogl._isString(id)) {
+            var scale = scales[id];
+            if (!scale) {
+                var component = getTransformableComponent(id);
+                if (!component) {
+                    error("Model or object not found: " + id);
+                    return this;
+                }
+                scale = scales[id];
             }
-            scale = scales[id];
+            scale.xyz = xyz;
+            return this;
         }
-        scale.xyz = xyz;
+        for (var i = 0, len = id.length; i < len; i++) {
+            this.setScale(id[i], xyz);
+        }
         return this;
     };
 
@@ -45981,19 +46305,25 @@ xeometry.Viewer = function (cfg) {
     this.setRotate = (function () {
         var quat = math.vec4();
         return function (id, xyz) {
-            var rotation = rotations[id];
-            if (!rotation) {
-                var component = getTransformableComponent(id);
-                if (!component) {
-                    error("Model or object not found: " + id);
-                    return this;
+            if (xeogl._isString(id)) {
+                var rotation = rotations[id];
+                if (!rotation) {
+                    var component = getTransformableComponent(id);
+                    if (!component) {
+                        error("Model or object not found: " + id);
+                        return this;
+                    }
+                    rotation = rotations[id];
                 }
-                rotation = rotations[id];
+                math.eulerToQuaternion(xyz, "XYZ", quat); // Tait-Bryan Euler angles
+                rotation.xyzw = quat;
+                var saveAngles = eulerAngles[id] || (eulerAngles[id] = math.vec3());
+                saveAngles.set(xyz);
+                return this;
             }
-            math.eulerToQuaternion(xyz, "XYZ", quat); // Tait-Bryan Euler angles
-            rotation.xyzw = quat;
-            var saveAngles = eulerAngles[id] || (eulerAngles[id] = math.vec3());
-            saveAngles.set(xyz);
+            for (var i = 0, len = id.length; i < len; i++) {
+                this.setRotate(id[i], xyz);
+            }
             return this;
         };
     })();
@@ -46042,16 +46372,22 @@ xeometry.Viewer = function (cfg) {
      * viewer.setTranslate("saw#3.1", [50, 30, 0]);
      */
     this.setTranslate = function (id, xyz) {
-        var translation = translations[id];
-        if (!translation) {
-            var component = getTransformableComponent(id);
-            if (!component) {
-                error("Model or object not found: " + id);
-                return this;
+        if (xeogl._isString(id)) {
+            var translation = translations[id];
+            if (!translation) {
+                var component = getTransformableComponent(id);
+                if (!component) {
+                    error("Model or object not found: " + id);
+                    return this;
+                }
+                translation = translations[id];
             }
-            translation = translations[id];
+            translation.xyz = xyz;
+            return this;
         }
-        translation.xyz = xyz;
+        for (var i = 0, len = id.length; i < len; i++) {
+            this.setTranslate(id[i], xyz);
+        }
         return this;
     };
 
@@ -46066,17 +46402,23 @@ xeometry.Viewer = function (cfg) {
      * viewer.addTranslate("saw#3.1", [10,0,0]);
      */
     this.addTranslate = function (id, xyz) {
-        var translation = translations[id];
-        if (!translation) {
-            var component = getTransformableComponent(id);
-            if (!component) {
-                error("Model or object not found: " + id);
-                return this;
+        if (xeogl._isString(id)) {
+            var translation = translations[id];
+            if (!translation) {
+                var component = getTransformableComponent(id);
+                if (!component) {
+                    error("Model or object not found: " + id);
+                    return this;
+                }
+                translation = translations[id];
             }
-            translation = translations[id];
+            var xyzOld = translation.xyz;
+            translation.xyz = [xyzOld[0] + xyz[0], xyzOld[1] + xyz[1], xyzOld[2] + xyz[2]];
+            return this;
         }
-        var xyzOld = translation.xyz;
-        translation.xyz = [xyzOld[0] + xyz[0], xyzOld[1] + xyz[1], xyzOld[2] + xyz[2]];
+        for (var i = 0, len = id.length; i < len; i++) {
+            this.addTranslate(id[i], xyz);
+        }
         return this;
     };
 
@@ -46198,14 +46540,13 @@ xeometry.Viewer = function (cfg) {
     //==================================================================================================================
 
     /**
-     * Shows model(s), object(s) and/or types(s).
+     * Shows model/object/types/clip/annotation/light(s).
      *
      * Shows all objects in the viewer when no arguments are given.
      *
      * Objects are visible by default.
      *
-     * @example viewer.show(); // Show all objects in the viewer
-     * @param {String|String[]} [ids] IDs of model(s) and/or object(s).
+     * @param {String|String[]} [ids] IDs of model/object/types/clip/annotation/light(s).
      * @returns {Viewer} this
      * @example
      *
@@ -46227,13 +46568,13 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Hides model(s), object(s) and/or types(s).
+     * Hides model/object/types/clip/annotation/light(s).
      *
      * Hides all objects in the viewer when no arguments are given.
      *
      * Objects are visible by default.
      *
-     * @param {String|String[]} ids IDs of model(s) and/or object(s).
+     * @param {String|String[]} ids IDs of model/object/types/clip/annotation/light(s).
      * @returns {Viewer} this
      * @example
      *
@@ -46257,6 +46598,8 @@ xeometry.Viewer = function (cfg) {
     function setVisible(ids, visible) {
         if (ids === undefined || ids === null) {
             setVisible(self.getObjects(), visible);
+            setVisible(self.getLights(), visible);
+            setVisible(self.getClips(), visible);
             return;
         }
         if (xeogl._isString(ids)) {
@@ -46266,6 +46609,20 @@ xeometry.Viewer = function (cfg) {
                 object.visible = visible;
                 return;
             }
+            var light = lights[id];
+            if (light) {
+                var lightHelper = lightHelpers[id];
+                if (lightHelper) {
+                    lightHelper.visible = visible;
+                }
+                return;
+            }
+            var clipHelper = clipHelpers[id];
+            if (clipHelper) {
+                clipHelper.visible = visible;
+                return;
+            }
+            // TODO: Show/hide annotations
             var model = models[id];
             if (!model) {
                 var objectsOfType = types[id];
@@ -46293,7 +46650,7 @@ xeometry.Viewer = function (cfg) {
     //==================================================================================================================
 
     /**
-     * Sets the opacity of model(s), object(s) and/or type(s).
+     * Sets the opacity of model/object/type(s).
      *
      * @param {String|String[]} ids IDs of models, objects or types. Sets opacity of all objects when this is null or undefined.
      * @param {Number} opacity Degree of opacity in range ````[0..1]````.
@@ -46364,9 +46721,9 @@ xeometry.Viewer = function (cfg) {
     //==================================================================================================================
 
     /**
-     * Sets the albedo color of model(s), object(s) and/or types(s).
+     * Sets the color of model/object/type/light(s).
      *
-     * @param {String|String[]} ids IDs of models, objects or types. Applies to all objects when this is null or undefined.
+     * @param {String|String[]} ids IDs of models, objects, types or lights. Applies to all objects when this is null or undefined.
      * @param {[Number, Number, Number]} color The RGB color, with each element in range [0..1].
      * @returns {Viewer} this
      * @example
@@ -46378,7 +46735,7 @@ xeometry.Viewer = function (cfg) {
      */
     this.setColor = function (ids, color) {
         if (color === null || color === undefined) {
-            color = 1.0;
+            color = [1, 1, 1];
         }
         if (ids === undefined || ids === null) {
             self.setColor(self.getObjects(), color);
@@ -46394,6 +46751,11 @@ xeometry.Viewer = function (cfg) {
                 } else {
                     material.baseColor = color; // xeogl.MetallicMaterial
                 }
+                return this;
+            }
+            var light = lights[id];
+            if (light) {
+                light.color = color;
                 return this;
             }
             var model = models[id];
@@ -46420,22 +46782,25 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the color of an object.
+     * Gets the color of an object or a light.
      *
-     * @param {String|String} id ID of an object.
-     * @return {[Number, Number, Number]} color The RGB color of the object, with each element in range [0..1].
+     * @param {String|String} id ID of an object or a light.
+     * @return {[Number, Number, Number]} color The RGB color, with each element in range [0..1].
      * @example
      * var objectColor = viewer.getColor("saw#3.1");
      */
     this.getColor = function (id) {
         var object = objects[id];
-        if (!object) {
-            error("Model, object or type not found: " + id);
-            return [1, 1, 1];
+        if (object) {
+            var material = object.material;
+            var color = material.diffuse || material.baseColor || [1, 1, 1]; // PhongMaterial || SpecularMaterial || MetallicMaterial
+            return color.slice();
         }
-        var material = object.material;
-        var color = material.diffuse || material.baseColor || [1, 1, 1]; // PhongMaterial || SpecularMaterial || MetallicMaterial
-        return color.slice();
+        var light = lights[id];
+        if (light) {
+            return light.color.slice();
+        }
+        error("Object or light not found: " + id);
     };
 
     //==================================================================================================================
@@ -46443,7 +46808,7 @@ xeometry.Viewer = function (cfg) {
     //==================================================================================================================
 
     /**
-     * Makes model(s), object(s) and/or type(s) clippable.
+     * Makes model/object/type(s) clippable.
      *
      * Makes all objects in the viewer clippable when no arguments are given.
      *
@@ -46471,9 +46836,9 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     *  Makes model(s), object(s) and/or type(s) unclippable.
+     * Makes model/object/type(s) unclippable.
      *
-     * These objects will then remain fully visible when they would otherwise be clipped by clipping planes.
+     * Unclippable objects will then remain fully visible when they would otherwise be clipped by clipping planes.
      *
      * Makes all objects in the viewer unclippable when no arguments are given.
      *
@@ -46539,7 +46904,7 @@ xeometry.Viewer = function (cfg) {
     //----------------------------------------------------------------------------------------------------
 
     /**
-     * Shows outline around model(s), object(s) or type(s).
+     * Shows outline around model/object/type(s).
      *
      * Outlines all objects in the viewer when no arguments are given.
      *
@@ -46556,7 +46921,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Hides outline around model(s), object(s) or type(s).
+     * Hides outline around model/object/type(s).
      *
      * Hides all outlines in the viewer when no arguments are given.
      *
@@ -46652,7 +47017,7 @@ xeometry.Viewer = function (cfg) {
     //----------------------------------------------------------------------------------------------------
 
     /**
-     * Gets the World-space center point of the given model(s), object(s) or type(s).
+     * Gets the World-space center point of the given model/object/types/clip/annotation/light(s).
      *
      * When no arguments are given, returns the collective center of all objects in the viewer.
      *
@@ -46675,11 +47040,11 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Gets the axis-aligned World-space boundary of the given model(s), object(s) or type(s).
+     * Gets the axis-aligned World-space boundary of the given model/object/type/annotation/light(s).
      *
      * When no arguments are given, returns the collective boundary of all objects in the viewer.
      *
-     * @param {String|String[]} target IDs of models, objects and/or annotations
+     * @param {String|String[]} target IDs of model/object/type/annotation/light(s).
      * @returns {[Number, Number, Number, Number, Number, Number]} An axis-aligned World-space bounding box, given as elements ````[xmin, ymin, zmin, xmax, ymax, zmax]````.
      * @example
      * viewer.getAABB(); // Gets collective boundary of all objects in the viewer
@@ -46713,6 +47078,7 @@ xeometry.Viewer = function (cfg) {
                 if (worldBoundary) {
                     return worldBoundary.aabb;
                 } else {
+                    error("// TODO: Calculate AABB for a single light source or annotation");
                     return null;
                 }
             } else {
@@ -46733,8 +47099,11 @@ xeometry.Viewer = function (cfg) {
         var ymax = -100000;
         var zmax = -100000;
         var aabb;
+        var pos;
         var valid = false;
         for (i = 0, len = target.length; i < len; i++) {
+            aabb = null;
+            pos = null;
             id = target[i];
             component = scene.components[id];
             if (!component) {
@@ -46742,10 +47111,13 @@ xeometry.Viewer = function (cfg) {
             }
             if (component) {
                 worldBoundary = component.worldBoundary;
-                if (!worldBoundary) {
+                if (worldBoundary) {
+                    aabb = worldBoundary.aabb;
+                } else if (component.pos) {
+                    pos = component.pos;
+                } else {
                     continue;
                 }
-                aabb = worldBoundary.aabb;
             } else {
                 objectsOfType = types[id];
                 if (objectsOfType) {
@@ -46758,23 +47130,45 @@ xeometry.Viewer = function (cfg) {
                     continue;
                 }
             }
-            if (aabb[0] < xmin) {
-                xmin = aabb[0];
+            if (aabb) {
+                if (aabb[0] < xmin) {
+                    xmin = aabb[0];
+                }
+                if (aabb[1] < ymin) {
+                    ymin = aabb[1];
+                }
+                if (aabb[2] < zmin) {
+                    zmin = aabb[2];
+                }
+                if (aabb[3] > xmax) {
+                    xmax = aabb[3];
+                }
+                if (aabb[4] > ymax) {
+                    ymax = aabb[4];
+                }
+                if (aabb[5] > zmax) {
+                    zmax = aabb[5];
+                }
             }
-            if (aabb[1] < ymin) {
-                ymin = aabb[1];
-            }
-            if (aabb[2] < zmin) {
-                zmin = aabb[2];
-            }
-            if (aabb[3] > xmax) {
-                xmax = aabb[3];
-            }
-            if (aabb[4] > ymax) {
-                ymax = aabb[4];
-            }
-            if (aabb[5] > zmax) {
-                zmax = aabb[5];
+            if (pos) {
+                if (pos[0] < xmin) {
+                    xmin = pos[0];
+                }
+                if (pos[1] < ymin) {
+                    ymin = pos[1];
+                }
+                if (pos[2] < zmin) {
+                    zmin = pos[2];
+                }
+                if (pos[3] > xmax) {
+                    xmax = pos[0];
+                }
+                if (pos[4] > ymax) {
+                    ymax = pos[1];
+                }
+                if (pos[5] > zmax) {
+                    zmax = pos[2];
+                }
             }
             valid = true;
         }
@@ -47150,7 +47544,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given annotation(s), model(s), object(s) and/or boundary(s).
+     * Moves the camera to fit the given model/object/annotation/light/boundary(s).
      *
      * Preserves the direction that the camera is currently pointing in.
      *
@@ -47181,7 +47575,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) and/or boundary(s) in view, while looking along the +X axis.
+     * Moves the camera to fit the given model/object/annotation/light/boundary(s) in view, while looking along the +X axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
      * @param {Function} [ok] Callback fired when camera has arrived at its target position.
@@ -47193,7 +47587,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) and/or boundary(s) in view, while looking along the +Z axis.
+     * Moves the camera to fit the given model/object/annotation/light/boundary(s) in view, while looking along the +Z axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
      * @param {Function} [ok] Callback fired when camera has arrived at its target position.
@@ -47205,7 +47599,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) and/or boundary(s) in view, while looking along the -X axis.
+     * Moves the camera to fit the given model/object/annotation/light/boundary(s) in view, while looking along the -X axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
      * @param {Function} [ok] Callback fired when camera has arrived at its target position.
@@ -47217,7 +47611,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) and/or boundary(s) in view, while looking along the +X axis.
+     * Moves the camera to fit the given model/object/annotation/light/boundary(s) in view, while looking along the +X axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
      * @param {Function} [ok] Callback fired when camera has arrived at its target position.
@@ -47229,7 +47623,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) and/or boundary(s) in view, while looking along the -Y axis.
+     * Moves the camera to fit the given model/object/annotation/light/boundary(s) in view, while looking along the -Y axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
      * @param {Function} [ok] Callback fired when camera has arrived at its target position.
@@ -47241,7 +47635,7 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Moves the camera to fit the given model(s), object(s) and/or boundary(s) in view, while looking along the +X axis.
+     * Moves the camera to fit the given model/object/annotation/light/boundary(s) in view, while looking along the +X axis.
      *
      * @param {String|[]} target The element(s) to fit in view, given as either the ID of model, ID of object, a boundary, or an array containing mixture of IDs and boundaries.
      * @param {Function} [ok] Callback fired when camera has arrived at its target position.
@@ -47386,6 +47780,7 @@ xeometry.Viewer = function (cfg) {
             return {
                 id: hit.entity.id,
                 worldPos: hit.worldPos,
+                normal: hit.normal,
                 primIndex: hit.primIndex,
                 bary: hit.bary
             };
@@ -47434,7 +47829,9 @@ xeometry.Viewer = function (cfg) {
         if (hit) {
             return {
                 id: hit.entity.id,
+                canvasPos: canvasPos,
                 worldPos: hit.worldPos,
+                normal: hit.normal,
                 primIndex: hit.primIndex,
                 bary: hit.bary
             };
@@ -47535,43 +47932,7 @@ xeometry.Viewer = function (cfg) {
      * @return {String[]} IDs of the annotations.
      */
     this.getAnnotations = function (id) {
-        //if (id !== undefined || id === null) {
-        //    var objectsOfType = types[id];
-        //    if (objectsOfType) {
-        //    //    return Object.keys(objectsOfType);
-        //    }
-        //    var model = models[id];
-        //    if (!model) {
-        //        error("Model not found: " + id);
-        //        return [];
-        //    }
-        //    var entities = model.types["xeogl.Entity"];
-        //    if (!entities) {
-        //        return [];
-        //    }
-        //    return Object.keys(entities);
-        //}
         return Object.keys(annotations);
-    };
-
-    /**
-     * Destroys an annotation.
-     *
-     * @param {String} id ID of the annotation.
-     * @return {Viewer} This viewer
-     */
-    this.destroyAnnotation = function (id) {
-        var annotation = annotations[id];
-        if (!annotation) {
-            return this;
-        }
-        if (annotation.entity) {
-            delete objectAnnotations[annotation.entity.id][annotation.id];
-        }
-        annotation.destroy();
-        delete annotations[id];
-        return this;
-
     };
 
     /**
@@ -47579,10 +47940,8 @@ xeometry.Viewer = function (cfg) {
      *
      * @return {Viewer} This viewer
      */
-    this.clearAnnotations = function () {
-        for (var ids = Object.keys(annotations), i = 0; i < ids.length; i++) {
-            this.destroyAnnotation(ids[i]);
-        }
+    this.destroyAnnotations = function () {
+        this.destroy(this.getAnnotations());
         return this;
     };
 
@@ -47997,13 +48356,12 @@ xeometry.Viewer = function (cfg) {
     /**
      * Creates a user-defined clipping plane.
      *
-     * The plane is positioned at a given World-space position, oriented in a given direction, and may be
-     * active or inactive.
+     * The plane is positioned at a given World-space position and oriented in a given direction.
      *
      * @param {String} id Unique ID to assign to the clipping plane.
      * @param {Object} cfg Clip plane configuration.
      * @param {[Number, Number, Number]} [cfg.pos=0,0,0] World-space position of the clip plane.
-     * @param {[Number, Number, Number]} [cfg.dir=[0,0,-1]} Vector indicating the orientation of the clip plane.
+     * @param {[Number, Number, Number]} [cfg.dir=0,0,-1] Vector indicating the orientation of the clip plane.
      * @param {Boolean} [cfg.active=true] Whether the clip plane is initially active. Only clips while this is true.
      * @param {Boolean} [cfg.shown=true] Whether to show a helper object to indicate the clip plane's position and orientation.
      * the front of the plane (with respect to the plane orientation vector), while ````-1```` discards elements behind the plane.
@@ -48026,13 +48384,14 @@ xeometry.Viewer = function (cfg) {
         });
         clips[clip.id] = clip;
         clipHelpers[clip.id] = new xeogl.ClipHelper(scene, {
-            clip: clip
+            clip: clip,
+            autoPlaneSize: true
         });
         clipsDirty = true;
         if (cfg.shown) {
-            this.showClip(id);
+            this.show(id);
         } else {
-            this.hideClip(id);
+            this.hide(id);
         }
         return this;
     };
@@ -48046,62 +48405,11 @@ xeometry.Viewer = function (cfg) {
     };
 
     /**
-     * Removes a clip plane from this viewer.
-     * @param {String} id ID of the clip plane to remove.
-     * @returns {Viewer} this
-     */
-    this.destroyClip = function (id) {
-        var clip = clips[id];
-        if (!clip) {
-            return this;
-        }
-        this.hideClip(id);
-        clip.destroy();
-        delete clips[id];
-        clipHelpers[id].destroy();
-        delete clipHelpers[id];
-        clipsDirty = true;
-        return this;
-    };
-
-    /**
      * Removes all clip planes from this viewer.
      * @returns {Viewer} this
      */
-    this.clearClips = function () {
-        for (var ids = Object.keys(clips), i = 0; i < ids.length; i++) {
-            this.destroyClip(ids[i]);
-        }
-        return this;
-    };
-
-    /**
-     * Shows a helper object to indicate the position and orientation of a clipping plane.
-     * @param {String} id ID of the clip plane to show.
-     * @returns {Viewer}
-     */
-    this.showClip = function (id) {
-        var clipHelper = clipHelpers[id];
-        if (!clipHelper) {
-            error("Clip not found: \"" + id + "\"");
-            return this;
-        }
-        clipHelper.visible = true;
-        return this;
-    };
-
-    /**
-     * Hides the helper object that indicates the position and orientation of the given clipping plane.
-     * @param {String} id ID of the clip plane to hide.
-     * @returns {Viewer}
-     */
-    this.hideClip = function (id) {
-        var clipHelper = clipHelpers[id];
-        if (!clipHelper) {
-            error("Clip not found: \"" + id + "\"");
-            return this;
-        }
-        clipHelper.visible = false;
+    this.destroyClips = function () {
+        this.destroy(this.getClips());
         return this;
     };
 
@@ -48110,13 +48418,19 @@ xeometry.Viewer = function (cfg) {
      * @param {String} id ID of the clip plane to enable.
      * @returns {Viewer}
      */
-    this.enableClip = function (id) {
-        var clip = clips[id];
-        if (!clip) {
+    this.enable = function (id) {
+        if (xeogl._isString(id)) {
+            var clip = clips[id];
+            if (clip) {
+                clip.active = true;
+                return this;
+            }
             error("Clip not found: \"" + id + "\"");
             return this;
         }
-        clip.active = true;
+        for (var i = 0, len = id.length; i < len; i++) {
+            this.enable(id[i]);
+        }
         return this;
     };
 
@@ -48125,74 +48439,500 @@ xeometry.Viewer = function (cfg) {
      * @param {String} id ID of the clip plane to disable.
      * @returns {Viewer}
      */
-    this.disableClip = function (id) {
-        var clip = clips[id];
-        if (!clip) {
+    this.disable = function (id) {
+        if (xeogl._isString(id)) {
+            var clip = clips[id];
+            if (clip) {
+                clip.active = false;
+                return this;
+            }
             error("Clip not found: \"" + id + "\"");
             return this;
         }
-        clip.active = false;
+        for (var i = 0, len = id.length; i < len; i++) {
+            this.disable(id[i]);
+        }
         return this;
     };
 
-    /**
-     * Sets the position of the given clip plane.
-     * @param {String} id ID of the clip plane to remove.
-     * @param {[Number, Number, Number]} [pos=0,0,0] World-space position of the clip plane.
-     * @returns {Viewer}
-     */
-    this.setClipPos = function (id, pos) {
-        var clip = clips[id];
-        if (!clip) {
-            error("Clip not found: \"" + id + "\"");
-            return this;
-        }
-        clip.pos = pos;
-        return this;
-    };
+    //----------------------------------------------------------------------------------------------------
+    // Light sources
+    //----------------------------------------------------------------------------------------------------
 
     /**
-     * Gets the position of the given clip plane.
-     * @param {String} id ID of the clip plane.
-     * @returns {[Number, Number, Number]} World-space position of the plane.
-     */
-    this.getClipPos = function (id) {
-        var clip = getclip(id);
-        if (!clip) {
-            error("Clip not found: \"" + id + "\"");
-            return;
-        }
-        return clip.pos;
-    };
-
-    /**
-     * Sets the orientation of the given clip plane.
-     * @param {String} id ID of the clip plane.
-     * @param {[Number, Number, Number]} [dir=0,0,1] Orientation vector.
+     * Creates a light source.
+     *
+     * @param {String} id Unique ID to assign to the lightping plane.
+     * @param {Object} cfg Light plane configuration.
+     * @param {Number} [cfg.type="dir"} Type of light source: "dir", "point" or "ambient".
+     * @param {[Number, Number, Number]} [cfg.color=[1,1,1]} RGB color for "dir", "point" and "ambient" light source.
+     * @param {Number} [cfg.intensity=1] Intensity factor for "dir", "point" and "ambient" light source, in range ````[0..1]````.
+     * @param {[Number, Number, Number]} [cfg.pos=0,0,0] World-space position for "point" light source..
+     * @param {[Number, Number, Number]} [cfg.dir=0,0,-1] Direction for "dir" light source..
+     * @param {Boolean} [cfg.shown=false] Whether or not to show a helper for "point" light source, to indicate its position, color etc..
      * @returns {Viewer} this
      */
-    this.setClipDir = function (id, dir) {
-        var clip = clips[id];
-        if (!clip) {
-            error("Clip not found: \"" + id + "\"");
+    this.createLight = function (id, cfg) {
+        if (scene.components[id]) {
+            error("Component with this ID already exists: " + id);
             return this;
         }
-        clip.dir = dir;
+        if (cfg === undefined) {
+            error("Light configuration expected");
+            return this;
+        }
+        var type = cfg.type || "dir";
+        var light;
+        if (type === "ambient") {
+            light = new xeogl.AmbientLight(scene, {
+                id: id,
+                color: cfg.color,
+                intensity: cfg.intensity
+            });
+        } else if (type === "point") {
+            light = new xeogl.PointLight(scene, {
+                id: id,
+                pos: cfg.pos,
+                color: cfg.color,
+                intensity: cfg.intensity,
+                space: cfg.space
+            });
+            //lightHelpers[light.id] = new xeogl.PointLightHelper(scene, {
+            //    light: light
+            //});
+        } else {
+            if (type !== "dir") {
+                error("Light type not recognized: " + type + " - defaulting to 'dir'");
+            }
+            light = new xeogl.DirLight(scene, {
+                id: id,
+                dir: cfg.dir,
+                color: cfg.color,
+                intensity: cfg.intensity,
+                space: cfg.space
+            });
+        }
+        lights[light.id] = light;
+        lightsDirty = true;
+        if (cfg.shown) {
+            this.show(id);
+        } else {
+            this.hide(id);
+        }
         return this;
     };
 
     /**
-     * Gets the orientation of the given clip plane.
-     * @param {String} id ID of the clip plane.
-     * @returns {[Number, Number, Number]} Orientation vector.
+     * Gets the IDs of the light sources currently in the viewer.
+     *
+     * @return {String[]} IDs of the light sources.
      */
-    this.getClipDir = function (id) {
-        var clip = clips[id];
-        if (!clip) {
-            error("Clip not found: \"" + id + "\"");
-            return;
+    this.getLights = function () {
+        return Object.keys(lights);
+    };
+
+    /**
+     * Destroys all lights.
+     *
+     * @return {Viewer} This viewer
+     */
+    this.destroyLights = function () {
+        this.destroy(this.getLights());
+        return this;
+    };
+
+    /**
+     * Sets light sources to defaults.
+     *
+     * @returns {Viewer} this
+     */
+    this.defaultLights = function () {
+        this.destroyLights();
+        this.createLight("light0", {
+            type: "ambient",
+            color: [1, 1, 1],
+            intensity: 1
+        });
+        this.createLight("light1", {
+            type: "dir",
+            dir: [0.8, -0.6, -0.8],
+            color: [1.0, 1.0, 1.0],
+            intensity: 1.0,
+            space: "view"
+        });
+        this.createLight("light2", {
+            type: "dir",
+            dir: [-0.8, -0.3, -0.4],
+            color: [0.8, 0.8, 0.8],
+            intensity: 1.0,
+            space: "view"
+        });
+        this.createLight("light3", {
+            type: "dir",
+            dir: [0.4, -0.4, 0.8],
+            color: [0.8, 1.0, 1.0],
+            intensity: 1.0,
+            space: "view"
+        });
+        return this;
+    };
+
+    /**
+     * Gets the type of the given light source.
+     *
+     * Returns null if the given ID is not a light source.
+     *
+     * @param {String} id ID of the light source.
+     * @returns {String} The light type: "dir", "point" or "ambient".
+     */
+    this.getLightType = (function () {
+        var types = {
+            "xeogl.DirLight": "dir",
+            "xeogl.PointLight": "point",
+            "xeogl.AmbientLight": "ambient"
+        };
+        return function (id) {
+            var light = lights[id];
+            if (!light) {
+                error("Light not found: \"" + id + "\"");
+                return null;
+            }
+            return types[light.type];
+        };
+    })();
+
+    /**
+     * Sets the position of the given point light or clip plane.
+     *
+     * @param {String} id ID of the light source or clip plane.
+     * @param {[Number, Number, Number]} [pos=0,0,0] World-space position.
+     * @returns {Viewer}
+     */
+    this.setPos = function (id, pos) {
+        if (xeogl._isString(id)) {
+            var light = lights[id];
+            if (light) {
+                if (light.type !== "xeogl.PointLight") {
+                    warn("Ignoring call to setPos() on light of incompatible type: \"" + id + "\"");
+                    return this;
+                }
+                light.pos = pos;
+                return this;
+            }
+            var clip = clips[id];
+            if (clip) {
+                clip.pos = pos;
+                return this;
+            }
+            error("Light or clip plane not found: \"" + id + "\"");
+            return this;
         }
-        return clip.dir;
+        for (var i = 0, len = id.length; i < len; i++) {
+            this.setPos(id[i], pos);
+        }
+        return this;
+    };
+
+    /**
+     * Gets the position of the given point light or clip plane.
+     *
+     * When the given ID is not a point light or clip plane,
+     * will log an error message and return a default value of ````[0,0,0]```` .
+     *
+     * @param {String} id ID of the light source or clip plane.
+     * @returns {[Number, Number, Number]} World-space position.
+     */
+    this.getPos = function (id) {
+        var light = lights[id];
+        if (light) {
+            if (light.type !== "xeogl.PointLight") {
+                error("Called getPos() for light of incompatible type: \"" + id + "\"");
+                return [0, 0, 0];
+            }
+            return light.pos;
+        }
+        var clip = clips[id];
+        if (clip) {
+            return clip.pos;
+        }
+        error("Light or clip plane not found: \"" + id + "\"");
+        return [0, 0, 0];
+    };
+
+    /**
+     * Sets the direction of the given directional light or clip plane.
+     *
+     * @param {String} id ID of a "dir" light source or clip plane.
+     * @param {[Number, Number, Number]} [dir=0,0,1] Direction vector.
+     * @returns {Viewer} this
+     */
+    this.setDir = function (id, dir) {
+        if (xeogl._isString(id)) {
+            var light = lights[id];
+            if (light) {
+                if (light.type !== "xeogl.DirLight") {
+                    warn("Ignoring call to setDir() on light of incompatible type: \"" + id + "\"");
+                    return this;
+                }
+                light.dir = dir;
+                return this;
+            }
+            var clip = clips[id];
+            if (clip) {
+                clip.dir = dir;
+                return this;
+            }
+            error("Light or clip plane not found: \"" + id + "\"");
+            return this;
+        }
+        for (var i = 0, len = id.length; i < len; i++) {
+            this.setDir(id[i], dir);
+        }
+        return this;
+    };
+
+    /**
+     * Gets the direction of the given directional light source or clip plane.
+     *
+     * When the given ID is not a directional light or clip plane,
+     * will log an error message and return a default value of ````[0,0,1]```` .
+     *
+     * @param {String} id ID of a "dir" light source or clip plane.
+     * @returns {[Number, Number, Number]} Direction vector.
+     */
+    this.getDir = function (id) {
+        var light = lights[id];
+        if (light) {
+            if (light.type !== "xeogl.DirLight") {
+                error("Called getDir() for light of incompatible type: \"" + id + "\"");
+                return null;
+            }
+            return light.dir;
+        }
+        var clip = clips[id];
+        if (clip) {
+            return clip.dir;
+        }
+        error("Light or clip plane not found: \"" + id + "\"");
+        return [0, 0, 1];
+    };
+
+    /**
+     * Sets the intensity of the given light source.
+     *
+     * @param {String} id ID of the light source.
+     * @param {Number} intensity Intensity factor in range [0..1].
+     * @returns {Viewer}
+     */
+    this.setIntensity = function (id, intensity) {
+        if (xeogl._isString(id)) {
+            var light = lights[id];
+            if (light) {
+                light.intensity = intensity;
+                return this;
+            }
+            error("Light not found: \"" + id + "\"");
+            return this;
+        }
+        for (var i = 0, len = id.length; i < len; i++) {
+            this.setIntensity(id[i], intensity);
+        }
+        return this;
+    };
+
+    /**
+     * Gets the intensity of the given light source.
+     *
+     * When the given ID is not a light source, will log an error message and return a default value of 1.0.
+     *
+     * @param {String} id ID of the light source.
+     * @returns {Number} Intensity factor in range [0..1].
+     */
+    this.getIntensity = function (id) {
+        var light = lights[id];
+        if (light) {
+            return light.intensity;
+        }
+        error("Light not found: \"" + id + "\"");
+        return 1.0;
+    };
+
+    /**
+     * Sets the coordinate space of the given light source.
+     *
+     * @param {String} id ID of the light source.
+     * @param {String} space The coordinate space: "world" or "view".
+     * @returns {Viewer}
+     */
+    this.setSpace = function (id, space) {
+        if (xeogl._isString(id)) {
+            var light = lights[id];
+            if (light) {
+                if (light.type !== "xeogl.DirLight" && light.type !== "xeogl.PointLight") {
+                    error("Called setSpace() for light of incompatible type: \"" + id + "\"");
+                    return this;
+                }
+                space = space || "view";
+                if (space !== "view" && space !== "world") {
+                    error("Light space not recognized: " + space + " - defaulting to 'view'");
+                    space = "view";
+                }
+                light.space = space;
+                return this;
+            }
+            error("Light not found: \"" + id + "\"");
+            return this;
+        }
+        for (var i = 0, len = id.length; i < len; i++) {
+            this.setSpace(id[i], space);
+        }
+        return this;
+    };
+
+    /**
+     * Gets the coordinate space of the given light source.
+     *
+     * When the given ID is not a light source, will log an error message and return the default value of "view".
+     *
+     * @param {String} id ID of the light source.
+     * @returns {String} Coordinate space: "world" or "view".
+     */
+    this.getSpace = function (id) {
+        var light = lights[id];
+        if (light) {
+            if (light.type !== "xeogl.DirLight" && light.type !== "xeogl.PointLight") {
+                error("Called getSpace() for light of incompatible type: \"" + id + "\"");
+                return "view";
+            }
+            return light.space;
+        }
+        error("Light not found: \"" + id + "\"");
+        return "view";
+    };
+
+    /**
+     *
+     *
+     * @param id
+     * @returns {Viewer}
+     */
+    this.destroy = function (id) {
+
+        if (!id) { // Destroy everything
+            scene.off(onTick);
+            scene.destroy();
+            models = {};
+            objects = {};
+            objectModels = {};
+            eulerAngles = {};
+            transformable = {};
+            translations = {};
+            rotations = {};
+            scales = {};
+            annotations = {};
+            objectAnnotations = {};
+            clips = {};
+            clipHelpers = {};
+            return this;
+        }
+
+        if (xeogl._isString(id)) {
+            var annotation = annotations[id];
+            if (annotation) {
+
+                // Destroy annotation
+
+                if (annotation.entity) {
+                    delete objectAnnotations[annotation.entity.id][annotation.id];
+                }
+                annotation.destroy();
+                delete annotations[id];
+                return this;
+            }
+
+            var light = lights[id];
+            if (light) {
+
+                // Destroy light
+
+                this.hide(id);
+                light.destroy();
+                delete lights[id];
+                var helper = lightHelpers[id];
+                if (helper) {
+                    helper.destroy();
+                    delete lightHelpers[id];
+                }
+                lightsDirty = true;
+                return this;
+            }
+
+            var clip = clips[id];
+            if (clip) {
+
+                // Destroy clip
+
+                this.hide(id);
+                clip.destroy();
+                delete clips[id];
+                var clipHelper = clipHelpers[id];
+                if (clipHelper) {
+                    clipHelper.destroy();
+                    delete clipHelpers[id];
+                }
+                clipsDirty = true;
+                return this;
+            }
+
+            var model = models[id];
+            if (model) {
+
+                // Destroy model
+
+                var entities = model.types["xeogl.Entity"];
+                var entity;
+                var meta;
+                for (var objectId in entities) {
+                    if (entities.hasOwnProperty(objectId)) {
+                        entity = entities[objectId];
+                        // Deregister for type
+                        meta = entity.meta;
+                        var type = meta && meta.type ? meta.type : "DEFAULT";
+                        var objectsOfType = types[type];
+                        if (objectsOfType) {
+                            delete objectsOfType[objectId];
+                        }
+                        delete objects[objectId];
+                        delete objectModels[objectId];
+                        delete eulerAngles[objectId];
+                        delete transformable[objectId];
+                        delete translations[objectId];
+                        delete rotations[objectId];
+                        delete scales[objectId];
+                    }
+                }
+                model.destroy();
+                delete models[id];
+                delete modelSrcs[id];
+                delete eulerAngles[id];
+                delete transformable[id];
+                delete translations[id];
+                delete rotations[id];
+                delete scales[id];
+
+                if (unloadedModel) {
+                    unloadedModel(id);
+                }
+
+                return this;
+            }
+        }
+
+        for (var i = 0, len = id.length; i < len; i++) {
+            this.destroy(id[i]);
+        }
+
+        return this;
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -48413,6 +49153,10 @@ xeometry.Viewer = function (cfg) {
                     if (!clip.active) {
                         clipState.active = clip.active;
                     }
+                    var clipHelper = clipHelpers[id];
+                    if (clipHelper && !clipHelper.visible) {
+                        clipState.shown = true;
+                    }
                     clipStates.push(clipState);
                 }
             }
@@ -48420,13 +49164,62 @@ xeometry.Viewer = function (cfg) {
                 bookmark.clips = clipStates;
             }
 
+            // Serialize lights
+
+            var lightStates = [];
+            var light;
+            var lightState;
+            for (id in lights) {
+                if (lights.hasOwnProperty(id)) {
+                    light = lights[id];
+                    lightState = {
+                        id: id,
+                        //type: light.type, // TODO
+                        pos: vecToArray(light.pos),
+                        dir: vecToArray(light.dir)
+                    };
+                    switch (light.type) {
+
+                        case "xeogl.AmbientLight":
+                            lightState.type = "ambient";
+                            lightState.color = vecToArray(light.color);
+                            lightState.intensity = light.intensity;
+                            break;
+
+                        case "xeogl.DirLight":
+                            lightState.type = "dir";
+                            lightState.color = vecToArray(light.color);
+                            lightState.dir = vecToArray(light.dir);
+                            lightState.intensity = light.intensity;
+                            break;
+
+                        case "xeogl.PointLight":
+                        default:
+                            lightState.type = "point";
+                            lightState.color = vecToArray(light.color);
+                            lightState.pos = vecToArray(light.pos);
+                            lightState.intensity = light.intensity;
+                            break;
+                    }
+                    //if (!light.active) {
+                    //    lightState.active = light.active;
+                    //}
+                    var lightHelper = lightHelpers[id];
+                    if (lightHelper && lightHelper.visible) {
+                        clipState.shown = true;
+                    }
+                    lightStates.push(lightState);
+                }
+            }
+            if (lightStates.length > 0) {
+                bookmark.lights = lightStates;
+            }
+
             // Serialize camera position
 
-            bookmark.lookat = {
-                eye: vecToArray(view.eye),
-                look: vecToArray(view.look),
-                up: vecToArray(view.up)
-            };
+            bookmark.eye = vecToArray(view.eye);
+            bookmark.look = vecToArray(view.look);
+            bookmark.up = vecToArray(view.up);
 
             // Serialize all other viewer properties, when they have non-default values
 
@@ -48434,8 +49227,8 @@ xeometry.Viewer = function (cfg) {
                 bookmark.gimbalLockY = view.gimbalLockY;
             }
 
-            if (cameraFlight.fitFOV !== 45) {
-                bookmark.viewFitFOV = cameraFlight.fitFOV;
+            if (cameraFlight.viewFitFOV !== 45) {
+                bookmark.viewFitFOV = cameraFlight.viewFitFOV;
             }
 
             if (cameraFlight.duration !== 0.5) {
@@ -48450,7 +49243,7 @@ xeometry.Viewer = function (cfg) {
                 bookmark.perspectiveNear = projections.perspective.near;
             }
 
-                if (projections.perspective.far !== 5000.0) {
+            if (projections.perspective.far !== 5000.0) {
                 bookmark.perspectiveFar = projections.perspective.far;
             }
 
@@ -48522,6 +49315,7 @@ xeometry.Viewer = function (cfg) {
             this.clear();
 
             if (!bookmark.models || bookmark.models.length === 0) {
+                this.defaultLights();
                 if (ok) {
                     ok();
                 }
@@ -48583,10 +49377,18 @@ xeometry.Viewer = function (cfg) {
                     }
                 }
 
+                var lightStates = bookmark.lights;
+                if (lightStates) {
+
+                    // TODO: Load lights from bookmark
+                } else {
+                    self.defaultLights();
+                }
+
                 if (invisible.length > 0) {
                     self.hide(invisible);
                 }
-                self.setEyeLookUp(bookmark.lookat.eye, bookmark.lookat.look, bookmark.lookat.up);
+                self.setEyeLookUp(bookmark.eye, bookmark.look, bookmark.up);
                 (bookmark.gimbalLockY === false) ? self.unlockGimbalY() : self.lockGimbalY();
                 self.setProjection(bookmark.projection || "perspective");
                 self.setViewFitFOV(bookmark.viewFitFOV || 45);
@@ -48638,29 +49440,35 @@ xeometry.Viewer = function (cfg) {
      * Clears and destroys this viewer.
      * @returns {Viewer} this
      */
-    this.destroy = function () {
-        scene.off(onTick);
-        scene.destroy();
-        models = {};
-        objects = {};
-        objectModels = {};
-        eulerAngles = {};
-        transformable = {};
-        translations = {};
-        rotations = {};
-        scales = {};
-        annotations = {};
-        objectAnnotations = {};
-        clips = {};
-        clipHelpers = {};
-        return this;
-    };
+    //this.destroy = function () {
+    //    scene.off(onTick);
+    //    scene.destroy();
+    //    models = {};
+    //    objects = {};
+    //    objectModels = {};
+    //    eulerAngles = {};
+    //    transformable = {};
+    //    translations = {};
+    //    rotations = {};
+    //    scales = {};
+    //    annotations = {};
+    //    objectAnnotations = {};
+    //    clips = {};
+    //    clipHelpers = {};
+    //    return this;
+    //};
 
     function error(msg) {
         console.error("[xeometry] " + msg);
     }
 
-    this.setBookmark(cfg);
+    function warn(msg) {
+        console.warn("[xeometry] " + msg);
+    }
+
+    //this.setBookmark(cfg);
+
+    this.defaultLights();
 
     var eventSubs = {};
 
@@ -48693,6 +49501,7 @@ xeometry.Viewer = function (cfg) {
             }
         }
     };
+
 };;/**
  * Controls the camera of a {@link xeometry.Viewer} with the mouse.
  *

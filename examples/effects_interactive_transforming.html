@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <script src="../build/xeometry.min.js"></script>
+    <link href="css/styles.css" rel="stylesheet"/>
+<body>
+
+<div id="info">
+    <h1>transforming</h1>
+    <p class="guidebookpage">See user guide: <a target="_top" href="https://xeolabs.gitbooks.io/xeometry/content/transforming.html">Transforming</a></p>
+
+    <h2>rotate model</h2>
+    <ul>
+    <li><a href='javascript:viewer.setRotate("saw", [0,0,0])'>setRotate("saw", [0,0,0]); </a> <span class="comment">// Rotate saw 0 degrees about X</span></li>
+    <li><a href='javascript:viewer.setRotate("saw", [90,0,0])'>setRotate("saw", [90,0,0]); </a> <span class="comment">// Rotate saw 90 degrees about X</span></li>
+    </ul>
+
+    <h2>translate model</h2>
+    <ul>
+    <li><a href='javascript:viewer.setTranslate("saw", [0,0,-100])'>setTranslate("saw", [0,0,-100]); </a> <span class="comment">// Translate saw backwards along -Z</span></li>
+    <li><a href='javascript:viewer.setTranslate("saw", [0,0,0])'>setTranslate("saw", [0,0,0]); </a> <span class="comment">// Restore saw translation to default</span></li>
+    </ul>
+
+    <h2>scale model</h2>
+    <ul>
+    <li><a href='javascript:viewer.setScale("saw", [0.5,0.5,0.5])'>setScale("saw", [0.5,0.5,0.5]); </a> <span class="comment">// Scale saw by 50%</span></li>
+    <li><a href='javascript:viewer.setScale("saw", [1,1,1])'>setScale("saw", [1,1,1]); </a> <span class="comment">// Restore saw scale to default</span></li>
+    </ul>
+
+    <h2>translate object</h2>
+    <ul>
+    <li><a href='javascript:viewer.setTranslate("saw#3.1", [0,80,-50])'>setTranslate("saw#3.1", [0,80,-50]); </a> <span class="comment">// Translate saw cover</span></li>
+    <li><a href='javascript:viewer.setTranslate("saw#3.1", [0,0,0])'>setTranslate("saw#3.1", [0,0,0]); </a> <span class="comment">// Restore saw cover translation to default</span></li>
+    </ul>
+
+    <h2>rotate object</h2>
+    <ul>
+    <li><a href='javascript:viewer.setRotate("saw#3.1", [-90,0,0])'>setRotate("saw#3.1", [-90,0,0]); </a> <span class="comment">// Rotate saw cover about X</span></li>
+    <li><a href='javascript:viewer.setRotate("saw#3.1", [0,0,0])'>setRotate("saw#3.1", [0,0,0]); </a> <span class="comment">// Restore saw cover rotation to default</span></li>
+    </ul>
+
+    <h2>scale object</h2>
+    <ul>
+    <li><a href='javascript:viewer.setScale("saw#3.1", [0.5,0.5,0.5])'>setScale("saw#3.1", [0.5,0.5,0.5]); </a> <span class="comment">// Scale saw cover by 50%</span></li>
+    <li><a href='javascript:viewer.setScale("saw#3.1", [1,1,1])'>setScale("saw#3.1", [1,1,1]); </a> <span class="comment">// Restore saw cover scale to default</span></li>
+    </ul>
+</div>
+
+<script>
+
+    var viewer = new xeometry.Viewer();
+
+    viewer.setEye([-130, 0, 350]);
+    viewer.setLook([-110.8940200805664, -44.856651306152344, -0.46092796325683594]);
+
+    viewer.setViewFitDuration(1);
+
+    viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF-MaterialsCommon/ReciprocatingSaw.gltf", function () {
+        viewer.setRotate("saw", [90, 0, 0]);
+    });
+
+    new xeometry.CameraControl(viewer);
+
+</script>
+</body>
+</html>

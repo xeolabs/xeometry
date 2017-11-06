@@ -9,35 +9,20 @@
 <body>
 
 <div id="info">
-    <h1>transparency</h1>
+    <h1>making objects transparent</h1>
     <p class="guidebookpage">See user guide: <a target="_top" href="https://xeolabs.gitbooks.io/xeometry/content/transparency.html">Transparency</a></p>
-
-    <h2>set opacities of models and objects</h2>
-    <ul>
-        <li><a href='javascript:viewer.setOpacity("saw", 0.2)'>setOpacity("saw", 0.2)</a> <span class="comment">// Set saw 20% opaque</span></li>
-        <li><a href='javascript:viewer.setOpacity("saw", 0.4)'>setOpacity("saw", 0.4)</a> <span class="comment">// Set saw 40% opaque</span></li>
-        <li><a href='javascript:viewer.setOpacity("saw", 0.6)'>setOpacity("saw", 0.6)</a> <span class="comment">// Set saw 60% opaque</span></li>
-        <li><a href='javascript:viewer.setOpacity("saw", 1.0)'>setOpacity("saw", 1.0)</a> <span class="comment">// Set saw 100% opaque</span></li>
-        <li><a href='javascript:viewer.setOpacity(["saw#3.1", "saw#3.2"], 0.2)'>setOpacity(["saw#3.1", "saw#3.2"], 0.2)</a> <span class="comment">// Set cover 20% opaque</span></li>
-        <li><a href='javascript:viewer.setOpacity(["saw#3.1", "saw#3.2"], 0.4)'>setOpacity(["saw#3.1", "saw#3.2"], 0.4)</a> <span class="comment">// Set cover 40% opaque</span></li>
-        <li><a href='javascript:viewer.setOpacity(["saw#3.1", "saw#3.2"], 0.6)'>setOpacity(["saw#3.1", "saw#3.2"], 0.6)</a> <span class="comment">// Set cover 60% opaque</span></li>
-        <li><a href='javascript:viewer.setOpacity(["saw#3.1", "saw#3.2"], 1.0)'>setOpacity(["saw#3.1", "saw#3.2"], 1.0)</a> <span class="comment">// Set cover 100% opaque</span></li>
-    </ul>
 </div>
 
 <script>
-
-    // Load saw, reveal motor by hiding objects
 
     var viewer = new xeometry.Viewer();
 
     viewer.setEye([-130, -40, 350]);
     viewer.setLook([-130, -40, 0]);
 
-    viewer.setViewFitDuration(1);
-
     viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF-MaterialsCommon/ReciprocatingSaw.gltf", function () {
         viewer.setRotate("saw", [90, 0, 0]);
+        viewer.setOpacity(["saw#3.1", "saw#3.2"], 0.5);
     });
 
     new xeometry.CameraControl(viewer);

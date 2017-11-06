@@ -3,33 +3,35 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <script src="../build/xeometry.min.js"></script>
+    <script src="../build/xeometry.js"></script>
     <link href="css/styles.css" rel="stylesheet"/>
 <body>
 
 <div id="info">
     <h1>loading bookmarks</h1>
-    <p class="guidebookpage">See user guide: <a target="_top" href="https://xeolabs.gitbooks.io/xeometry/content/bookmarking.html">Bookmarking</a></p>
+    <p class="guidebookpage">See user guide: <a target="_top"
+                                                href="https://xeolabs.gitbooks.io/xeometry/content/bookmarking.html">Bookmarking</a>
+    </p>
     <h2>load samples:</h2>
     <ul>
         <li><a href='javascript:viewer.setBookmark(bookmarks["saw-panelRemoved"])'>
             setBookmark(bookmarks["saw-panelRemoved"])
-         </a> <span class="comment">// Saw model with panel hidden</span></li>
+        </a> <span class="comment">// Saw model with panel hidden</span></li>
         <li><a href='javascript:viewer.setBookmark(bookmarks["saw-clipped"])'>
             setBookmark(bookmarks["saw-clipped"])
-         </a> <span class="comment">// Saw model with custom clipping plane</span></li>
+        </a> <span class="comment">// Saw model with custom clipping plane</span></li>
         <li><a href='javascript:viewer.setBookmark(bookmarks["gearbox-outlined"])'>
             setBookmark(bookmarks["gearbox-outlined"])
-         </a> <span class="comment">// Gearbox model with two outlined objects</span></li>
+        </a> <span class="comment">// Gearbox model with two outlined objects</span></li>
         <li><a href='javascript:viewer.setBookmark(bookmarks["saw-xrayed"])'>
             setBookmark(bookmarks["saw-xrayed"])
-         </a> <span class="comment">// Saw model with transparent cover</span></li>
+        </a> <span class="comment">// Saw model with transparent cover</span></li>
         <li><a href='javascript:viewer.setBookmark(bookmarks["saw-transformed"])'>
             setBookmark(bookmarks["saw-transformed"])
-         </a> <span class="comment">// Saw model with cover moved</span></li>
+        </a> <span class="comment">// Saw model with cover moved</span></li>
         <li><a href='javascript:viewer.setBookmark(bookmarks["saw-annotated"])'>
             setBookmark(bookmarks["saw-annotated"])
-         </a> <span class="comment">// Saw model with annotations</span></li>
+        </a> <span class="comment">// Saw model with annotations</span></li>
 
     </ul>
 </div>
@@ -62,15 +64,13 @@
                     "visible": false
                 }
             ],
-            "lookat": {
-                "eye": [98.91, 27.46, 263.33],
-                "look": [-130, 0, 0],
-                "up": [-0.05, 1, -0.06]
-            },
+            "eye": [98.91, 27.46, 263.33],
+            "look": [-130, 0, 0],
+            "up": [-0.05, 1, -0.06],
             "viewFitDuration": 1
         },
 
-        // View of reciprocating saw model, sliced in half by a clipping plane,
+        // View of reciprocating saw model, sliced in half by two clipping planes,
         // with side panel remaining unclipped.
 
         "saw-clipped": {
@@ -94,16 +94,20 @@
             "clips": [
                 {
                     "id": "clip1",
-                    "pos": [0, 0, 0],
-                    "dir": [0, 0, -1]
+                    "pos": [-130, -40, 0],
+                    "dir": [0, 0, -1],
+                    "shown": true
+                },
+                {
+                    "id": "clip2",
+                    "pos": [-130, 10, 0],
+                    "dir": [0, -1, -1],
+                    "shown": true
                 }
             ],
-            "lookat": {
-                "eye": [98.91, 27.46, 263.33],
-                "look": [-130, 0, 0],
-                "up": [-0.05, 1, -0.06]
-            },
-            "viewFitDuration": 1
+            "eye": [-350, -40, 300],
+            "look": [-130, -40, 0],
+            "up": [0, 1, 0]
         },
 
         // View of gearbox model with some parts outlined
@@ -161,11 +165,9 @@
                     "outlined": true
                 }
             ],
-            "lookat": {
-                "eye": [154.89, 35.27, 1.12],
-                "look": [153.34, 17.86, 3.22],
-                "up": [-0.59, 0.15, 0.8]
-            },
+            "eye": [154.89, 35.27, 1.12],
+            "look": [153.34, 17.86, 3.22],
+            "up": [-0.59, 0.15, 0.8],
             "viewFitDuration": 0.1,
             "outlineThickness": 8
         },
@@ -634,11 +636,9 @@
                     "opacity": 0.6
                 }
             ],
-            "lookat": {
-                "eye": [-148.14, -20.64, 302.94],
-                "look": [-148.14, -20.64, 0],
-                "up": [0, 1, 0]
-            },
+            "eye": [-148.14, -20.64, 302.94],
+            "look": [-148.14, -20.64, 0],
+            "up": [0, 1, 0],
             "viewFitDuration": 1
         },
 
@@ -654,16 +654,14 @@
             ],
             "objects": [
                 {
-                    "id": "saw#3.1",
+                    "id": "saw#3.2",
                     "translate": [0, 80, -50],
                     "rotate": [-90, 0, 0]
                 }
             ],
-            "lookat": {
-                "eye": [141.44, -291.59, 418.15],
-                "look": [-110.89, -24.58, 87.87],
-                "up": [0.39, 0.77, 0.51]
-            },
+            "eye": [141.44, -291.59, 418.15],
+            "look": [-110.89, -24.58, 87.87],
+            "up": [0.39, 0.77, 0.51],
             "viewFitDuration": 1
         },
 
@@ -690,7 +688,7 @@
             "annotations": [
                 {
                     "id": "a1",
-                    "object": "saw#3.32",
+                    "object": "saw#3.33",
                     "primIndex": 3303,
                     "bary": [0.3333, 0.3333, 0.3333],
                     "glyph": "A1",
@@ -703,23 +701,21 @@
                 },
                 {
                     "id": "a2",
+                    "object": "saw#3.95",
                     "primIndex": 11532,
                     "bary": [0.3333, 0.3333, 0.3333],
                     "glyph": "A2",
                     "title": "Bearing enclosure",
                     "desc": "Front bearing enclosure 330003-12",
-                    "object": "saw#3.94",
                     "eye": [-107.94, -31.69, 101.03],
                     "look": [-103.53, -20.64, 0],
                     "up": [-0.03, 0.75, 0.66],
                     "occludable": false
                 }
             ],
-            "lookat": {
-                "eye": [37.23, 62.45, 301.05],
-                "look": [-130, 0, 0],
-                "up": [0, 1, 0]
-            },
+            "eye": [37.23, 62.45, 301.05],
+            "look": [-130, 0, 0],
+            "up": [0, 1, 0],
             "viewFitFOV": 50,
             "viewFitDuration": 0.1
         }

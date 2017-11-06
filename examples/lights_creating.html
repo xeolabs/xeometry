@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <script src="../build/xeometry.js"></script>
+    <link href="css/styles.css" rel="stylesheet"/>
+<body>
+
+<div id="info">
+    <h1>creating light sources</h1>
+    <p class="guidebookpage">See user guide: <a target="_top" href="https://xeolabs.gitbooks.io/xeometry/content/lighting.html">Lighting</a></p>
+</div>
+
+<script>
+
+    var viewer = new xeometry.Viewer();
+
+    viewer.setEye([-130, -40, 350]);
+    viewer.setLook([-130, -40, 0]);
+
+    viewer.setViewFitDuration(1);
+
+    viewer.destroyLights();
+
+    viewer.createLight("light0", {
+        type: "ambient",
+        color: [0.7, 0.7, 1.0],
+        intensity: 1
+    });
+
+    viewer.createLight("light1", {
+        type: "dir",
+        dir: [0.8, -0.0, -0.8],
+        color: [1.0, 0.5, 0.5],
+        intensity: 0.4,
+        space: "view"
+    });
+
+    viewer.createLight("light2", {
+        type: "dir",
+        dir: [-0.8, -0.3, -0.4],
+        color: [0.3, 0.3, 1.0],
+        intensity: 1.0,
+        space: "view"
+    });
+
+    viewer.createLight("light3", {
+        type: "dir",
+        dir: [0, -1, 0],
+        color: [1.0, 1.0, 1.0],
+        intensity: 1.0,
+        space: "view"
+    });
+
+    viewer.createLight("light4", {
+        type: "dir",
+        dir: [-.5, -.5, -1],
+        color: [1.0, 1.0, 1.0],
+        intensity: 1.0,
+        space: "view"
+    });
+
+    viewer.loadModel("saw", "models/gltf/ReciprocatingSaw/glTF-MaterialsCommon/ReciprocatingSaw.gltf", function () {
+        viewer.setRotate("saw", [90, 0, 0]);
+    });
+
+    new xeometry.CameraControl(viewer);
+
+</script>
+</body>
+</html>

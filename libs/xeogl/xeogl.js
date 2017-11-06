@@ -4,7 +4,7 @@
  * A WebGL-based 3D visualization engine from xeoLabs
  * http://xeogl.org/
  *
- * Built on 2017-10-31
+ * Built on 2017-11-01
  *
  * MIT License
  * Copyright 2017, Lindsay Kay
@@ -10057,7 +10057,7 @@ var Canvas2Image = (function () {
 
                 if (phongMaterial) {
 
-                    add("ambientColor *= lightAmbient;");
+                    add("ambientColor *= (lightAmbient * lightAmbientIntensity);");
 
                     add("vec3 outgoingLight =  (shadow * occlusion * (ambientColor + reflectedLight.diffuse + reflectedLight.specular)) + emissiveColor;");
 
@@ -10071,7 +10071,7 @@ var Canvas2Image = (function () {
                 // NO SHADING - EMISSIVE and AMBIENT ONLY
                 //--------------------------------------------------------------------------------
 
-                add("ambientColor *= lightAmbient;");
+                add("ambientColor *= (lightAmbient * lightAmbientIntensity);");
 
                 add("vec3 outgoingLight = emissiveColor + ambientColor;");
             }

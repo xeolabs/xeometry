@@ -8,6 +8,8 @@ module.exports = function (grunt) {
 
         "libs/xeogl/xeogl.js",
         "libs/xeogl/geometry/vectorTextGeometry.js",
+        "libs/xeogl/helpers/aabbHelper.js",
+        "libs/xeogl/helpers/planeHelper.js",
         "libs/xeogl/helpers/clipHelper.js",
         "libs/xeogl/annotations/pin.js",
         "libs/xeogl/annotations/annotation.js",

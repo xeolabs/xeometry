@@ -9,7 +9,9 @@
 
 <div id="info">
     <h1>initializing a viewer from a bookmark</h1>
-    <p class="guidebookpage">See user guide: <a target="_top" href="https://xeolabs.gitbooks.io/xeometry/content/bookmarking.html">Bookmarking</a></p>
+    <p class="guidebookpage">See user guide: <a target="_top"
+                                                href="https://xeolabs.gitbooks.io/xeometry/content/bookmarking.html">Bookmarking</a>
+    </p>
 </div>
 
 <script>
@@ -26,22 +28,22 @@
         ],
         "objects": [
             {
-                "id": "saw#3.1",
+                "id": "saw#3.2",
                 "translate": [0, 80, -50],
                 "rotate": [-90, 0, 0]
             }
         ],
-        "lookat": {
-            "eye": [53.06, -198.07, 302.47],
-            "look": [-110.88, -24.57, 87.87],
-            "up": [0.38, 0.76, 0.50]
-        },
+        "eye": [53.06, -198.07, 302.47],
+        "look": [-110.88, -24.57, 87.87],
+        "up": [0.38, 0.76, 0.50],
         "viewFitDuration": 1
     };
 
-    var viewer = new xeometry.Viewer(bookmark);
+    var viewer = new xeometry.Viewer();
 
     new xeometry.CameraControl(viewer);
+
+    viewer.setBookmark(bookmark);
 
 </script>
 </body>
